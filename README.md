@@ -137,16 +137,22 @@ git clone https://github.com/microsoft/Semi-supervised-learning.git
 Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
 ### Quick Start
-TODO: add quick start example
+TODO: add quick start example and refer lighting notebook
 
 ###  Training
-TODO: add training example
+Here is an example to train FixMatch on CIFAR-100 with 200 labels. Trianing other supported algorithms (on other datasets with different label settings) can be specified by a config file:
+```sh
+python train.py --c config/usb_cv/fixmatch/fixmatch_cifar100_200_0.yaml
+```
 
 ### Evaluation
-TODO: add evaluation example
+After trianing, you can check the evaluation performance on training logs, or running evaluation script:
+```
+python eval.py --dataset cifar100 --num_classes 100 --load_path /PATH/TO/CHECKPOINT
+```
 
 ### Develop
-TODO: add develop example
+TODO: add develop example notebook
 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
@@ -166,7 +172,7 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 - [ ] Multi-language Support
     - [ ] Chinese
 
-See the [open issues](https://github.com/othneildrew/Best-README-Template/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/microsoft/Semi-supervised-learning/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -231,22 +237,14 @@ Project Link: [https://github.com/your_username/repo_name](https://github.com/yo
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
-
-* [Choose an Open Source License](https://choosealicense.com)
-* [GitHub Emoji Cheat Sheet](https://www.webpagefx.com/tools/emoji-cheat-sheet)
-* [Malven's Flexbox Cheatsheet](https://flexbox.malven.co/)
-* [Malven's Grid Cheatsheet](https://grid.malven.co/)
-* [Img Shields](https://shields.io)
-* [GitHub Pages](https://pages.github.com)
-* [Font Awesome](https://fontawesome.com)
-* [React Icons](https://react-icons.github.io/react-icons/search)
+TODO: add acknowledges
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
 <!-- References -->
 ## References
+TODO: add reference markdown
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
