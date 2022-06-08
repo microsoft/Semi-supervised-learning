@@ -136,7 +136,7 @@ pathspec==0.9.0
 petname==2.6
 pexpect @ file:///tmp/build/80754af9/pexpect_1605563209008/work
 pickleshare @ file:///tmp/build/80754af9/pickleshare_1606932040724/work
-Pillow==8.4.0
+Pillow==9.0.1
 pkginfo==1.8.2
 portalocker==2.4.0
 progress==1.6
