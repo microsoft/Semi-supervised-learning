@@ -1,3 +1,10 @@
+data_statistics/
+data/
+saved_models/
+pretrained_weights/
+ssl_nlp_datasets/
+back_translate_models/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -127,3 +134,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# zip files
+*.zip
