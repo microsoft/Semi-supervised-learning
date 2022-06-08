@@ -218,7 +218,8 @@ def exp_usb_nlp(label_amount):
             'pimodel', 'vat', 'dash', 'mpl', 'comatch', 'crmatch', 'simmatch', 'adamatch']
     datasets = ['aclImdb', 'ag_news', 'amazon_review', 'dbpedia', 'yahoo_answers', 'yelp_review']
 
-    seeds = [0, 1, 2]  # 1, 22, 333
+    # seeds = [0, 1, 2]  # 1, 22, 333
+    seeds = [0]
 
     dist_port = range(10001, 31120, 1)
     count = 0   
@@ -226,7 +227,7 @@ def exp_usb_nlp(label_amount):
     weight_decay = 5e-4
     max_length = 512
     # lr = 
-    lr = 1e-5
+    lr = 5e-6
     tau = 0.95
 
     for alg in algs:

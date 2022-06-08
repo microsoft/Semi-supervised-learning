@@ -217,11 +217,12 @@ def exp_usb_speech(label_amount):
             'pimodel', 'vat', 'dash', 'mpl', 'crmatch', 'comatch', 'simmatch', 'adamatch']
     datasets = ['esc50', 'fsdnoisy', 'urbansound8k', 'gtzan', 'superbks']
 
-    seeds = [0, 1, 2]  # 1, 22, 333
+    # seeds = [0, 1, 2]  # 1, 22, 333
+    seeds = [0]
 
     dist_port = range(10001, 31120, 1)
     count = 0   
-    weight_decay = 5e-4
+    weight_decay = 2e-5
     sampling_rate = 16000
 
     for alg in algs:
@@ -262,7 +263,7 @@ def exp_usb_speech(label_amount):
                 # prepare the configuration file
                 cfg = create_usb_speech_config(alg, seed,
                                                dataset, net, num_classes, num_labels,
-                                               port, 1e-5, weight_decay, max_length_seconds, sampling_rate)
+                                               port, 2e-5, weight_decay, max_length_seconds, sampling_rate)
                 count += 1
                 create_configuration(cfg, config_file)
 

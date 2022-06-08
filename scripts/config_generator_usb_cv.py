@@ -255,16 +255,17 @@ def exp_usb_cv(label_amount):
              'pimodel', 'vat', 'dash', 'mpl', 'crmatch', 'comatch', 'simmatch', 'adamatch']
     datasets = ['cifar100', 'eurosat', 'semi_aves', 'tissuemnist', 'stl10']
 
-    algs = ['fixmatch', 'flexmatch', 'comatch', 'simmatch']
-    datasets = ['imagenet']
-    seeds = [0, 1, 2]  # 1, 22, 333
+    # algs = ['fixmatch', 'flexmatch', 'comatch', 'simmatch']
+    # datasets = ['imagenet']
+    # seeds = [0, 1, 2]  # 1, 22, 333
+    seeds = [0]
 
     dist_port = range(10001, 11120, 1)
     count = 0
-    # TODO: change this
-    pretrain_path = '/mnt/default/dataset/usb_models/pretrained/pretrained_weights'
+    
+    pretrain_path = 'https://github.com/microsoft/Semi-supervised-learning'
     weight_decay = 5e-4
-    lr = 1e-5
+    lr = 5e-5
     warmup = 5
     amp = False
 

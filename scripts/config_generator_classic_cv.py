@@ -236,7 +236,8 @@ def exp_classific_cv(label_amount):
             'pimodel', 'vat', 'dash', 'mpl', 'crmatch', 'comatch', 'simmatch', 'adamatch']
     datasets = ['cifar100', 'svhn', 'stl10', 'cifar10']
 
-    seeds = [0, 1, 2] 
+    # seeds = [0, 1, 2] 
+    seeds = [0]
 
     dist_port = range(10001, 11120, 1)
     count = 0
@@ -300,8 +301,8 @@ def exp_classific_cv(label_amount):
 
 
 if __name__ == '__main__':
-    if not os.path.exists('./saved_models/classic_cv/'):
-        os.mkdir('./saved_models/classic_cv/')
+    # if not os.path.exists('./saved_models/classic_cv/'):
+    #     os.mkdir('./saved_models/classic_cv/')
     if not os.path.exists('./config/classic_cv/'):
         os.mkdir('./config/classic_cv/')
 
