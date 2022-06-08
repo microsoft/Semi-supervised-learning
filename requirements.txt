@@ -149,7 +149,7 @@ pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.21
 Pygments @ file:///opt/conda/conda-bld/pygments_1644249106324/work
-PyJWT==2.3.0
+PyJWT==2.4.0
 PyNaCl==1.5.0
 pynndescent @ file:///home/conda/feedstock_root/build_artifacts/pynndescent_1642882095160/work
 pyOpenSSL==21.0.0
