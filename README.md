@@ -69,6 +69,8 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
+    <li><a href="#model-zoo">Model Zoo</a></li>
+    <li><a href="#benchmark-results">Benchmark Results</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -158,6 +160,21 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+
+<!-- MODEL ZOO -->
+## Model Zoo
+
+TODO: add pre-trained models.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+<!-- BENCHMARK RESULTS -->
+## Benchmark Results
+
+Please refer to Results for benchmark results.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
 
 
 <!-- ROADMAP -->
