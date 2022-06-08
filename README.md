@@ -139,7 +139,13 @@ git clone https://github.com/microsoft/Semi-supervised-learning.git
 Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
 ### Quick Start
-TODO: add quick start example and refer lighting notebook
+<!-- TODO: add quick start example and refer lighting notebook -->
+Please see [Installation](#installation) to install USB first. We provide colab tutorials for:
+
+- [A beginning example](notebooks/Beginner_Example.ipynb)
+- [Customize models](notebooks/Custom_Algorithm.ipynb)
+- [Customize datasets](notebooks/Custom_Dataset.ipynb)
+- [USB lighting](notebooks/lighting_example.ipynb)
 
 ###  Training
 Here is an example to train FixMatch on CIFAR-100 with 200 labels. Trianing other supported algorithms (on other datasets with different label settings) can be specified by a config file:
