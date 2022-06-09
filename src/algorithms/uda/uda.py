@@ -66,7 +66,7 @@ class UDA(AlgorithmBase):
                 mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
 
             unsup_loss = F.kl_div(F.softmax(logits_x_ulb_s, dim=-1).log(),
-                                  F.softmax(logits_x_ulb_w / self.T, dim=-1),
+                                  F.softmax(logits_x_ulb_w / self.T, dim=-1).detach(),
                                   reduction='none').sum(dim=1, keepdim=False)
             unsup_loss = (unsup_loss * mask).mean()
 
