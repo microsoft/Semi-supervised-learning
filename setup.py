@@ -13,9 +13,8 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-# exec(open('timm/version.py').read())
 setup(
-    name='unissl',
+    name='usb',
     version='0.0.0',
     description='Unfied Semi-Supervised Learning Benchmark',
     long_description=long_description,
