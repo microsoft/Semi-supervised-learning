@@ -104,16 +104,107 @@ trainer.evaluate(eval_loader)
 y_pred, y_logits = trainer.predict(eval_loader)
 
 ```
----
----
-### Benchmarking Algorithms 
+
 
 ## Customized Usage
+---
+### Customizing Dataset
+---
 
-### customizing algorithm
 
-### customizing dataset
+In this tutorial, we provide an example of using custom dataset.
 
 
+1. **Specifiy configs and define the model**
+
+```python
+# define configs and create config
+config = {
+    'algorithm': 'fixmatch',
+    'net': 'wrn_28_2',
+    'use_pretrain': False,  # todo: add pretrain
+
+    # optimization configs
+    'epoch': 3,
+    'num_train_iter': 150,
+    'num_eval_iter': 50,
+    'optim': 'SGD',
+    'lr': 0.03,
+    'momentum': 0.9,
+    'batch_size': 64,
+    'eval_batch_size': 64,
+
+    # dataset configs
+    'dataset': 'none',
+    'num_labels': 40,
+    'num_classes': 10,
+    'input_size': 32,
+    'data_dir': './data',
+
+    # algorithm specific configs
+    'hard_label': True,
+    'uratio': 3,
+    'ulb_loss_ratio': 1.0,
+
+    # device configs
+    'gpu': 0,
+    'world_size': 1,
+    'distributed': False,
+}
+config = get_config(config)
+
+# create model and specify algorithm
+algorithm = get_algorithm(config,  net_builder(config.net, from_name=False), tb_log=None, logger=None)
+
+```
+---
+2. **Create Dataset**
+```python
+# replace with your own code
+data = np.random.randint(0, 255, size=3072 * 1000).reshape((-1, 32, 32, 3))
+data = np.uint8(data)
+target = np.random.randint(0, 10, size=1000)
+lb_data, lb_target, ulb_data, ulb_target = split_ssl_data(config, data, target,
+                                                          num_labels=config.num_labels,
+                                                          num_classes=config.num_classes)
+
+train_transform = transforms.Compose([transforms.RandomHorizontalFlip(),
+                                      transforms.RandomCrop(32, padding=int(32 * 0.125), padding_mode='reflect'),
+                                      transforms.ToTensor(),
+                                      transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+
+lb_dataset = BasicDataset(config.algorithm, lb_data, lb_target, config.num_classes, train_transform, is_ulb=False)
+ulb_dataset = BasicDataset(config.algorithm, lb_data, lb_target, config.num_classes, train_transform, is_ulb=True)
+```
+
+```python
+# replace with your own code
+eval_data = np.random.randint(0, 255, size=3072 * 100).reshape((-1, 32, 32, 3))
+eval_data = np.uint8(eval_data)
+eval_target = np.random.randint(0, 10, size=100)
+
+eval_transform = transforms.Compose([transforms.Resize(32),
+                                      transforms.ToTensor(),
+                                      transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+
+eval_dataset = BasicDataset(config.algorithm, lb_data, lb_target, config.num_classes, eval_transform, is_ulb=False)
+```
+
+```python
+# define data loaders
+train_lb_loader = get_data_loader(config, lb_dataset, config.batch_size)
+train_ulb_loader = get_data_loader(config, ulb_dataset, int(config.batch_size * config.uratio))
+eval_loader = get_data_loader(config, eval_dataset, config.eval_batch_size)
+```
+
+---
+
+3. **Training and Evaluation**
+```python
+# training and evaluation
+trainer = Trainer(config, algorithm)
+trainer.fit(train_lb_loader, train_ulb_loader, eval_loader)
+trainer.evaluate(eval_loader)
+```
 
 

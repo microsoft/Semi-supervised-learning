@@ -610,6 +610,55 @@ forward(self, x, only_fc=False, only_feat=False, **kwargs)
 ---
 
 
+## Lighting
+```python
+def get_config(config)
+```
+> This function sets all configurations spanning from: Saving & loading of the model; Training configurations； Optimizer configurations; Backbone Net Configurations; Algorithms Configurations; Data Configurations; multi-GPUs & Distrbitued Training.
+
+```python
+class Trainer()
+```
+> This class enables training, evaluation and prediction on specific dataset.
+
+```python
+__init__(self, config, algorithm, verbose=0)
+```
+> Initialization.
+>>Parameters:
+- **config**(*config*): The configuration arguments. 
+- **algorithm**(*nn.Module*): the algorithm model
+
+```python
+fit(self, train_lb_loader, train_ulb_loader, eval_loader)
+```
+> Conduct the entire training.
+>>Parameters:
+- **train_lb_loader**(*nn.dataloader*): data loader of labeled training data
+- **train_ulb_loader**(*nn.dataloader*): data loader of unlabeled training data
+- **eval_loader**(*nn.dataloader*): data loader of evaluation data set
+
+```python
+evaluate(self, data_loader, use_ema_model=False)
+```
+> Evaluate the performance of trained model on specific data.
+>>Parameters:
+- **data_loader**(*nn.dataloader*): data loader of testing set
+- **use_ema_model**(*bool, optional*): True if use ema.
+
+```python
+predict(self, data_loader, use_ema_model=False， return_gt=False)
+```
+> Get the predicted class labels of testing set.
+>>Paramters:
+- **data_loader**(*nn.dataloader*): data loader of testing set.
+- **use_ema_model**(*bool*): True if use ema
+- **return_gt**(*bool*): True if return ground-truth labels
+>>Return:
+- **y_pred**(*tensor*): predicted labels
+- **y_logits**(*tensor*): predicted logits
+- **y_true**(*tensor*): ground-truth labels. Returned if *return_gt* is *True*. 
+---
 
 
 
