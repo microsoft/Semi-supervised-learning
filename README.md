@@ -45,6 +45,8 @@
     ·
     <a href="https://github.com/microsoft/Semi-supervised-learning">Demo</a>
     ·
+    <a href="https://github.com/microsoft/Semi-supervised-learning">Docs</a>
+    ·
     <a href="https://github.com/microsoft/Semi-supervised-learning/issues">Issue</a>
   </p>
 </div>
@@ -255,7 +257,8 @@ Project Link: [https://github.com/your_username/repo_name](https://github.com/yo
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
+<!-- CITE -->
+## Cite
 
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
