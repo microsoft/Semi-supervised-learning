@@ -197,7 +197,7 @@ def consistency_loss(logits_s, logits_w, name='ce', use_hard_labels=True, T=0.5,
         else:
             pseudo_label = logits_w
         probs = torch.softmax(logits_s, dim=-1)
-        loss = F.mse_loss(probs, pseudo_label, reduction='none').sum(dim=1)
+        loss = F.mse_loss(probs, pseudo_label, reduction='none').mean(dim=1)
     else:
         if use_hard_labels:
             pseudo_label = torch.argmax(logits_w, dim=-1)
