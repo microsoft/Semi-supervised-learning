@@ -28,7 +28,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/microsoft/Semi-supervised-learning">
-    <img src="figures/logo.jpg" alt="Logo" width="80" height="80">
+    <img src="figures/logo.jpg" alt="Logo" width="320" height="80">
   </a>
 
   <h3 align="center">USB</h3>
