@@ -24,9 +24,9 @@ setup(
     # author_email='',
 
     # Note that this is a string of words separated by whitespace, not a list.
-    keywords='pytorch semi-supervised learning',
+    keywords='pytorch semi-supervised-learning',
     packages=find_packages(exclude=['preprocess', 'saved_models', 'data', 'config']),
     include_package_data=True,
-    install_requires=['torch >= 1.7', 'torchvision', 'torchaudio', 'transformers'],
-    python_requires='>=3.6',
+    install_requires=['torch >= 1.8', 'torchvision', 'torchaudio', 'transformers'， 'timm'],
+    python_requires='>=3.7',
 )
