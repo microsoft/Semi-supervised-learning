@@ -28,7 +28,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/microsoft/Semi-supervised-learning">
-    <img src="figures/logo.png" alt="Logo" width="320" height="120">
+    <img src="figures/logo.png" alt="Logo" width="400" height="160">
   </a>
 
   <h3 align="center">USB</h3>
@@ -57,12 +57,8 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
-    <li>
-      <a href="#news-and-updates">News and Updates</a>
-    </li>
-    <li>
-      <a href="#intro">Introduction</a>
-    </li>
+    <li><a href="#news-and-updates">News and Updates</a></li>
+    <li><a href="#intro">Introduction</a></li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
@@ -71,12 +67,10 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#model-zoo">Model Zoo</a></li>
     <li><a href="#benchmark-results">Benchmark Results</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#model-zoo">Model Zoo</a></li>
+    <li><a href="#contributing">Community</a></li>
     <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
@@ -95,7 +89,7 @@ USB is a Pytorch-based Python package for Semi-Supervised Learning (SSL). It is 
 ## Getting Started
 
 This is an example of how to set up USB locally.
-To get a local copy up and running follow these simple example steps.
+To get a local copy up, running follow these simple example steps.
 
 ### Prerequisites
 
@@ -103,17 +97,12 @@ USB is built on pytorch, with torchvision, torchaudio, and transformers.
 
 To install the required packages, you can create a conda environment:
 ```sh
-conda install --name usb --file environment.txt
+conda create --name usb python=3.8
 ```
 
-or use pip:
+then use pip to install required packages:
 ```sh
 pip install -r requirements.txt
-```
-
-or docker:
-```sh
-add docker
 ```
 
 ### Installation
@@ -138,16 +127,14 @@ git clone https://github.com/microsoft/Semi-supervised-learning.git
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+USB is easy to use and extend. Going through the belowing examples will help you faimiliar with USB for quick use, evaluate an exsiting SSL algorithm on your own dataset, or developing new SSL algorithms.
 
-### Quick Start
+### Quick Start with USB package
 <!-- TODO: add quick start example and refer lighting notebook -->
 Please see [Installation](#installation) to install USB first. We provide colab tutorials for:
 
-- [A beginning example](notebooks/Beginner_Example.ipynb)
-- [Customize models](notebooks/Custom_Algorithm.ipynb)
+- [Beginning example](notebooks/Beginner_Example.ipynb)
 - [Customize datasets](notebooks/Custom_Dataset.ipynb)
-- [USB lighting](notebooks/lighting_example.ipynb)
 
 ###  Training
 Here is an example to train FixMatch on CIFAR-100 with 200 labels. Trianing other supported algorithms (on other datasets with different label settings) can be specified by a config file:
@@ -162,9 +149,18 @@ python eval.py --dataset cifar100 --num_classes 100 --load_path /PATH/TO/CHECKPO
 ```
 
 ### Develop
-TODO: add develop example notebook
+Check the developing documentation for creating your own SSL algorithm!
+
 
 _For more examples, please refer to the [Documentation](https://example.com)_
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+
+<!-- BENCHMARK RESULTS -->
+## Benchmark Results
+
+Please refer to [Results](./results) for benchmark results on different tasks.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -177,22 +173,14 @@ TODO: add pre-trained models.
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
-<!-- BENCHMARK RESULTS -->
-## Benchmark Results
-
-Please refer to Results for benchmark results.
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
 
 <!-- ROADMAP -->
-## Roadmap
+## TODO
 
 - [ ] Add docker
-- [ ] Add Logo figures
 - [ ] Finish Readme
 - [ ] Compile docs and add usage example in docs
-- [ ] Create Colab Notebooks
+- [ ] Check Notebooks Create Colab Notebooks
 - [ ] Updating SUPPORT.MD with content about this project's support experience
 - [ ] Multi-language Support
     - [ ] Chinese
@@ -220,10 +208,10 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 If you have a suggestion that would make USB better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
+1. Fork the project
+2. Create your branch (`git checkout -b your_name/your_branch`)
+3. Commit your changes (`git commit -m 'Add some features'`)
+4. Push to the branch (`git push origin your_name/your_branch`)
 5. Open a Pull Request
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -249,28 +237,47 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 
 <!-- CONTACT -->
-## Contributors and Contact
+## Community and Contact
 
-Your Name - [@your_twitter](https://twitter.com/your_username) - email@example.com
-
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
+The USB comunity is maintained by:
+- Yidong Wang (), 
+- Hao Chen (haoc3@andrew.cmu.edu), Carnegie Mellon University 
+- Yue Fan (), 
+- Wenxin Hou (),
+- Ran Tao (),
+- Jindong Wang (),
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- CITE -->
-## Cite
+## Citing USB
+Please cite us if you fine USB helpful for your project/paper:
+
+```
+@article{},
+  title={},
+  author={},
+  booktitle={},
+  year={}
+}
+```
+
 
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-TODO: add acknowledges
+We thanks the following projects for reference of creating USB:
+
+- [TorchSSL](https://github.com/TorchSSL/TorchSSL)
+- [FixMatch](https://github.com/google-research/fixmatch)
+- [CoMatch](https://github.com/salesforce/CoMatch)
+- [SimMatch](https://github.com/KyleZheng1997/simmatch)
+- [HuggingFace](https://huggingface.co/docs/transformers/index)
+- [Pytorch Lighting](https://github.com/Lightning-AI/lightning)
+- [README Template](https://github.com/othneildrew/Best-README-Template)
+
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
-
-<!-- References -->
-## References
-TODO: add reference markdown
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
