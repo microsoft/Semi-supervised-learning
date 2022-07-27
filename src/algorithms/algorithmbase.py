@@ -265,10 +265,14 @@ class AlgorithmBase:
                 self.after_train_step()
                 start_batch.record()
 
-        eval_dict = self.evaluate('eval')
-        eval_dict.update({'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it})
+        # eval_dict = self.evaluate('eval')
+        eval_dict = {{'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it}}
         if 'test' in self.loader_dict:
-            eval_dict.update(self.evaluate('test'))
+            # load the best model and evaluate on test dataset
+            best_model_path = os.path.join(self.args.save_dir, self.args.save_name, 'model_best.pth')
+            self.load_model(best_model_path)
+            test_dict = self.evaluate('test')
+            eval_dict['test/best_acc'] = test_dict['test/top-1-acc']
         return eval_dict
 
     def evaluate(self, eval_dest='eval'):

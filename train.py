@@ -223,6 +223,11 @@ def main_worker(gpu, ngpus_per_node, args):
     logger.info("Model training")
     result = model.train()
 
+    # print validation (and test results)
+    logger.info("Model result:")
+    for key, item in result.items():
+        logger.info(f"{key} : {item}")
+
     if hasattr(model, 'finetune'):
         logger.info("Finetune stage")
         model.finetune()
