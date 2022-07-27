@@ -92,9 +92,10 @@ class FlexMatch(AlgorithmBase):
                 max_probs, max_idx = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)
                 # mask = max_probs.ge(p_cutoff * (class_acc[max_idx] + 1.) / 2).float()  # linear
                 # mask = max_probs.ge(p_cutoff * (1 / (2. - class_acc[max_idx]))).float()  # low_limit
-                select = max_probs.ge(self.p_cutoff * (self.classwise_acc[max_idx] / (2. - self.classwise_acc[max_idx])))  # convex
+                mask = max_probs.ge(self.p_cutoff * (self.classwise_acc[max_idx] / (2. - self.classwise_acc[max_idx])))  # convex
                 # mask = max_probs.ge(p_cutoff * (torch.log(class_acc[max_idx] + 1.) + 0.5)/(math.log(2) + 0.5)).float()  # concave
-                mask = select.to(max_probs.dtype)
+                select = max_probs.ge(self.p_cutoff)
+                mask = mask.to(max_probs.dtype)
 
             unsup_loss, pseudo_lb = consistency_loss(logits_x_ulb_s,
                                                      logits_x_ulb_w,
