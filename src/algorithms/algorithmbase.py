@@ -266,7 +266,7 @@ class AlgorithmBase:
                 start_batch.record()
 
         # eval_dict = self.evaluate('eval')
-        eval_dict = {{'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it}}
+        eval_dict = {'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it}
         if 'test' in self.loader_dict:
             # load the best model and evaluate on test dataset
             best_model_path = os.path.join(self.args.save_dir, self.args.save_name, 'model_best.pth')

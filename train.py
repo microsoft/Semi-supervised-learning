@@ -191,6 +191,7 @@ def main_worker(gpu, ngpus_per_node, args):
     loader_dict['eval'] = get_data_loader(args,
                                           dataset_dict['eval'],
                                           args.eval_batch_size,
+                                          data_sampler=None,
                                           num_workers=args.num_workers,
                                           drop_last=False)
     
@@ -198,6 +199,7 @@ def main_worker(gpu, ngpus_per_node, args):
         loader_dict['test'] =  get_data_loader(args,
                                                dataset_dict['test'],
                                                args.eval_batch_size,
+                                               data_sampler=None,
                                                num_workers=args.num_workers,
                                                drop_last=False)
 
@@ -224,9 +226,8 @@ def main_worker(gpu, ngpus_per_node, args):
     result = model.train()
 
     # print validation (and test results)
-    logger.info("Model result:")
     for key, item in result.items():
-        logger.info(f"{key} : {item}")
+        logger.info(f"Model result - {key} : {item}")
 
     if hasattr(model, 'finetune'):
         logger.info("Finetune stage")
