@@ -172,12 +172,12 @@ class AlgorithmBase:
         save model and printing log
         """
         # Save model 
-        if self.it % self.num_eval_iter == 0:
+        if (self.it + 1) % self.num_eval_iter == 0:
             save_path = os.path.join(self.save_dir, self.save_name)
             if not self.distributed or (self.distributed and self.rank % self.ngpus_per_node == 0):
                 self.save_model('latest_model.pth', save_path)
 
-        if self.it % self.num_eval_iter == 0:
+        if (self.it + 1) % self.num_eval_iter == 0:
             eval_dict = self.evaluate('eval')
             self.tb_dict.update(eval_dict)
 
@@ -201,7 +201,7 @@ class AlgorithmBase:
         
         self.it += 1
         del self.tb_dict
-        if self.it > 0.8 * self.num_train_iter:
+        if self.it > 0.9 * self.num_train_iter:
             self.num_eval_iter = 1024
 
     def train(self):
@@ -230,7 +230,7 @@ class AlgorithmBase:
             self.epoch = epoch
             
             # prevent the training iterations exceed args.num_train_iter
-            if self.it > self.num_train_iter:
+            if self.it >= self.num_train_iter:
                 break
 
             if isinstance(self.loader_dict['train_lb'].sampler, DistributedSampler):
@@ -243,7 +243,7 @@ class AlgorithmBase:
             for data_lb, data_ulb in zip(self.loader_dict['train_lb'],
                                          self.loader_dict['train_ulb']):
                 # prevent the training iterations exceed args.num_train_iter
-                if self.it > self.num_train_iter:
+                if self.it >= self.num_train_iter:
                     break
 
                 end_batch.record()
