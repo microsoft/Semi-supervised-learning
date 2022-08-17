@@ -7,9 +7,8 @@
 *** Thanks again! Now go create something AMAZING! :D
 -->
 
-
-
 <!-- PROJECT SHIELDS -->
+
 <!--
 *** I'm using markdown "reference style" links for readability.
 *** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
@@ -17,23 +16,24 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
 
+[Contributors][contributors-url]
+[Forks][forks-url]
+[Stargazers][stars-url]
+[Issues][issues-url]
+[MIT License][license-url]
 
 <!-- PROJECT LOGO -->
+
 <br />
 <div align="center">
   <a href="https://github.com/microsoft/Semi-supervised-learning">
     <img src="figures/logo.png" alt="Logo" width="400" height="160">
   </a>
 
-  <h3 align="center">USB</h3>
+<h3 align="center">USB</h3>
 
-  <p align="center">
+<p align="center">
     An Unified Semi-supervised Learning Benchmark for CV, NLP, Audio
     <!-- <br />
     <a href="https://github.com/microsoft/Semi-supervised-learning"><strong>Explore the docs »</strong></a>
@@ -51,9 +51,8 @@
   </p>
 </div>
 
-
-
 <!-- TABLE OF CONTENTS -->
+
 <details>
   <summary>Table of Contents</summary>
   <ol>
@@ -75,17 +74,16 @@
   </ol>
 </details>
 
-
-
 <!-- Introduction -->
+
 ## Introduction
 
 USB is a Pytorch-based Python package for Semi-Supervised Learning (SSL). It is easy-to-use/extend, affordable, and comprehensive for developing and evaluating SSL algorithms. USB provides the implementation of 14 SSL algorithms based on Consistency Regularization, and 15 tasks for evaluation from CV, NLP, and Audio domain.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 <!-- GETTING STARTED -->
+
 ## Getting Started
 
 This is an example of how to set up USB locally.
@@ -93,14 +91,16 @@ To get a local copy up, running follow these simple example steps.
 
 ### Prerequisites
 
-USB is built on pytorch, with torchvision, torchaudio, and transformers. 
+USB is built on pytorch, with torchvision, torchaudio, and transformers.
 
 To install the required packages, you can create a conda environment:
+
 ```sh
 conda create --name usb python=3.8
 ```
 
 then use pip to install required packages:
+
 ```sh
 pip install -r requirements.txt
 ```
@@ -108,73 +108,80 @@ pip install -r requirements.txt
 ### Installation
 
 We provide a Python package of USB for users who want to start training/testing the supported SSL algorithms on their data quickly:
+
 ```sh
 pip install usb
 ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 ### Development
+
 You can also develop your own SSL algorithm and evaluate it by cloning USB:
+
 ```sh
 git clone https://github.com/microsoft/Semi-supervised-learning.git
 ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 <!-- USAGE EXAMPLES -->
+
 ## Usage
 
 USB is easy to use and extend. Going through the belowing examples will help you faimiliar with USB for quick use, evaluate an exsiting SSL algorithm on your own dataset, or developing new SSL algorithms.
 
 ### Quick Start with USB package
+
 <!-- TODO: add quick start example and refer lighting notebook -->
+
 Please see [Installation](#installation) to install USB first. We provide colab tutorials for:
 
 - [Beginning example](notebooks/Beginner_Example.ipynb)
 - [Customize datasets](notebooks/Custom_Dataset.ipynb)
 
-###  Training
+### Training
+
 Here is an example to train FixMatch on CIFAR-100 with 200 labels. Trianing other supported algorithms (on other datasets with different label settings) can be specified by a config file:
+
 ```sh
 python train.py --c config/usb_cv/fixmatch/fixmatch_cifar100_200_0.yaml
 ```
 
 ### Evaluation
+
 After trianing, you can check the evaluation performance on training logs, or running evaluation script:
+
 ```
 python eval.py --dataset cifar100 --num_classes 100 --load_path /PATH/TO/CHECKPOINT
 ```
 
 ### Develop
-Check the developing documentation for creating your own SSL algorithm!
 
+Check the developing documentation for creating your own SSL algorithm!
 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 <!-- BENCHMARK RESULTS -->
+
 ## Benchmark Results
 
 Please refer to [Results](./results) for benchmark results on different tasks.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 <!-- MODEL ZOO -->
+
 ## Model Zoo
 
 TODO: add pre-trained models.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
-
 <!-- ROADMAP -->
+
 ## TODO
 
 - [ ] Add docker
@@ -183,14 +190,14 @@ TODO: add pre-trained models.
 - [ ] Check Notebooks Create Colab Notebooks
 - [ ] Updating SUPPORT.MD with content about this project's support experience
 - [ ] Multi-language Support
-    - [ ] Chinese
+  - [ ] Chinese
 
 See the [open issues](https://github.com/microsoft/Semi-supervised-learning/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 <!-- CONTRIBUTING -->
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
@@ -216,33 +223,33 @@ Don't forget to give the project a star! Thanks again!
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 <!-- TRADEMARKS -->
+
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
+[Microsoft&#39;s Trademark &amp; Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
 
-
 <!-- LICENSE -->
+
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
-
 <!-- CONTACT -->
+
 ## Community and Contact
 
 The USB comunity is maintained by:
-- Yidong Wang (), 
-- Hao Chen (haoc3@andrew.cmu.edu), Carnegie Mellon University 
-- Yue Fan (), 
+
+- Yidong Wang (),
+- Hao Chen (haoc3@andrew.cmu.edu), Carnegie Mellon University
+- Yue Fan (),
 - Wenxin Hou (),
 - Ran Tao (),
 - Jindong Wang (),
@@ -250,7 +257,9 @@ The USB comunity is maintained by:
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- CITE -->
+
 ## Citing USB
+
 Please cite us if you fine USB helpful for your project/paper:
 
 ```
@@ -266,8 +275,8 @@ Please cite us if you fine USB helpful for your project/paper:
 }
 ```
 
-
 <!-- ACKNOWLEDGMENTS -->
+
 ## Acknowledgments
 
 We thanks the following projects for reference of creating USB:
@@ -280,12 +289,12 @@ We thanks the following projects for reference of creating USB:
 - [Pytorch Lighting](https://github.com/Lightning-AI/lightning)
 - [README Template](https://github.com/othneildrew/Best-README-Template)
 
-
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
 <!-- MARKDOWN LINKS & IMAGES -->
+
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
 [contributors-shield]: https://img.shields.io/github/contributors/microsoft/Semi-supervised-learning.svg?style=for-the-badge
 [contributors-url]: https://github.com/microsoft/Semi-supervised-learning/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/microsoft/Semi-supervised-learning.svg?style=for-the-badge
@@ -295,4 +304,4 @@ We thanks the following projects for reference of creating USB:
 [issues-shield]: https://img.shields.io/github/issues/microsoft/Semi-supervised-learning.svg?style=for-the-badge
 [issues-url]: https://github.com/microsoft/Semi-supervised-learning/issues
 [license-shield]: https://img.shields.io/github/license/microsoft/Semi-supervised-learning.svg?style=for-the-badge
-[license-url]: https://github.com/microsoft/Semi-supervised-learning/blob/main/LICENSE
+[license-url]: https://github.com/microsoft/Semi-supervised-learning/blob/main/LICENSE.txt
