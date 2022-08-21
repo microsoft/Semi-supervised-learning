@@ -17,10 +17,11 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
+[Contributors][contributors-url]
+[Forks][forks-url]
+[Stargazers][stars-url]
+[Issues][issues-url]
+
 <!-- 
 ***[![MIT License][license-shield]][license-url]
 -->
@@ -115,11 +116,9 @@ pip install -r requirements.txt
 
 ### Installation
 
-We provide a Python package of USB for users who want to start training/testing the supported SSL algorithms on their data quickly:
+We provide a Python package *semilearn* of USB for users who want to start training/testing the supported SSL algorithms on their data quickly:
 
-```sh
-pip install usb
-```
+pip install semilearn
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -145,8 +144,8 @@ USB is easy to use and extend. Going through the belowing examples will help you
 
 Please see [Installation](#installation) to install USB first. We provide colab tutorials for:
 
-- [Beginning example](notebooks/Beginner_Example.ipynb)
-- [Customize datasets](notebooks/Custom_Dataset.ipynb)
+- [Beginning example](https://colab.research.google.com/drive/1lFygK31jWyTH88ktao6Ow-5nny5-B7v5)
+- [Customize datasets](https://colab.research.google.com/drive/1zbswPm1sM8j0fndUQOeqX2HADdYq-wOw)
 
 ### Training
 
@@ -195,7 +194,6 @@ TODO: add pre-trained models.
 - [ ] Add docker
 - [ ] Finish Readme
 - [ ] Compile docs and add usage example in docs
-- [ ] Check Notebooks Create Colab Notebooks
 - [ ] Updating SUPPORT.MD with content about this project's support experience
 - [ ] Multi-language Support
   - [ ] Chinese
