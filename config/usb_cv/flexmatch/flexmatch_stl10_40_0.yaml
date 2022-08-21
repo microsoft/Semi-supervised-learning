@@ -42,4 +42,4 @@ dist_url: tcp://127.0.0.1:10005
 dist_backend: nccl
 gpu: None
 use_pretrain: True
-pretrain_path: https://github.com/microsoft/Semi-supervised-learning/mae_pretrain_vit_base.pth
+pretrain_path: https://github.com/microsoft/Semi-supervised-learning/releases/download/v.0.0.0/mae_pretrain_vit_base.pth

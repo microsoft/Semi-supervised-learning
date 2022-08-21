@@ -263,7 +263,7 @@ def exp_usb_cv(label_amount):
     dist_port = range(10001, 11120, 1)
     count = 0
     
-    pretrain_path = 'https://github.com/microsoft/Semi-supervised-learning'
+    pretrain_path = 'https://github.com/microsoft/Semi-supervised-learning/releases/download/v.0.0.0'
     weight_decay = 5e-4
     lr = 5e-5
     warmup = 5

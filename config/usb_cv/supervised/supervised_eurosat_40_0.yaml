@@ -37,4 +37,4 @@ dist_url: tcp://127.0.0.1:10027
 dist_backend: nccl
 gpu: None
 use_pretrain: True
-pretrain_path: https://github.com/microsoft/Semi-supervised-learning/vit_small_patch2_32_mlp_im_1k_32.pth
+pretrain_path: https://github.com/microsoft/Semi-supervised-learning/releases/download/v.0.0.0/vit_small_patch2_32_mlp_im_1k_32.pth

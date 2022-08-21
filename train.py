@@ -15,10 +15,10 @@ import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from src.datasets.utils import get_data_loader
-from src.algorithms import get_algorithm
-from src.utils import net_builder, get_dataset, get_optimizer, get_logger, get_port, \
-                      get_cosine_schedule_with_warmup, count_parameters, over_write_args_from_file, TBLog
+from semilearn.datasets import get_data_loader
+from semilearn.algorithms import get_algorithm
+from semilearn.utils import net_builder, get_dataset, get_optimizer, get_logger, get_port, \
+                            get_cosine_schedule_with_warmup, count_parameters, over_write_args_from_file, TBLog
 
 
 def main(args):
@@ -244,8 +244,8 @@ def main_worker(gpu, ngpus_per_node, args):
 
 
 if __name__ == "__main__":
-    from src.algorithms.utils import str2bool
-    from src.algorithms import name2alg
+    from semilearn.algorithms.utils import str2bool
+    from semilearn.algorithms import name2alg
 
     parser = argparse.ArgumentParser(description='')
 

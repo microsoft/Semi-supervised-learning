@@ -76,6 +76,12 @@
   </ol>
 </details>
 
+<!-- News and Updates -->
+
+## News and Updates
+
+- [08/21/2022] USB has been released!
+
 <!-- Introduction -->
 
 ## Introduction
