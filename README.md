@@ -17,11 +17,10 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-[Contributors][contributors-url]
-[Forks][forks-url]
-[Stargazers][stars-url]
-[Issues][issues-url]
-
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
 <!-- 
 ***[![MIT License][license-shield]][license-url]
 -->
@@ -118,7 +117,9 @@ pip install -r requirements.txt
 
 We provide a Python package *semilearn* of USB for users who want to start training/testing the supported SSL algorithms on their data quickly:
 
+```sh
 pip install semilearn
+```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
