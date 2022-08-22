@@ -35,14 +35,14 @@ def create_configuration(cfg, cfg_file):
 
 
 
-def create_usb_speech_config(alg, seed,
+def create_usb_audio_config(alg, seed,
                              dataset, net, num_classes, num_labels,
                              port, lr, weight_decay, max_length_seconds, sample_rate):
     cfg = {}
     cfg['algorithm'] = alg
 
     # save config
-    cfg['save_dir'] = './saved_models/usb_speech'
+    cfg['save_dir'] = './saved_models/usb_audio'
     cfg['save_name'] = None
     cfg['resume'] = True
     cfg['load_path'] = None
@@ -204,8 +204,8 @@ def create_usb_speech_config(alg, seed,
 
 
 def exp_usb_speech(label_amount):
-    config_file = r'./config/usb_speech/'
-    save_path = r'./saved_models/usb_speech'
+    config_file = r'./config/usb_audio/'
+    save_path = r'./saved_models/usb_audio'
 
     if not os.path.exists(config_file):
         os.mkdir(config_file)
@@ -261,18 +261,18 @@ def exp_usb_speech(label_amount):
 
                 port = dist_port[count]
                 # prepare the configuration file
-                cfg = create_usb_speech_config(alg, seed,
-                                               dataset, net, num_classes, num_labels,
-                                               port, 2e-5, weight_decay, max_length_seconds, sampling_rate)
+                cfg = create_usb_audio_config(alg, seed,
+                                              dataset, net, num_classes, num_labels,
+                                              port, 2e-5, weight_decay, max_length_seconds, sampling_rate)
                 count += 1
                 create_configuration(cfg, config_file)
 
 
 if __name__ == '__main__':
-    if not os.path.exists('./saved_models/usb_speech/'):
-        os.mkdir('./saved_models/usb_speech/')
-    if not os.path.exists('./config/usb_speech/'):
-        os.mkdir('./config/usb_speech/')
+    if not os.path.exists('./saved_models/usb_audio/'):
+        os.mkdir('./saved_models/usb_audio/')
+    if not os.path.exists('./config/usb_audio/'):
+        os.mkdir('./config/usb_audio/')
 
     # usb speech
     label_amount = {

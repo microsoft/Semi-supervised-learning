@@ -2,7 +2,7 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from src.utils import net_builder, get_dataset
+from semilearn.utils import net_builder, get_dataset
 
 
 if __name__ == "__main__":

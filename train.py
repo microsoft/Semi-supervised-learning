@@ -271,8 +271,8 @@ if __name__ == "__main__":
     parser.add_argument('--num_eval_iter', type=int, default=5000,
                         help='evaluation frequency')
     parser.add_argument('-nl', '--num_labels', type=int, default=40)
-    parser.add_argument('-bsz', '--batch_size', type=int, default=64)
-    parser.add_argument('--uratio', type=int, default=7,
+    parser.add_argument('-bsz', '--batch_size', type=int, default=4)
+    parser.add_argument('--uratio', type=int, default=1,
                         help='the ratio of unlabeled data to labeld data in each mini-batch')
     parser.add_argument('--eval_batch_size', type=int, default=1024,
                         help='batch size of evaluation data loader (it does not affect the accuracy)')
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     '''
     Backbone Net Configurations
     '''
-    parser.add_argument('--net', type=str, default='wrn_28_2')
+    parser.add_argument('--net', type=str, default='hubert_base')
     parser.add_argument('--net_from_name', type=str2bool, default=False)
     parser.add_argument('--use_pretrain', default=False, type=str2bool)
     parser.add_argument('--pretrain_path', default='', type=str)
@@ -298,8 +298,8 @@ if __name__ == "__main__":
     '''
     Algorithms Configurations
     '''  
-    parser.add_argument('-alg', '--algorithm', type=str, default='remixmatch', help='ssl algorithm')
-    parser.add_argument('--use_cat', type=str2bool, default=True, help='use cat operation in algorithms')
+    parser.add_argument('-alg', '--algorithm', type=str, default='fixmatch', help='ssl algorithm')
+    parser.add_argument('--use_cat', type=str2bool, default=False, help='use cat operation in algorithms')
     parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)
 
@@ -308,7 +308,7 @@ if __name__ == "__main__":
     '''
 
     parser.add_argument('--data_dir', type=str, default='./data')
-    parser.add_argument('-ds', '--dataset', type=str, default='cifar10')
+    parser.add_argument('-ds', '--dataset', type=str, default='superbks')
     parser.add_argument('--train_sampler', type=str, default='RandomSampler')
     parser.add_argument('-nc', '--num_classes', type=int, default=10)
     parser.add_argument('--num_workers', type=int, default=1)
