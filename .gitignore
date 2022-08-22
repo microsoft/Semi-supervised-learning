@@ -137,3 +137,6 @@ dmypy.json
 
 # zip files
 *.zip
+
+# MacOS system file
+.DS_Store
