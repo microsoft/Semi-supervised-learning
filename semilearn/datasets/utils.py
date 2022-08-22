@@ -94,17 +94,17 @@ def get_sampler_by_name(name):
 
 def get_collactor(args, net):
     if net == 'bert_base_uncased':
-        from src.datasets.collactors import get_bert_base_uncased_collacor
-        collact_fn = get_bert_base_uncased_collacor(args.max_length)
+        from semilearn.datasets.collactors import get_bert_base_uncased_collactor
+        collact_fn = get_bert_base_uncased_collactor(args.max_length)
     elif net == 'bert_base_cased':
-        from src.datasets.collactors import get_bert_base_cased_collacor
-        collact_fn = get_bert_base_cased_collacor(args.max_length)
+        from semilearn.datasets.collactors import get_bert_base_cased_collactor
+        collact_fn = get_bert_base_cased_collactor(args.max_length)
     elif net == 'wave2vecv2_base':
-        from src.datasets.collactors import get_wave2vecv2_base_collacor
-        collact_fn = get_wave2vecv2_base_collacor(args.max_length_seconds, args.sample_rate)
+        from semilearn.datasets.collactors import get_wave2vecv2_base_collactor
+        collact_fn = get_wave2vecv2_base_collactor(args.max_length_seconds, args.sample_rate)
     elif net == 'hubert_base':
-        from src.datasets.collactors import get_hubert_base_collacor
-        collact_fn = get_hubert_base_collacor(args.max_length_seconds, args.sample_rate)
+        from semilearn.datasets.collactors import get_hubert_base_collactor
+        collact_fn = get_hubert_base_collactor(args.max_length_seconds, args.sample_rate)
     else:
         collact_fn = None
     return collact_fn

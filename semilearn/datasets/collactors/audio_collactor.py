@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, NewType, Optional, Tuple, Union
 from transformers import AutoFeatureExtractor
 from transformers.file_utils import PaddingStrategy
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
-
+from transformers.data import default_data_collator
 
 @dataclass
 class DataCollatorWithPadding:
@@ -43,81 +43,70 @@ class DataCollatorWithPadding:
     return_tensors: str = "pt"
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
-        # check if input_values_s in features
+        w_features = []
+        l_features = []
         s_features_ = []
         s_features = []
-        w_features = []
-
         for f in features:
-            f_ = {k:v for k,v in f.items() if 'wav' not in k}
-            input_values = self.tokenizer(f['wav'], max_length=int(self.max_length * self.sample_rate), 
-                                          sampling_rate=self.sample_rate, truncation=True)['input_values'][0]
-            f_['input_values'] = input_values
-            w_features.append(f_)
+            l_features.append({k:v for k,v in f.items() if 'wav' not in k})
+            w_features.append(f['wav'])
 
             if 'wav_s' in f:
-                input_values_s = self.tokenizer(f['wav_s'], max_length=int(self.max_length * self.sample_rate), 
-                                                sampling_rate=self.sample_rate, truncation=True)['input_values'][0]
-                s_features.append({'input_values':input_values_s})
+                s_features.append(f['wav_s'])
             
             if 'wav_s_' in f:
-                input_values_s_ = self.tokenizer(f['wav_s_'], max_length=int(self.max_length * self.sample_rate), 
-                                                sampling_rate=self.sample_rate, truncation=True)['input_values'][0]
-                s_features_.append({'input_values':input_values_s_})
+                s_features_.append(f['wav_s_'])
 
-        batch = self.tokenizer.pad(
+        batch = default_data_collator(l_features, return_tensors='pt')
+        batch['input_values'] = self.tokenizer(
             w_features,
-            padding=self.padding,
-            max_length=None,
+            padding=True,
+            max_length=int(self.max_length * self.sample_rate), 
+            sampling_rate=self.sample_rate,
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors=self.return_tensors,
-        )
-        if "label" in batch:
-            batch["labels"] = batch["label"]
-            del batch["label"]
-        if "label_ids" in batch:
-            batch["labels"] = batch["label_ids"]
-            del batch["label_ids"]
+            truncation=True,
+        )['input_values']
             
         if 'labels' in batch:
-            return {'idx_lb': batch['idx'], 'x_lb': batch['input_values'], 'y_lb': batch['labels']}
+            return {'idx_lb': batch['idx'].long(), 'x_lb': batch['input_values'], 'y_lb': batch['labels'].long()}
         else:
-            if len(s_features) > 0 and len(s_features_) == 0:
-                s_batch = self.tokenizer.pad(
+            if len(s_features) > 0:
+                s_batch = self.tokenizer(
                     s_features,
-                    padding=self.padding,
-                    max_length=self.max_length,
+                    padding='max_length',
+                    max_length=int(self.max_length * self.sample_rate), 
+                    sampling_rate=self.sample_rate,
                     pad_to_multiple_of=self.pad_to_multiple_of,
                     return_tensors=self.return_tensors,
+                    truncation=True,
                 )
-                return {'idx_ulb': batch['idx'], 'x_ulb_w': batch['input_values'], 'x_ulb_s': s_batch['input_values']}
-            elif len(s_features) > 0 and len(s_features_) > 0:
-                s_batch = self.tokenizer.pad(
-                    s_features,
-                    padding=self.padding,
-                    max_length=self.max_length,
-                    pad_to_multiple_of=self.pad_to_multiple_of,
-                    return_tensors=self.return_tensors,
-                )
-                s_batch_ = self.tokenizer.pad(
-                    s_features_,
-                    padding=self.padding,
-                    max_length=self.max_length,
-                    pad_to_multiple_of=self.pad_to_multiple_of,
-                    return_tensors=self.return_tensors,
-                )
-                return {'idx_ulb': batch['idx'], 'x_ulb_w': batch['input_values'], 'x_ulb_s_0': s_batch['input_values'], 'x_ulb_s_1': s_batch_['input_values']}
+                if len(s_features_) > 0:
+                    s_batch_ = self.tokenizer(
+                        s_features_,
+                        padding='max_length',
+                        max_length=int(self.max_length * self.sample_rate), 
+                        sampling_rate=self.sample_rate,
+                        pad_to_multiple_of=self.pad_to_multiple_of,
+                        return_tensors=self.return_tensors,
+                        truncation=True,
+                    )
+                    return {'idx_ulb': batch['idx'].long(), 'x_ulb_w': batch['input_values'], 'x_ulb_s_0': s_batch['input_values'], 'x_ulb_s_1': s_batch_['input_values']}
+                else:
+                    return {'idx_ulb': batch['idx'].long(), 'x_ulb_w': batch['input_values'], 'x_ulb_s': s_batch['input_values']}
             else:
-                return {'idx_ulb': batch['idx'], 'x_ulb_w': batch['input_values']}
+                return {'idx_ulb': batch['idx'].long(), 'x_ulb_w': batch['input_values']}
 
 
-def get_wave2vecv2_base_collacor(max_length=4, sample_rate=16000):
+
+
+def get_wave2vecv2_base_collactor(max_length=4, sample_rate=16000):
     feature_extractor = AutoFeatureExtractor.from_pretrained('facebook/wav2vec2-base-960h')
     collator = DataCollatorWithPadding(feature_extractor, max_length=max_length, sample_rate=sample_rate)
     return collator
 
 
-def get_hubert_base_collacor(max_length=4, sample_rate=16000):
+def get_hubert_base_collactor(max_length=4, sample_rate=16000):
     feature_extractor = AutoFeatureExtractor.from_pretrained('facebook/hubert-base-ls960')
     collator = DataCollatorWithPadding(feature_extractor, max_length=max_length, sample_rate=sample_rate)
     return collator
