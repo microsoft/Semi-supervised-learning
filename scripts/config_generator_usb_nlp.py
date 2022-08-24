@@ -179,7 +179,8 @@ def create_usb_nlp_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    cfg['data_dir'] = './data'
+    # cfg['data_dir'] = './data'
+    cfg['data_dir'] = '/media/Auriga/usb_datasets/data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
