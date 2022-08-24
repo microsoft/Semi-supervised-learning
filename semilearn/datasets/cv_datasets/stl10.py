@@ -9,7 +9,7 @@ import math
 from torchvision import transforms
 
 from .datasetbase import BasicDataset
-from semilearn.datasets.utils import sample_labeled_data
+from semilearn.datasets.utils import sample_labeled_unlabeled_data
 from semilearn.datasets.augmentation import RandAugment
 
 
@@ -69,9 +69,15 @@ def get_stl10(args, alg, name, num_labels, num_classes, data_dir='./data'):
     lb_data, lb_targets = dset_lb.data.transpose([0, 2, 3, 1]), dset_lb.labels.astype(np.int64)
     ulb_data = dset_ulb.data.transpose([0, 2, 3, 1])
 
+    # Note this data can have imbalanced labeled set, and with unkown unlabeled set
     ulb_data = np.concatenate([ulb_data, lb_data], axis=0)
-    lb_data, lb_targets, _ = sample_labeled_data(args, lb_data, lb_targets, num_labels, num_classes)
+    lb_idx, _ = sample_labeled_unlabeled_data(args, lb_data, lb_targets, num_classes,
+                                              lb_num_labels=num_labels,
+                                              ulb_num_labels=args.ulb_num_labels,
+                                              lb_imbalance_ratio=args.lb_imb_ratio,
+                                              ulb_imbalance_ratio=args.ulb_imb_ratio)
     ulb_targets = None
+    lb_data, lb_targets = lb_data[lb_idx], lb_targets[lb_idx]
 
     # output the distribution of labeled data for remixmatch
     count = [0 for _ in range(num_classes)]

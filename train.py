@@ -263,18 +263,18 @@ if __name__ == "__main__":
     Training Configuration of FixMatch
     '''
 
-    parser.add_argument('--epoch', type=int, default=1024)
-    parser.add_argument('--num_train_iter', type=int, default=2 ** 20,
+    parser.add_argument('--epoch', type=int, default=1)
+    parser.add_argument('--num_train_iter', type=int, default=1024,
                         help='total number of training iterations')
     parser.add_argument('--num_warmup_iter', type=int, default=0,
                         help='cosine linear warmup iterations')
-    parser.add_argument('--num_eval_iter', type=int, default=5000,
+    parser.add_argument('--num_eval_iter', type=int, default=100,
                         help='evaluation frequency')
-    parser.add_argument('-nl', '--num_labels', type=int, default=40)
-    parser.add_argument('-bsz', '--batch_size', type=int, default=4)
+    parser.add_argument('-nl', '--num_labels', type=int, default=400)
+    parser.add_argument('-bsz', '--batch_size', type=int, default=8)
     parser.add_argument('--uratio', type=int, default=1,
                         help='the ratio of unlabeled data to labeld data in each mini-batch')
-    parser.add_argument('--eval_batch_size', type=int, default=1024,
+    parser.add_argument('--eval_batch_size', type=int, default=16,
                         help='batch size of evaluation data loader (it does not affect the accuracy)')
     parser.add_argument('--ema_m', type=float, default=0.999, help='ema momentum for eval_model')
     parser.add_argument('--ulb_loss_ratio', type=float, default=1.0)
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     '''
     Backbone Net Configurations
     '''
-    parser.add_argument('--net', type=str, default='hubert_base')
+    parser.add_argument('--net', type=str, default='wrn_28_2')
     parser.add_argument('--net_from_name', type=str2bool, default=False)
     parser.add_argument('--use_pretrain', default=False, type=str2bool)
     parser.add_argument('--pretrain_path', default='', type=str)
@@ -307,11 +307,17 @@ if __name__ == "__main__":
     Data Configurations
     '''
 
-    parser.add_argument('--data_dir', type=str, default='./data')
-    parser.add_argument('-ds', '--dataset', type=str, default='superbks')
-    parser.add_argument('--train_sampler', type=str, default='RandomSampler')
+    ## standard setting configurations
+    parser.add_argument('--data_dir', type=str, default='/media/Auriga/usb_datasets/data')
+    parser.add_argument('-ds', '--dataset', type=str, default='cifar10')
     parser.add_argument('-nc', '--num_classes', type=int, default=10)
+    parser.add_argument('--train_sampler', type=str, default='RandomSampler')
     parser.add_argument('--num_workers', type=int, default=1)
+
+    ## imbalanced setting arguments
+    parser.add_argument('--lb_imb_ratio', type=int, default=1, help="imbalance ratio of labeled data, default to 1")
+    parser.add_argument('--ulb_imb_ratio', type=int, default=1, help="imbalance ratio of unlabeled data, default to 1")
+    parser.add_argument('--ulb_num_labels', type=int, default=None, help="number of labels for unlabeled data, used for determining the maximum number of labels in imbalanced setting")
 
     ## cv dataset arguments
     parser.add_argument('--img_size', type=int, default=224)

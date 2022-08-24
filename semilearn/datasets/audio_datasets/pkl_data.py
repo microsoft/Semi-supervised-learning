@@ -71,6 +71,7 @@ def get_pkl_dset(args, alg='fixmatch', dataset='esc50', num_labels=40, num_class
         return lb_dset, None, dev_dset, test_dset
     
     if dataset == 'fsdnoisy':
+        # TODO: take care of this for imbalanced setting
         ulb_wav_list = []
         ulb_label_list = []
         with open(os.path.join(data_dir, 'ulb_train.pkl'), 'rb') as f:
@@ -80,7 +81,12 @@ def get_pkl_dset(args, alg='fixmatch', dataset='esc50', num_labels=40, num_class
             ulb_label_list.append(int(ulb_train_data[idx]["label"]))
         lb_wav_list, lb_label_list = train_wav_list, train_label_list
     else: 
-        lb_wav_list, lb_label_list, ulb_wav_list, ulb_label_list = split_ssl_data(args, train_wav_list, train_label_list, num_labels, num_classes, index, include_lb_to_ulb)
+        lb_wav_list, lb_label_list, ulb_wav_list, ulb_label_list = split_ssl_data(args, train_wav_list, train_label_list, num_classes, 
+                                                                                  lb_num_labels=num_labels,
+                                                                                  ulb_num_labels=args.ulb_num_labels,
+                                                                                  lb_imbalance_ratio=args.lb_imb_ratio,
+                                                                                  ulb_imbalance_ratio=args.ulb_imb_ratio,
+                                                                                  include_lb_to_ulb=True)
 
     # output the distribution of labeled data for remixmatch
     count = [0 for _ in range(num_classes)]

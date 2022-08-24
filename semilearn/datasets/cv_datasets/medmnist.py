@@ -16,6 +16,7 @@ import random
 from skimage.util import montage as skimage_montage
 
 from semilearn.datasets.augmentation import RandAugment
+from semilearn.datasets.utils import split_ssl_data
 from .datasetbase import BasicDataset
 
 
@@ -911,9 +912,13 @@ def get_medmnist(args, alg, dataset_name, num_labels, num_classes, data_dir='./d
     total_targets = train_targets[shuffle_index]
     total_data = train_data[shuffle_index]
 
-    train_labeled_data, train_labeled_targets, train_unlabeled_data, train_unlabeled_targets = balanced_selection(total_data, total_targets,
-                                                                                                                  num_classes, n_labeled_per_class)
-
+    train_labeled_data, train_labeled_targets, train_unlabeled_data, train_unlabeled_targets = split_ssl_data(args, total_data, total_targets, num_classes, 
+                                                                                                              lb_num_labels=num_labels,
+                                                                                                              ulb_num_labels=args.ulb_num_labels,
+                                                                                                              lb_imbalance_ratio=args.lb_imb_ratio,
+                                                                                                              ulb_imbalance_ratio=args.ulb_imb_ratio,
+                                                                                                              include_lb_to_ulb=True)
+                                                                                                              
     if alg == 'fullysupervised':
         if len(train_unlabeled_data) == len(total_data):
             train_labeled_data = train_unlabeled_data 
