@@ -10,7 +10,7 @@ from semilearn.datasets.augmentation import RandAugment, RandomResizedCropAndInt
 from .datasetbase import BasicDataset
 
 
-def get_semi_aves(args, alg, dataset, train_split='l_train_val', data_dir='./data'):
+def get_semi_aves(args, alg, dataset, train_split='l_train_val', ulb_split='u_train_in', data_dir='./data'):
     assert train_split in ['l_train', 'l_train_val']
 
     data_dir = os.path.join(data_dir, 'semi_fgvc')
@@ -46,7 +46,7 @@ def get_semi_aves(args, alg, dataset, train_split='l_train_val', data_dir='./dat
 
     # NOTE this dataset is inherently imbalanced with unknow distribution
     train_labeled_dataset = iNatDataset(alg, data_dir, train_split, dataset, transform=transform_weak)
-    train_unlabeled_dataset = iNatDataset(alg, data_dir, 'u_train_in', dataset, is_ulb=True, transform=transform_weak, transform_strong=transform_strong)
+    train_unlabeled_dataset = iNatDataset(alg, data_dir, ulb_split, dataset, is_ulb=True, transform=transform_weak, transform_strong=transform_strong)
     test_dataset = iNatDataset(alg, data_dir, 'test', dataset, transform=transform_val)
 
     num_data_per_cls = [0] * train_labeled_dataset.num_classes

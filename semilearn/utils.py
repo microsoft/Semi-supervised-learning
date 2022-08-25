@@ -116,6 +116,9 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, seed=0, data_
     elif dataset == "semi_aves":
         lb_dset, ulb_dset, eval_dset = get_semi_aves(args, algorithm, dataset, train_split='l_train_val', data_dir=data_dir)
         test_dset = None
+    elif dataset == "semi_aves_out":
+        lb_dset, ulb_dset, eval_dset = get_semi_aves(args, algorithm, "semi_aves", train_split='l_train_val', ulb_split='u_train_out', data_dir=data_dir)
+        test_dset = None
     elif dataset in ["cifar10", "cifar100"]:
         lb_dset, ulb_dset, eval_dset = get_cifar(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir)
         test_dset = None
