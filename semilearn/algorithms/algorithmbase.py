@@ -12,7 +12,10 @@ import torch.nn.functional as F
 from torch.cuda.amp import autocast, GradScaler
 
 from semilearn.datasets import DistributedSampler
+# TODO: regroup utils
 from semilearn.algorithms.utils import Bn_Controller, EMA
+from semilearn.datasets.utils import get_data_loader
+from semilearn.utils import get_dataset, get_optimizer, get_cosine_schedule_with_warmup
 
 
 class AlgorithmBase:
@@ -70,15 +73,21 @@ class AlgorithmBase:
         self.it = 0
         self.best_eval_acc, self.best_it = 0.0, 0
         self.bn_controller = Bn_Controller()
-        self.optimizer = None
-        self.scheduler = None
-        self.loader_dict = {}
+        self.net_builder = net_builder
+        self.ema = None
         
+        # build dataset
+        self.dataset_dict = self.set_dataset()
+
         # cv, nlp, speech builder different arguments
         self.model = net_builder(num_classes=self.num_classes, pretrained=self.args.use_pretrain, pretrained_path=self.args.pretrain_path)
-        self.net_builder = net_builder
         self.ema_model = self.set_ema_model()
-        self.ema = None
+
+        # build optimizer and scheduler
+        self.optimizer, self.scheduler = self.set_optimizer()
+
+        # build data loader
+        self.loader_dict = self.set_data_loader()
 
         # other arguments specific to this algorithm
         # self.init(**kwargs)
@@ -88,14 +97,64 @@ class AlgorithmBase:
         algorithm specific init function, to add parameters into class
         """
         raise NotImplementedError
+    
 
-    def set_data_loader(self, loader_dict):
-        self.loader_dict = loader_dict
-        self.print_fn(f'[!] data loader keys: {self.loader_dict.keys()}')
+    def set_dataset(self):
+        if self.rank != 0 and self.distributed:
+            torch.distributed.barrier()
+        dataset_dict = get_dataset(self.args, self.algorithm, self.args.dataset, self.args.num_labels, self.args.num_classes, self.args.seed, self.args.data_dir)
+        self.args.ulb_dest_len = len(dataset_dict['train_ulb']) if dataset_dict['train_ulb'] is not None else 0
+        self.args.lb_dest_len = len(dataset_dict['train_lb'])
+        self.logger.info("unlabeled data number: {}, labeled data number {}".format(self.args.ulb_dest_len, self.args.lb_dest_len))
+        if self.rank == 0 and self.distributed:
+            torch.distributed.barrier()
+        return dataset_dict
 
-    def set_optimizer(self, optimizer, scheduler=None):
-        self.optimizer = optimizer
-        self.scheduler = scheduler
+    def set_data_loader(self):
+        self.print_fn("Create train and test data loaders")
+        loader_dict = {}
+        loader_dict['train_lb'] = get_data_loader(self.args,
+                                                  self.dataset_dict['train_lb'],
+                                                  self.args.batch_size,
+                                                  data_sampler=self.args.train_sampler,
+                                                  num_iters=self.num_train_iter,
+                                                  num_epochs=self.epochs,
+                                                  num_workers=self.args.num_workers,
+                                                  distributed=self.distributed)
+
+        loader_dict['train_ulb'] = get_data_loader(self.args,
+                                                   self.dataset_dict['train_ulb'],
+                                                   self.args.batch_size * self.args.uratio,
+                                                   data_sampler=self.args.train_sampler,
+                                                   num_iters=self.num_train_iter,
+                                                   num_epochs=self.epochs,
+                                                   num_workers=2 * self.args.num_workers,
+                                                   distributed=self.distributed)
+
+        loader_dict['eval'] = get_data_loader(self.args,
+                                              self.dataset_dict['eval'],
+                                              self.args.eval_batch_size,
+                                              data_sampler=None,
+                                              num_workers=self.args.num_workers,
+                                              drop_last=False)
+        
+        if self.dataset_dict['test'] is not None:
+            loader_dict['test'] =  get_data_loader(self.args,
+                                                   self.dataset_dict['test'],
+                                                   self.args.eval_batch_size,
+                                                   data_sampler=None,
+                                                   num_workers=self.args.num_workers,
+                                                   drop_last=False)
+        self.print_fn(f'[!] data loader keys: {loader_dict.keys()}')
+        return loader_dict
+
+    def set_optimizer(self):
+        self.print_fn("Create optimizer and scheduler")
+        optimizer = get_optimizer(self.model, self.args.optim, self.args.lr, self.args.momentum, self.args.weight_decay)
+        scheduler = get_cosine_schedule_with_warmup(optimizer,
+                                                    self.num_train_iter,
+                                                    num_warmup_steps=self.args.num_warmup_iter)
+        return optimizer, scheduler
 
     def set_ema_model(self):
         """
@@ -163,10 +222,10 @@ class AlgorithmBase:
         # return tb_dict
         raise NotImplementedError
 
-
     def before_train_step(self):
-        raise NotImplementedError
-
+        # raise NotImplementedError
+        pass
+    
     def after_train_step(self):
         """
         save model and printing log
@@ -227,12 +286,13 @@ class AlgorithmBase:
 
 
         for epoch in range(self.epochs):
+            # TODO: move this part to before train epoch
             self.epoch = epoch
             
             # prevent the training iterations exceed args.num_train_iter
             if self.it >= self.num_train_iter:
                 break
-
+            
             if isinstance(self.loader_dict['train_lb'].sampler, DistributedSampler):
                 self.loader_dict['train_lb'].sampler.set_epoch(epoch)
             if isinstance(self.loader_dict['train_ulb'].sampler, DistributedSampler):
@@ -264,8 +324,11 @@ class AlgorithmBase:
                 # post processing for saving model and print logs
                 self.after_train_step()
                 start_batch.record()
+            
+            # TODO: after train epoch
 
         # eval_dict = self.evaluate('eval')
+        # TODO: move this part to after train
         eval_dict = {'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it}
         if 'test' in self.loader_dict:
             # load the best model and evaluate on test dataset

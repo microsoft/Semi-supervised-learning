@@ -87,6 +87,7 @@ def main_worker(gpu, ngpus_per_node, args):
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     cudnn.deterministic = True
+    cudnn.benchmark = True
 
     # SET UP FOR DISTRIBUTED TRAINING
     if args.distributed:
@@ -111,30 +112,10 @@ def main_worker(gpu, ngpus_per_node, args):
     logger = get_logger(args.save_name, save_path, logger_level)
     logger.info(f"Use GPU: {args.gpu} for training")
 
-    # Construct Dataset
-    cudnn.benchmark = True
-    if args.rank != 0 and args.distributed:
-        torch.distributed.barrier()
-    dataset_dict = get_dataset(args, args.algorithm, args.dataset, args.num_labels, args.num_classes, args.seed, args.data_dir)
-    args.ulb_dest_len = len(dataset_dict['train_ulb']) if dataset_dict['train_ulb'] is not None else 0
-    args.lb_dest_len = len(dataset_dict['train_lb'])
-    logger.info("unlabeled data number: {}, labeled data number {}".format(args.ulb_dest_len, args.lb_dest_len))
-    if args.rank == 0 and args.distributed:
-        torch.distributed.barrier()
-
     _net_builder = net_builder(args.net, args.net_from_name)
+    # optimizer, scheduler, datasets, dataloaders with be set in algorithms
     model = get_algorithm(args, _net_builder, tb_log, logger)
     logger.info(f'Number of Trainable Params: {count_parameters(model.model)}')
-
-    # SET Optimizer & LR Scheduler
-    ## construct SGD and cosine lr scheduler
-    optimizer = get_optimizer(model.model, args.optim, args.lr, args.momentum, args.weight_decay)
-    scheduler = get_cosine_schedule_with_warmup(optimizer,
-                                                args.num_train_iter,
-                                                num_warmup_steps=args.num_warmup_iter)
-                                                
-    ## set SGD and cosine lr on FixMatchy
-    model.set_optimizer(optimizer, scheduler)
 
     # SET Devices for (Distributed) DataParallel
     if not torch.cuda.is_available():
@@ -164,48 +145,7 @@ def main_worker(gpu, ngpus_per_node, args):
         model.model = model.model.cuda(args.gpu)
     else:
         model.model = torch.nn.DataParallel(model.model).cuda()
-    logger.info(f"model_arch: {model}")
-    logger.info(f"Arguments: {args}")
-
-    # Construct Dataset & DataLoader
-    loader_dict = {}
-
-    loader_dict['train_lb'] = get_data_loader(args,
-                                              dataset_dict['train_lb'],
-                                              args.batch_size,
-                                              data_sampler=args.train_sampler,
-                                              num_iters=args.num_train_iter,
-                                              num_epochs=args.epoch,
-                                              num_workers=args.num_workers,
-                                              distributed=args.distributed)
-
-    loader_dict['train_ulb'] = get_data_loader(args,
-                                               dataset_dict['train_ulb'],
-                                               args.batch_size * args.uratio,
-                                               data_sampler=args.train_sampler,
-                                               num_iters=args.num_train_iter,
-                                               num_epochs=args.epoch,
-                                               num_workers=2 * args.num_workers,
-                                               distributed=args.distributed)
-
-    loader_dict['eval'] = get_data_loader(args,
-                                          dataset_dict['eval'],
-                                          args.eval_batch_size,
-                                          data_sampler=None,
-                                          num_workers=args.num_workers,
-                                          drop_last=False)
-    
-    if dataset_dict['test'] is not None:
-        loader_dict['test'] =  get_data_loader(args,
-                                               dataset_dict['test'],
-                                               args.eval_batch_size,
-                                               data_sampler=None,
-                                               num_workers=args.num_workers,
-                                               drop_last=False)
-
-    ## set DataLoader on FixMatch
-    model.set_data_loader(loader_dict)
-    logger.info("Create train and test data loaders")
+    logger.info(f"Arguments: {model.args}")
 
     # If args.resume, load checkpoints from args.load_path
     if args.resume and os.path.exists(args.load_path):
@@ -238,9 +178,6 @@ def main_worker(gpu, ngpus_per_node, args):
         model.save_model('latest_model.pth', save_path)
 
     logging.warning(f"GPU {args.rank} training is FINISHED")
-
-
-
 
 
 if __name__ == "__main__":
@@ -298,10 +235,15 @@ if __name__ == "__main__":
     '''
     Algorithms Configurations
     '''  
-    parser.add_argument('-alg', '--algorithm', type=str, default='fixmatch', help='ssl algorithm')
+
+    ## core algorithm setting
+    parser.add_argument('-alg', '--algorithm', type=str, default='crmatch', help='ssl algorithm')
     parser.add_argument('--use_cat', type=str2bool, default=False, help='use cat operation in algorithms')
     parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)
+
+    ## imbalance algorithm setting
+    parser.add_argument('-imb_alg', '--imb_algorithm', type=str, default=None, help='imbalance ssl algorithm')
 
     '''
     Data Configurations
@@ -320,7 +262,7 @@ if __name__ == "__main__":
     parser.add_argument('--ulb_num_labels', type=int, default=None, help="number of labels for unlabeled data, used for determining the maximum number of labels in imbalanced setting")
 
     ## cv dataset arguments
-    parser.add_argument('--img_size', type=int, default=224)
+    parser.add_argument('--img_size', type=int, default=32)
     parser.add_argument('--crop_ratio', type=float, default=0.95)
 
     ## nlp dataset arguments 

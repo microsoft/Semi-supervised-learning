@@ -13,7 +13,7 @@ from .vat import VAT
 from .remixmatch import ReMixMatch
 from .crmatch import CRMatch
 from .dash import Dash
-from .mpl import MPL
+# from .mpl import MPL
 from .fullysupervised import FullySupervised
 from .comatch import CoMatch
 from .simmatch import SimMatch
@@ -37,7 +37,7 @@ name2alg = {
     'comatch': CoMatch,
     'simmatch': SimMatch,
     'dash': Dash,
-    'mpl': MPL
+    # 'mpl': MPL
 }
 
 

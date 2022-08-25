@@ -128,11 +128,11 @@ class CRMatch(AlgorithmBase):
                 If True, targets have [Batch size] shape with int values. If False, the target is vector
         """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
+        self.lambda_rot = args.rot_loss_ratio
+        self.use_rot = self.lambda_rot > 0
         super().__init__(args, net_builder,  tb_log, logger)
         # crmatch specificed arguments
         self.init(p_cutoff=args.p_cutoff, hard_label=args.hard_label)
-        self.lambda_rot = args.rot_loss_ratio
-        self.use_rot = self.lambda_rot > 0
         self.model_backbone = self.model
         self.model = CRMatch_Net(self.model_backbone, args, use_rot=self.use_rot)
         self.ema_model = CRMatch_Net(self.ema_model, args, use_rot=self.use_rot)
@@ -143,23 +143,22 @@ class CRMatch(AlgorithmBase):
         self.p_cutoff = p_cutoff
         self.use_hard_label = hard_label
 
-
-    def set_data_loader(self, loader_dict):
-        self.loader_dict = loader_dict
-        self.print_fn(f'[!] data loader keys: {self.loader_dict.keys()}')
+    def set_data_loader(self):
+        loader_dict = super().set_data_loader()
 
         if self.use_rot:
-            x_ulb_rot = deepcopy(self.loader_dict['train_ulb'].dataset.data)
-            dataset_ulb_rot = RotNet(x_ulb_rot, transform=self.loader_dict['train_lb'].dataset.transform)
-            self.loader_dict['train_ulb_rot'] = get_data_loader(self.args,
-                                                                dataset_ulb_rot,
-                                                                self.args.batch_size,
-                                                                data_sampler=self.args.train_sampler,
-                                                                num_iters=self.args.num_train_iter,
-                                                                num_epochs=self.args.epoch,
-                                                                num_workers=4 * self.args.num_workers,
-                                                                distributed=self.args.distributed)
-            self.loader_dict['train_ulb_rot_iter'] = iter(self.loader_dict['train_ulb_rot'])
+            x_ulb_rot = deepcopy(loader_dict['train_ulb'].dataset.data)
+            dataset_ulb_rot = RotNet(x_ulb_rot, transform=loader_dict['train_lb'].dataset.transform)
+            loader_dict['train_ulb_rot'] = get_data_loader(self.args,
+                                                           dataset_ulb_rot,
+                                                           self.args.batch_size,
+                                                           data_sampler=self.args.train_sampler,
+                                                           num_iters=self.num_train_iter,
+                                                           num_epochs=self.epochs,
+                                                           num_workers=4 * self.args.num_workers,
+                                                           distributed=self.distributed)
+            loader_dict['train_ulb_rot_iter'] = iter(loader_dict['train_ulb_rot'])
+        return loader_dict
 
     def train(self):
         # EMA Init
