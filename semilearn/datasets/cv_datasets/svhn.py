@@ -32,7 +32,7 @@ def get_transform(mean, std, crop_size, train=True, crop_ratio=0.95):
                                    transforms.Normalize(mean, std)])
 
 
-def get_svhn(args, alg, name, num_labels, num_classes, data_dir='./data'):
+def get_svhn(args, alg, name, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
 
     crop_size = args.img_size
     crop_ratio = args.crop_ratio
@@ -82,7 +82,7 @@ def get_svhn(args, alg, name, num_labels, num_classes, data_dir='./data'):
                                                                 ulb_num_labels=args.ulb_num_labels,
                                                                 lb_imbalance_ratio=args.lb_imb_ratio,
                                                                 ulb_imbalance_ratio=args.ulb_imb_ratio,
-                                                                include_lb_to_ulb=True)
+                                                                include_lb_to_ulb=include_lb_to_ulb)
     if alg == 'fullysupervised':
         lb_data = data
         lb_targets = targets

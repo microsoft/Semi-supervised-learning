@@ -21,7 +21,7 @@ std['cifar10'] = [0.229, 0.224, 0.225]
 std['cifar100'] = [x / 255 for x in [68.2, 65.4, 70.4]]
 
 
-def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data'):
+def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
     
     data_dir = os.path.join(data_dir, name.lower())
     dset = getattr(torchvision.datasets, name.upper())
@@ -59,7 +59,7 @@ def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data'):
                                                                 ulb_num_labels=args.ulb_num_labels,
                                                                 lb_imbalance_ratio=args.lb_imb_ratio,
                                                                 ulb_imbalance_ratio=args.ulb_imb_ratio,
-                                                                include_lb_to_ulb=True)
+                                                                include_lb_to_ulb=include_lb_to_ulb)
     
     lb_count = [0 for _ in range(num_classes)]
     ulb_count = [0 for _ in range(num_classes)]

@@ -59,7 +59,7 @@ def get_json_dset(args, alg='fixmatch', dataset='acmIb', num_labels=40, num_clas
                                                                     ulb_num_labels=args.ulb_num_labels,
                                                                     lb_imbalance_ratio=args.lb_imb_ratio,
                                                                     ulb_imbalance_ratio=args.ulb_imb_ratio,
-                                                                    include_lb_to_ulb=True)
+                                                                    include_lb_to_ulb=include_lb_to_ulb)
 
         # output the distribution of labeled data for remixmatch
         count = [0 for _ in range(num_classes)]

@@ -102,7 +102,7 @@ class AlgorithmBase:
     def set_dataset(self):
         if self.rank != 0 and self.distributed:
             torch.distributed.barrier()
-        dataset_dict = get_dataset(self.args, self.algorithm, self.args.dataset, self.args.num_labels, self.args.num_classes, self.args.seed, self.args.data_dir)
+        dataset_dict = get_dataset(self.args, self.algorithm, self.args.dataset, self.args.num_labels, self.args.num_classes, self.args.data_dir)
         self.args.ulb_dest_len = len(dataset_dict['train_ulb']) if dataset_dict['train_ulb'] is not None else 0
         self.args.lb_dest_len = len(dataset_dict['train_lb'])
         self.logger.info("unlabeled data number: {}, labeled data number {}".format(self.args.ulb_dest_len, self.args.lb_dest_len))
@@ -232,7 +232,9 @@ class AlgorithmBase:
         """
         # Save model 
         if (self.it + 1) % self.num_eval_iter == 0:
+            # TODO: explicitly set save_path
             save_path = os.path.join(self.save_dir, self.save_name)
+            
             if not self.distributed or (self.distributed and self.rank % self.ngpus_per_node == 0):
                 self.save_model('latest_model.pth', save_path)
 
@@ -267,6 +269,10 @@ class AlgorithmBase:
         """
         train function
         """
+
+        # TODO make this train function more modular
+        # 1) consider before_train_epoch, after_train_epoch, before_train_step, after_train_step
+        # 2) consider hooks as in mmdet?
 
         # EMA Init
         self.model.train()
@@ -338,7 +344,7 @@ class AlgorithmBase:
             eval_dict['test/best_acc'] = test_dict['test/top-1-acc']
         return eval_dict
 
-    def evaluate(self, eval_dest='eval'):
+    def evaluate(self, eval_dest='eval', return_logits=False):
         """
         evaluation function
         """
@@ -349,6 +355,7 @@ class AlgorithmBase:
         total_num = 0.0
         y_true = []
         y_pred = []
+        # y_probs = []
         y_logits = []
         with torch.no_grad():
             for data in eval_loader:
@@ -370,11 +377,13 @@ class AlgorithmBase:
                 loss = F.cross_entropy(logits, y, reduction='mean')
                 y_true.extend(y.cpu().tolist())
                 y_pred.extend(torch.max(logits, dim=-1)[1].cpu().tolist())
-                y_logits.append(torch.softmax(logits, dim=-1).cpu().numpy())
+                y_logits.append(logits.cpu().numpy())
+                # y_probs.append(torch.softmax(logits, dim=-1).cpu().numpy())
                 total_loss += loss.item() * num_batch
         y_true = np.array(y_true)
         y_pred = np.array(y_pred)
         y_logits = np.concatenate(y_logits)
+        # y_probs = np.concatenate(y_probs)
         top1 = accuracy_score(y_true, y_pred)
         # top5 = top_k_accuracy_score(y_true, y_logits, k=5)
         # top5 = 0
@@ -389,6 +398,8 @@ class AlgorithmBase:
 
         eval_dict = {eval_dest+'/loss': total_loss / total_num, eval_dest+'/top-1-acc': top1, 
                      eval_dest+'/precision': precision, eval_dest+'/recall': recall, eval_dest+'/F1': F1}
+        if return_logits:
+            eval_dict[eval_dest+'/logits'] = y_logits
         return eval_dict
 
     def get_save_dict(self):

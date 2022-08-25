@@ -40,7 +40,7 @@ dataset_std = (0.5, 0.5, 0.5)
 num_classes = 10
 
 
-def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', seed=1):
+def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
 
     crop_size = args.img_size
     crop_ratio = args.crop_ratio
@@ -104,7 +104,7 @@ def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', 
 
     # shuffle the dataset
     shuffle_index = list(range(len(train_ids)))
-    random.Random(seed).shuffle(shuffle_index)
+    np.random.shuffle(shuffle_index)
     total_targets = train_targets[shuffle_index]
     total_idxs = train_ids[shuffle_index]
 
@@ -113,7 +113,7 @@ def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', 
                                                                     ulb_num_labels=args.ulb_num_labels,
                                                                     lb_imbalance_ratio=args.lb_imb_ratio,
                                                                     ulb_imbalance_ratio=args.ulb_imb_ratio,
-                                                                    include_lb_to_ulb=True)
+                                                                    include_lb_to_ulb=include_lb_to_ulb)
     # construct datasets for training and testing
     if alg == 'fullysupervised':
         if len(train_unlabeled_idxs) == len(total_idxs):

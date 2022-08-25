@@ -11,7 +11,7 @@ from .datasetbase import BasicDataset
 
 
 
-def get_pkl_dset(args, alg='fixmatch', dataset='esc50', num_labels=40, num_classes=20, data_dir='./data', index=None, include_lb_to_ulb=True, onehot=False):
+def get_pkl_dset(args, alg='fixmatch', dataset='esc50', num_labels=40, num_classes=20, data_dir='./data', include_lb_to_ulb=True, onehot=False):
     """
     get_ssl_dset split training samples into labeled and unlabeled samples.
     The labeled data is balanced samples over classes.
@@ -86,7 +86,7 @@ def get_pkl_dset(args, alg='fixmatch', dataset='esc50', num_labels=40, num_class
                                                                                   ulb_num_labels=args.ulb_num_labels,
                                                                                   lb_imbalance_ratio=args.lb_imb_ratio,
                                                                                   ulb_imbalance_ratio=args.ulb_imb_ratio,
-                                                                                  include_lb_to_ulb=True)
+                                                                                  include_lb_to_ulb=include_lb_to_ulb)
 
     # output the distribution of labeled data for remixmatch
     count = [0 for _ in range(num_classes)]
