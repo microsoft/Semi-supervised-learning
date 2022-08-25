@@ -57,11 +57,15 @@ class FixMatch(AlgorithmBase):
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
+            # TODO: add moduler distribution alignment here
+
+            # TODO: convert to moduler masking method
             # compute mask
             with torch.no_grad():
                 max_probs = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)[0]
                 mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
 
+            # TODO: maybe specify a function for loss calculation?
             unsup_loss, _ = consistency_loss(logits_x_ulb_s,
                                              logits_x_ulb_w,
                                              'ce',
