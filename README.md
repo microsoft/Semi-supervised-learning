@@ -41,7 +41,7 @@
     <a href="https://github.com/microsoft/Semi-supervised-learning"><strong>Explore the docs »</strong></a>
     <br /> -->
     <br />
-    <a href="https://github.com/microsoft/Semi-supervised-learning">Paper</a>
+    <a href="https://arxiv.org/abs/2208.07204">Paper</a>
     ·
     <a href="https://github.com/microsoft/Semi-supervised-learning">Benchmark</a>
     ·
