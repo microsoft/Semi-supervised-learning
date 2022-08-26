@@ -163,10 +163,10 @@ def main_worker(gpu, ngpus_per_node, args):
 
     # START TRAINING of FixMatch
     logger.info("Model training")
-    result = model.train()
+    model.train()
 
     # print validation (and test results)
-    for key, item in result.items():
+    for key, item in model.results_dict.items():
         logger.info(f"Model result - {key} : {item}")
 
     if hasattr(model, 'finetune'):
@@ -201,12 +201,14 @@ if __name__ == "__main__":
     '''
 
     parser.add_argument('--epoch', type=int, default=1)
-    parser.add_argument('--num_train_iter', type=int, default=1024,
+    parser.add_argument('--num_train_iter', type=int, default=100,
                         help='total number of training iterations')
     parser.add_argument('--num_warmup_iter', type=int, default=0,
                         help='cosine linear warmup iterations')
-    parser.add_argument('--num_eval_iter', type=int, default=100,
+    parser.add_argument('--num_eval_iter', type=int, default=50,
                         help='evaluation frequency')
+    parser.add_argument('--num_log_iter', type=int, default=10,
+                        help='logging frequencu')
     parser.add_argument('-nl', '--num_labels', type=int, default=400)
     parser.add_argument('-bsz', '--batch_size', type=int, default=8)
     parser.add_argument('--uratio', type=int, default=1,
@@ -237,7 +239,7 @@ if __name__ == "__main__":
     '''  
 
     ## core algorithm setting
-    parser.add_argument('-alg', '--algorithm', type=str, default='crmatch', help='ssl algorithm')
+    parser.add_argument('-alg', '--algorithm', type=str, default='fixmatch', help='ssl algorithm')
     parser.add_argument('--use_cat', type=str2bool, default=False, help='use cat operation in algorithms')
     parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)

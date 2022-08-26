@@ -4,7 +4,7 @@
 # Licensed under the MIT License.
 
 import torch
-from semilearn.algorithms.algorithmbase import AlgorithmBase
+from semilearn.core.algorithmbase import AlgorithmBase
 from semilearn.algorithms.utils import ce_loss, consistency_loss,  SSL_Argument, str2bool
 
 
@@ -65,7 +65,6 @@ class FixMatch(AlgorithmBase):
                 max_probs = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)[0]
                 mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
 
-            # TODO: maybe specify a function for loss calculation?
             unsup_loss, _ = consistency_loss(logits_x_ulb_s,
                                              logits_x_ulb_w,
                                              'ce',
@@ -75,7 +74,9 @@ class FixMatch(AlgorithmBase):
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
-        self.parameter_update(total_loss)
+        # TODO: how to call parameter update hook
+        # self.parameter_update(total_loss)
+        self.call_hook("param_update", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

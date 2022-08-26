@@ -13,7 +13,7 @@ import torch
 import torch.nn.functional as F
 from torch.cuda.amp import autocast, GradScaler
 
-# from semilearn.core.hooks import Hook, Priority, get_priority, CheckpointHook, TimerHook, 
+from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, LoggingHook, DistSamplerSeedHook, ParamUpdateHook, EvaluationHook
 
 from semilearn.datasets import DistributedSampler
 # TODO: regroup utils
@@ -52,6 +52,7 @@ class AlgorithmBase:
         self.epochs = args.epoch
         self.num_train_iter = args.num_train_iter
         self.num_eval_iter = args.num_eval_iter
+        self.num_log_iter = args.num_log_iter
         self.num_iter_per_epoch = int(self.num_train_iter // self.epochs)
         self.lambda_u = args.ulb_loss_ratio 
         self.use_cat = args.use_cat
@@ -79,7 +80,10 @@ class AlgorithmBase:
         self.bn_controller = Bn_Controller()
         self.net_builder = net_builder
         self.ema = None
+
+        # common hooks during training
         self._hooks = []
+        self.set_training_hooks()
 
         # build dataset
         self.dataset_dict = self.set_dataset()
@@ -180,9 +184,13 @@ class AlgorithmBase:
         """
         set necessary training hooks
         """
-        self.set_hook()
-
-
+        # parameter update hook is called inside each train_step
+        self.set_hook(ParamUpdateHook(), "HIGHEST")
+        self.set_hook(TimerHook(), "HIGHEST")
+        self.set_hook(EvaluationHook(), "HIGHEST")
+        self.set_hook(CheckpointHook(), "VERY_HIGH")
+        self.set_hook(DistSamplerSeedHook(), "HIGH")
+        self.set_hook(LoggingHook(), "LOW")
 
     def process_batch(self, **kwargs):
         """
@@ -208,28 +216,27 @@ class AlgorithmBase:
             input_dict[arg] = var
         return input_dict
 
+    # def parameter_update(self, loss):
+    #     """
+    #     # parameter updates
+    #     """
+    #     if self.use_amp:
+    #         self.loss_scaler.scale(loss).backward()
+    #         if (self.clip_grad > 0):
+    #             self.loss_scaler.unscale_(self.optimizer)
+    #             torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad)
+    #         self.loss_scaler.step(self.optimizer)
+    #         self.loss_scaler.update()
+    #     else:
+    #         loss.backward()
+    #         if (self.clip_grad > 0):
+    #             torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad)
+    #         self.optimizer.step()
 
-    def parameter_update(self, loss):
-        """
-        # parameter updates
-        """
-        if self.use_amp:
-            self.loss_scaler.scale(loss).backward()
-            if (self.clip_grad > 0):
-                self.loss_scaler.unscale_(self.optimizer)
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad)
-            self.loss_scaler.step(self.optimizer)
-            self.loss_scaler.update()
-        else:
-            loss.backward()
-            if (self.clip_grad > 0):
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_grad)
-            self.optimizer.step()
-
-        self.scheduler.step()
-        self.model.zero_grad()
-        if self.ema is not None:
-            self.ema.update()
+    #     self.scheduler.step()
+    #     self.model.zero_grad()
+    #     if self.ema is not None:
+    #         self.ema.update()
 
     def train_step(self, idx_lb, x_lb, y_lb, idx_ulb, x_ulb_w, x_ulb_s):
         """
@@ -242,48 +249,48 @@ class AlgorithmBase:
         # return tb_dict
         raise NotImplementedError
 
-    def before_train_step(self):
-        # raise NotImplementedError
-        pass
+    # def before_train_step(self):
+    #     # raise NotImplementedError
+    #     pass
     
-    def after_train_step(self):
-        """
-        save model and printing log
-        """
-        # Save model 
-        if (self.it + 1) % self.num_eval_iter == 0:
-            # TODO: explicitly set save_path
-            save_path = os.path.join(self.save_dir, self.save_name)
+    # def after_train_step(self):
+    #     """
+    #     save model and printing log
+    #     """
+    #     # Save model 
+    #     if (self.it + 1) % self.num_eval_iter == 0:
+    #         # TODO: explicitly set save_path
+    #         save_path = os.path.join(self.save_dir, self.save_name)
             
-            if not self.distributed or (self.distributed and self.rank % self.ngpus_per_node == 0):
-                self.save_model('latest_model.pth', save_path)
+    #         if not self.distributed or (self.distributed and self.rank % self.ngpus_per_node == 0):
+    #             self.save_model('latest_model.pth', save_path)
 
-        if (self.it + 1) % self.num_eval_iter == 0:
-            eval_dict = self.evaluate('eval')
-            self.tb_dict.update(eval_dict)
+    #     if (self.it + 1) % self.num_eval_iter == 0:
+    #         eval_dict = self.evaluate('eval')
+    #         self.tb_dict.update(eval_dict)
 
-            save_path = os.path.join(self.save_dir, self.save_name)
+    #         save_path = os.path.join(self.save_dir, self.save_name)
 
-            if self.tb_dict['eval/top-1-acc'] > self.best_eval_acc:
-                self.best_eval_acc = self.tb_dict['eval/top-1-acc']
-                self.best_it = self.it
+    #         if self.tb_dict['eval/top-1-acc'] > self.best_eval_acc:
+    #             self.best_eval_acc = self.tb_dict['eval/top-1-acc']
+    #             self.best_it = self.it
 
-            if not self.distributed or (self.distributed and self.rank % self.ngpus_per_node == 0):
-                self.print_fn(f"{self.it} iteration, USE_EMA: {self.ema_m != 0}, {self.tb_dict}, BEST_EVAL_ACC: {self.best_eval_acc}, at {self.best_it} iters")
+    #         if not self.distributed or (self.distributed and self.rank % self.ngpus_per_node == 0):
+    #             self.print_fn(f"{self.it} iteration, USE_EMA: {self.ema_m != 0}, {self.tb_dict}, BEST_EVAL_ACC: {self.best_eval_acc}, at {self.best_it} iters")
 
 
-            if not self.distributed or  (self.distributed and self.rank % self.ngpus_per_node == 0):
+    #         if not self.distributed or  (self.distributed and self.rank % self.ngpus_per_node == 0):
 
-                if self.it == self.best_it:
-                    self.save_model('model_best.pth', save_path)
+    #             if self.it == self.best_it:
+    #                 self.save_model('model_best.pth', save_path)
 
-                if not self.tb_log is None:
-                    self.tb_log.update(self.tb_dict, self.it)
+    #             if not self.tb_log is None:
+    #                 self.tb_log.update(self.tb_dict, self.it)
         
-        self.it += 1
-        del self.tb_dict
-        if self.it > 0.9 * self.num_train_iter:
-            self.num_eval_iter = 1024
+    #     self.it += 1
+    #     del self.tb_dict
+    #     if self.it > 0.9 * self.num_train_iter:
+    #         self.num_eval_iter = 1024
 
     def train(self):
         """
@@ -294,8 +301,9 @@ class AlgorithmBase:
         # 1) consider before_train_epoch, after_train_epoch, before_train_step, after_train_step
         # 2) consider hooks as in mmdet?
 
-        # EMA Init
         self.model.train()
+
+        # EMA Init
         self.ema = EMA(self.model, self.ema_m)
         self.ema.register()
         if self.resume == True:
@@ -304,12 +312,14 @@ class AlgorithmBase:
             # self.print_fn(eval_dict)
 
         # for gpu profiling
-        start_batch = torch.cuda.Event(enable_timing=True)
-        end_batch = torch.cuda.Event(enable_timing=True)
-        start_run = torch.cuda.Event(enable_timing=True)
-        end_run = torch.cuda.Event(enable_timing=True)
-        start_batch.record()
+        # start_batch = torch.cuda.Event(enable_timing=True)
+        # end_batch = torch.cuda.Event(enable_timing=True)
+        # start_run = torch.cuda.Event(enable_timing=True)
+        # end_run = torch.cuda.Event(enable_timing=True)
+        # start_batch.record()
 
+
+        self.call_hook("before_run")
 
         for epoch in range(self.epochs):
             # TODO: move this part to before train epoch
@@ -319,10 +329,12 @@ class AlgorithmBase:
             if self.it >= self.num_train_iter:
                 break
             
-            if isinstance(self.loader_dict['train_lb'].sampler, DistributedSampler):
-                self.loader_dict['train_lb'].sampler.set_epoch(epoch)
-            if isinstance(self.loader_dict['train_ulb'].sampler, DistributedSampler):
-                self.loader_dict['train_ulb'].sampler.set_epoch(epoch)
+            self.call_hook("before_train_epoch")
+
+            # if isinstance(self.loader_dict['train_lb'].sampler, DistributedSampler):
+            #     self.loader_dict['train_lb'].sampler.set_epoch(epoch)
+            # if isinstance(self.loader_dict['train_ulb'].sampler, DistributedSampler):
+            #     self.loader_dict['train_ulb'].sampler.set_epoch(epoch)
 
             # for (idx_lb, x_lb, y_lb), (idx_ulb, x_ulb_w, x_ulb_s) in zip(self.loader_dict['train_lb'],
             #                                                              self.loader_dict['train_ulb']):
@@ -332,37 +344,46 @@ class AlgorithmBase:
                 if self.it >= self.num_train_iter:
                     break
 
-                end_batch.record()
-                torch.cuda.synchronize()
-                start_run.record()
+                
+                self.call_hook("before_train_step")
+                
+                # end_batch.record()
+                # torch.cuda.synchronize()
+                # start_run.record()
+
 
                 # self.tb_dict = self.train_step(**self.process_batch(idx_lb=idx_lb, x_lb=x_lb, y_lb=y_lb, idx_ulb=idx_ulb, x_ulb_w=x_ulb_w, x_ulb_s=x_ulb_s))
                 self.tb_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb))
 
-                end_run.record()
-                torch.cuda.synchronize()
+                self.call_hook("after_train_step")
+                # end_run.record()
+                # torch.cuda.synchronize()
 
                 # tensorboard_dict update
-                self.tb_dict['lr'] = self.optimizer.param_groups[0]['lr']
-                self.tb_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
-                self.tb_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
+                # self.tb_dict['lr'] = self.optimizer.param_groups[0]['lr']
+                # self.tb_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
+                # self.tb_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
 
                 # post processing for saving model and print logs
-                self.after_train_step()
-                start_batch.record()
+                # self.after_train_step()
+                # start_batch.record()
+                self.it += 1
             
             # TODO: after train epoch
+            self.call_hook("after_train_epoch")
 
         # eval_dict = self.evaluate('eval')
+        self.call_hook("after_run")
+        
         # TODO: move this part to after train
-        eval_dict = {'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it}
-        if 'test' in self.loader_dict:
-            # load the best model and evaluate on test dataset
-            best_model_path = os.path.join(self.args.save_dir, self.args.save_name, 'model_best.pth')
-            self.load_model(best_model_path)
-            test_dict = self.evaluate('test')
-            eval_dict['test/best_acc'] = test_dict['test/top-1-acc']
-        return eval_dict
+        # eval_dict = {'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it}
+        # if 'test' in self.loader_dict:
+        #     # load the best model and evaluate on test dataset
+        #     best_model_path = os.path.join(self.args.save_dir, self.args.save_name, 'model_best.pth')
+        #     self.load_model(best_model_path)
+        #     test_dict = self.evaluate('test')
+        #     eval_dict['test/best_acc'] = test_dict['test/top-1-acc']
+        # return eval_dict
 
     def evaluate(self, eval_dest='eval', return_logits=False):
         """
@@ -512,6 +533,16 @@ class AlgorithmBase:
                 break
         if not inserted:
             self._hooks.insert(0, hook)
+
+    def call_hook(self, fn_name, *args, **kwargs):
+        """Call all hooks.
+        Args:
+            fn_name (str): The function name in each hook to be called, such as
+                "before_train_epoch".
+        """
+        for hook in self._hooks:
+            if hasattr(hook, fn_name):
+                getattr(hook, fn_name)(self, *args, **kwargs)
 
     @staticmethod
     def get_argument():

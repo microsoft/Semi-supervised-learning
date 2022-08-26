@@ -98,7 +98,7 @@ class CReST(AlgorithmBase):
         self.best_eval_acc, self.best_it = 0.0, 0
         self.ema = None
         
-        # build dataset
+        # build dataset with pseudo label list
         self.dataset_dict = self.set_dataset(pseudo_label_list)
 
         # cv, nlp, speech builder different arguments
