@@ -5,7 +5,8 @@
 import os
 
 import torch
-from semilearn.algorithms.algorithmbase import AlgorithmBase
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.hooks import PseudoLabelHook
 from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, EMA
 from semilearn.datasets import DistributedSampler
 
@@ -56,7 +57,13 @@ class Dash(AlgorithmBase):
         self.rho = None
         self.warmup_stage = True
 
+    def set_hooks(self):
+        self.register_hook(PseudoLabelHook(), "PseudoLabelHook")
+        super().set_hooks()
+
     def warmup(self):
+        # TODO: think about this
+        
         # prevent the training iterations exceed args.num_train_iter
         if self.it > self.num_wu_iter:
             return
@@ -188,12 +195,24 @@ class Dash(AlgorithmBase):
                 loss_w = ce_loss(logits_x_ulb_w, pseudo_label, use_hard_labels=self.use_hard_label, reduction='none').detach()
                 mask = loss_w.le(self.rho).to(logits_x_ulb_s.dtype).detach()
 
-            unsup_loss, _ = consistency_loss(logits_x_ulb_s,
-                                             logits_x_ulb_w,
-                                             'ce',
-                                             use_hard_labels=self.use_hard_label,
-                                             T=self.T,
-                                             mask=mask)
+
+            # generate unlabeled targets using pseudo label hook
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelHook", 
+                                          logits=logits_x_ulb_w,
+                                          use_hard_label=self.use_hard_label,
+                                          T=self.T)
+
+            unsup_loss = consistency_loss(logits_x_ulb_s,
+                                          pseudo_label,
+                                          'ce',
+                                          mask=mask)
+
+            # unsup_loss, _ = consistency_loss(logits_x_ulb_s,
+            #                                  logits_x_ulb_w,
+            #                                  'ce',
+            #                                  use_hard_labels=self.use_hard_label,
+            #                                  T=self.T,
+            #                                  mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 

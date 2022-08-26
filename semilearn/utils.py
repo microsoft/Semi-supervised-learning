@@ -139,7 +139,7 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
         lb_dset, ulb_dset, eval_dset, test_dset = get_json_dset(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
     else:
         raise NotImplementedError
-        
+    
     dataset_dict = {'train_lb': lb_dset, 'train_ulb': ulb_dset, 'eval': eval_dset, 'test': test_dset}
     return dataset_dict
 

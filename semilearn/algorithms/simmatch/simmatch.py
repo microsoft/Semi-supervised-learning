@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from semilearn.algorithms.algorithmbase import AlgorithmBase
+from semilearn.core import AlgorithmBase
 from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool
 
 
@@ -206,20 +206,17 @@ class SimMatch(AlgorithmBase):
             max_probs = torch.max(probs_x_ulb_w, dim=-1)[0]
             mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
 
-            unsup_loss, _ = consistency_loss(logits_x_ulb_s,
-                                             probs_x_ulb_w,
-                                             'ce',
-                                             use_hard_labels=False,
-                                             T=1.0,
-                                             mask=mask,
-                                             softmax=False)
+            unsup_loss = consistency_loss(logits_x_ulb_s,
+                                          probs_x_ulb_w,
+                                          'ce',
+                                          mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_in * in_loss
 
             self.update_bank(ema_feats_x_lb, y_lb, idx_lb)
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

@@ -1,11 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-import torch
 
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, EMA
-from semilearn.datasets import DistributedSampler
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.utils import ce_loss
 
 
 class FullySupervised(AlgorithmBase):
@@ -34,7 +32,7 @@ class FullySupervised(AlgorithmBase):
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
         # parameter updates
-        self.parameter_update(sup_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=sup_loss)
 
         # tensorboard_dict update
         tb_dict = {}
@@ -45,19 +43,7 @@ class FullySupervised(AlgorithmBase):
     def train(self):
         # lb: labeled, ulb: unlabeled
         self.model.train()
-        self.ema = EMA(self.model, self.ema_m)
-        self.ema.register()
-        if self.resume == True:
-            self.ema.load(self.ema_model)
-            eval_dict = self.evaluate()
-            self.print_fn(eval_dict)
-
-        # for gpu profiling
-        start_batch = torch.cuda.Event(enable_timing=True)
-        end_batch = torch.cuda.Event(enable_timing=True)
-        start_run = torch.cuda.Event(enable_timing=True)
-        end_run = torch.cuda.Event(enable_timing=True)
-        start_batch.record()
+        self.call_hook("before_run")
             
         for epoch in range(self.epochs):
             self.epoch = epoch
@@ -66,8 +52,7 @@ class FullySupervised(AlgorithmBase):
             if self.it > self.num_train_iter:
                 break
 
-            if isinstance(self.loader_dict['train_lb'].sampler, DistributedSampler):
-                self.loader_dict['train_lb'].sampler.set_epoch(epoch)
+            self.call_hook("before_train_epoch")
 
             for data_lb in self.loader_dict['train_lb']:
 
@@ -75,26 +60,10 @@ class FullySupervised(AlgorithmBase):
                 if self.it > self.num_train_iter:
                     break
 
-                end_batch.record()
-                torch.cuda.synchronize()
-                start_run.record()
-
+                self.call_hook("before_train_step")
                 self.tb_dict = self.train_step(**self.process_batch(**data_lb))
+                self.call_hook("after_train_step")
+                self.it += 1
 
-                end_run.record()
-                torch.cuda.synchronize()
-
-                self.tb_dict['lr'] = self.optimizer.param_groups[0]['lr']
-                self.tb_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
-                self.tb_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
-
-                self.after_train_step()
-                start_batch.record()
-
-        eval_dict = self.evaluate()
-        eval_dict.update({'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it})
-        return eval_dict
-
-    @staticmethod
-    def get_argument():
-        return {}
+            self.call_hook("after_train_epoch")
+        self.call_hook("after_run")

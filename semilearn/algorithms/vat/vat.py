@@ -6,9 +6,8 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.datasets import DistributedSampler
-from semilearn.algorithms.utils import ce_loss, EMA, SSL_Argument, str2bool
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool
 
 
 class VAT(AlgorithmBase):
@@ -66,7 +65,7 @@ class VAT(AlgorithmBase):
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup + self.lambda_ent * loss_entmin
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

@@ -1,14 +1,23 @@
-"""
-# TODO: put ema part into hook
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
-before_run
-    self.ema = EMA(self.model, self.ema_m)
-    self.ema.register()
-    if self.resume == True:
-        self.ema.load(self.ema_model)
 
-after_train_step
-    if algorithm.ema is not None:
-        algorithm.ema.update()
-"""
+from .hook import Hook
+
+from semilearn.algorithms.utils import EMA
+
+
+class EMAHook(Hook):
+    def __init__(self) -> None:
+        super().__init__()
+    
+    def before_run(self, algorithm):
+        algorithm.ema = EMA(algorithm.model, algorithm.ema_m)
+        algorithm.ema.register()
+        if algorithm.resume == True:
+            algorithm.ema.load(algorithm.ema_model)
+
+    def after_train_step(self, algorithm):
+        if algorithm.ema is not None:
+            algorithm.ema.update()
 

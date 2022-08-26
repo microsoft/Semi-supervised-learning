@@ -5,7 +5,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from semilearn.algorithms.algorithmbase import AlgorithmBase
+from semilearn.core import AlgorithmBase
 from semilearn.algorithms.utils import ce_loss, consistency_loss, EMA, SSL_Argument, str2bool
 from semilearn.datasets import DistributedSampler
 
@@ -198,14 +198,10 @@ class CoMatch(AlgorithmBase):
 
                 self.update_bank(feats_w, probs_w)
 
-
             unsup_loss, _ = consistency_loss(logits_x_ulb_s_0,
                                              probs,
                                              'ce',
-                                             use_hard_labels=False,
-                                             T=1.0,
-                                             mask=mask,
-                                             softmax=False)
+                                             mask=mask)
 
             # pseudo-label graph with self-loop
             Q = torch.mm(probs, probs.t())       
@@ -219,7 +215,7 @@ class CoMatch(AlgorithmBase):
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_c * contrast_loss
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
 
         tb_dict = {}

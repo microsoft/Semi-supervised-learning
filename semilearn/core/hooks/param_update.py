@@ -29,6 +29,3 @@ class ParamUpdateHook(Hook):
 
         algorithm.scheduler.step()
         algorithm.model.zero_grad()
-
-        if algorithm.ema is not None:
-            algorithm.ema.update()

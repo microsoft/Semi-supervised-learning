@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from copy import deepcopy
 
-from semilearn.algorithms.algorithmbase import AlgorithmBase
+from semilearn.core import AlgorithmBase
 from semilearn.algorithms.utils import ce_loss, EMA, SSL_Argument, str2bool
 from semilearn.datasets import DistributedSampler, get_data_loader
 from PIL import Image
@@ -161,6 +161,7 @@ class CRMatch(AlgorithmBase):
         return loader_dict
 
     def train(self):
+        # TODO: change this
         # EMA Init
         self.model.train()
         self.ema = EMA(self.model, self.ema_m)
@@ -273,7 +274,7 @@ class CRMatch(AlgorithmBase):
                 total_loss += Lrot
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = Lx.item()

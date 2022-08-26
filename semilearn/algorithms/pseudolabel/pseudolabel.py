@@ -3,9 +3,9 @@
 
 import numpy as np
 import torch
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, EMA, SSL_Argument
-from semilearn.datasets import DistributedSampler
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.hooks import PseudoLabelHook
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
 
 
 class PseudoLabel(AlgorithmBase):
@@ -35,6 +35,10 @@ class PseudoLabel(AlgorithmBase):
         self.p_cutoff = p_cutoff
         self.unsup_warm_up = unsup_warm_up 
 
+    def set_hooks(self):
+        self.register_hook(PseudoLabelHook(), "PseudoLabelHook")
+        super().set_hooks()
+
     def train_step(self, x_lb, y_lb, x_ulb_w):
         # inference and calculate sup/unsup losses
         with self.amp_cm():
@@ -45,7 +49,6 @@ class PseudoLabel(AlgorithmBase):
             logits_x_ulb = self.model(x_ulb_w)
             self.bn_controller.unfreeze_bn(self.model)
 
-
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             # compute mask
@@ -53,16 +56,21 @@ class PseudoLabel(AlgorithmBase):
                 max_probs = torch.max(torch.softmax(logits_x_ulb.detach(), dim=-1), dim=-1)[0]
                 mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
 
-            unsup_loss, _ = consistency_loss(logits_x_ulb,
-                                             logits_x_ulb,
-                                             'ce',
-                                             mask=mask)
+            # generate unlabeled targets using pseudo label hook
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelHook", 
+                                          logits=logits_x_ulb,
+                                          use_hard_label=True)
+
+            unsup_loss = consistency_loss(logits_x_ulb,
+                                          pseudo_label,
+                                          'ce',
+                                          mask=mask)
 
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

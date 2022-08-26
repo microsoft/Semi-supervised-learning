@@ -2,11 +2,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-import os
 import torch
 from copy import deepcopy
 from collections import Counter
-from semilearn.algorithms.algorithmbase import AlgorithmBase
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.hooks import PseudoLabelHook
 from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool
 
 
@@ -55,6 +55,10 @@ class FlexMatch(AlgorithmBase):
         self.selected_label = selected_label.cuda(self.gpu)
         self.classwise_acc = torch.zeros((self.num_classes,)).cuda(self.gpu)
 
+    def set_hooks(self):
+        self.register_hook(PseudoLabelHook(), "PseudoLabelHook")
+        super().set_hooks()
+
     @torch.no_grad()
     def update_classwise_acc(self):
         pseudo_counter = Counter(self.selected_label.tolist())
@@ -96,23 +100,27 @@ class FlexMatch(AlgorithmBase):
                 # mask = max_probs.ge(p_cutoff * (torch.log(class_acc[max_idx] + 1.) + 0.5)/(math.log(2) + 0.5)).float()  # concave
                 select = max_probs.ge(self.p_cutoff)
                 mask = mask.to(max_probs.dtype)
+            
+            # generate unlabeled targets using pseudo label hook
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelHook", 
+                                          logits=logits_x_ulb_w,
+                                          use_hard_label=self.use_hard_label,
+                                          T=self.T)
 
-            unsup_loss, pseudo_lb = consistency_loss(logits_x_ulb_s,
-                                                     logits_x_ulb_w,
-                                                     'ce',
-                                                     use_hard_labels=self.use_hard_label,
-                                                     T=self.T,
-                                                     mask=mask)
+            unsup_loss = consistency_loss(logits_x_ulb_s,
+                                          pseudo_label,
+                                          'ce',
+                                          mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
             # update classwise acc
             if idx_ulb[select == 1].nelement() != 0:
-                self.selected_label[idx_ulb[select == 1]] = pseudo_lb[select == 1]
+                self.selected_label[idx_ulb[select == 1]] = pseudo_label[select == 1]
             self.update_classwise_acc()
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

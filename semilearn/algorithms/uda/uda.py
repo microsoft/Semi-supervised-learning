@@ -3,9 +3,9 @@
 
 import torch
 import math
-import torch.nn.functional as F
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, Get_Scalar, SSL_Argument, str2bool
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.hooks import PseudoLabelHook
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
 
 
 class UDA(AlgorithmBase):
@@ -40,6 +40,10 @@ class UDA(AlgorithmBase):
         self.p_cutoff = p_cutoff
         self.tsa_schedule = tsa_schedule
 
+    def set_hooks(self):
+        self.register_hook(PseudoLabelHook(), "PseudoLabelHook")
+        super().set_hooks()
+
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
 
@@ -65,15 +69,29 @@ class UDA(AlgorithmBase):
                 max_probs = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)[0]
                 mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
 
-            unsup_loss = F.kl_div(F.softmax(logits_x_ulb_s, dim=-1).log(),
-                                  F.softmax(logits_x_ulb_w / self.T, dim=-1).detach(),
-                                  reduction='none').sum(dim=1, keepdim=False)
-            unsup_loss = (unsup_loss * mask).mean()
+            # generate unlabeled targets using pseudo label hook
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelHook", 
+                                          logits=logits_x_ulb_w,
+                                          use_hard_label=False,
+                                          T=self.T)
+
+            unsup_loss = consistency_loss(logits_x_ulb_s,
+                                          pseudo_label,
+                                          'ce',
+                                          mask=mask)
+
+            # unsup_loss, _ = consistency_loss(
+            #                         logits_x_ulb_s,
+            #                         logits_x_ulb_w,
+            #                         'ce',
+            #                         use_hard_labels=False,
+            #                         T=self.T,
+            #                         mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

@@ -3,7 +3,7 @@
 
 import torch
 import numpy as np
-from semilearn.algorithms.algorithmbase import AlgorithmBase
+from semilearn.core import AlgorithmBase
 from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
 
 
@@ -51,14 +51,15 @@ class MeanTeacher(AlgorithmBase):
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
             unsup_loss, _ = consistency_loss(logits_x_ulb_s,
-                                             logits_x_ulb_w,
+                                             torch.softmax(logits_x_ulb_w.detach(), dim=-1),
                                              'mse')
             
+            # TODO: move this into masking
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

@@ -239,7 +239,7 @@ if __name__ == "__main__":
     '''  
 
     ## core algorithm setting
-    parser.add_argument('-alg', '--algorithm', type=str, default='fixmatch', help='ssl algorithm')
+    parser.add_argument('-alg', '--algorithm', type=str, default='adamatch', help='ssl algorithm')
     parser.add_argument('--use_cat', type=str2bool, default=False, help='use cat operation in algorithms')
     parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)

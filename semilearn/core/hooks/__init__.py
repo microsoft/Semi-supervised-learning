@@ -7,3 +7,4 @@ from .param_update import ParamUpdateHook
 from .priority import Priority, get_priority
 from .sampler_seed import DistSamplerSeedHook
 from .timer import TimerHook
+from .ema import EMAHook

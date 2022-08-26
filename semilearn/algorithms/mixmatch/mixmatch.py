@@ -4,8 +4,8 @@
 import torch
 import numpy as np
 import torch.nn.functional as F
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, interleave
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, interleave, mixup_one_target
 
 
 class MixMatch(AlgorithmBase):
@@ -67,9 +67,9 @@ class MixMatch(AlgorithmBase):
                 inputs = torch.cat((self.model(x_lb, only_feat=True), self.model(x_ulb_w, only_feat=True), self.model(x_ulb_s, only_feat=True)))
             else:
                 inputs = torch.cat([x_lb, x_ulb_w, x_ulb_s])
-            mixed_x, mixed_y, _ = self.mixup_one_target(inputs, input_labels,
-                                                        self.mixup_alpha,
-                                                        is_bias=True)
+            mixed_x, mixed_y, _ = mixup_one_target(inputs, input_labels,
+                                                   self.mixup_alpha,
+                                                   is_bias=True)
             mixed_x = list(torch.split(mixed_x, num_lb))
             mixed_x = interleave(mixed_x, num_lb)
 
@@ -87,7 +87,7 @@ class MixMatch(AlgorithmBase):
             logits_u = torch.cat(logits[1:], dim=0)
 
             sup_loss = ce_loss(logits_x, mixed_y[:num_lb], use_hard_labels=False, reduction='mean')
-            unsup_loss, _ = consistency_loss(logits_u, mixed_y[num_lb:], name='mse', softmax=False)
+            unsup_loss, _ = consistency_loss(logits_u, mixed_y[num_lb:], name='mse')
 
             # set ramp_up for lambda_u
             unsup_warmup = float(np.clip(self.it / (self.unsup_warm_up * self.num_train_iter), 0.0, 1.0))
@@ -96,7 +96,7 @@ class MixMatch(AlgorithmBase):
             total_loss = sup_loss + lambda_u * unsup_loss
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()
@@ -105,21 +105,21 @@ class MixMatch(AlgorithmBase):
         return tb_dict
 
     # TODO: move mixup to utils
-    def mixup_one_target(self, x, y, alpha=1.0, is_bias=False):
-        """Returns mixed inputs, mixed targets, and lambda
-        """
-        if alpha > 0:
-            lam = np.random.beta(alpha, alpha)
-        else:
-            lam = 1
-        if is_bias:
-            lam = max(lam, 1 - lam)
+    # def mixup_one_target(self, x, y, alpha=1.0, is_bias=False):
+    #     """Returns mixed inputs, mixed targets, and lambda
+    #     """
+    #     if alpha > 0:
+    #         lam = np.random.beta(alpha, alpha)
+    #     else:
+    #         lam = 1
+    #     if is_bias:
+    #         lam = max(lam, 1 - lam)
 
-        index = torch.randperm(x.size(0)).to(x.device)
+    #     index = torch.randperm(x.size(0)).to(x.device)
 
-        mixed_x = lam * x + (1 - lam) * x[index]
-        mixed_y = lam * y + (1 - lam) * y[index]
-        return mixed_x, mixed_y, lam
+    #     mixed_x = lam * x + (1 - lam) * x[index]
+    #     mixed_y = lam * y + (1 - lam) * y[index]
+    #     return mixed_x, mixed_y, lam
 
     @staticmethod
     def get_argument():

@@ -5,6 +5,7 @@
 
 import torch
 from semilearn.core.algorithmbase import AlgorithmBase
+from semilearn.algorithms.hooks import PseudoLabelHook
 from semilearn.algorithms.utils import ce_loss, consistency_loss,  SSL_Argument, str2bool
 
 
@@ -38,6 +39,9 @@ class FixMatch(AlgorithmBase):
         self.p_cutoff = p_cutoff
         self.use_hard_label = hard_label
     
+    def set_hooks(self):
+        self.register_hook(PseudoLabelHook(), "PseudoLabelHook")
+        super().set_hooks()
 
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
@@ -65,18 +69,20 @@ class FixMatch(AlgorithmBase):
                 max_probs = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)[0]
                 mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
 
-            unsup_loss, _ = consistency_loss(logits_x_ulb_s,
-                                             logits_x_ulb_w,
-                                             'ce',
-                                             use_hard_labels=self.use_hard_label,
-                                             T=self.T,
-                                             mask=mask)
+            # generate unlabeled targets using pseudo label hook
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelHook", 
+                                          logits=logits_x_ulb_w,
+                                          use_hard_label=self.use_hard_label,
+                                          T=self.T)
+
+            unsup_loss = consistency_loss(logits_x_ulb_s,
+                                          pseudo_label,
+                                          'ce',
+                                          mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
-        # TODO: how to call parameter update hook
-        # self.parameter_update(total_loss)
-        self.call_hook("param_update", loss=total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()
