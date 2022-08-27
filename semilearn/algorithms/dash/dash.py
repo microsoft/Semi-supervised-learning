@@ -62,7 +62,7 @@ class Dash(AlgorithmBase):
         super().set_hooks()
 
     def warmup(self):
-        # TODO: think about this
+        # TODO: think about this, how to make this compatible with hooks?
         
         # prevent the training iterations exceed args.num_train_iter
         if self.it > self.num_wu_iter:
@@ -119,10 +119,11 @@ class Dash(AlgorithmBase):
                 # inference and calculate sup/unsup losses
                 with self.amp_cm():
                     logits_x_lb = self.model(x_lb)
-                    sup_loss = ce_loss(logits_x_lb, y_lb, use_hard_labels=True, reduction='mean')
+                    sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
                 # parameter updates
-                self.parameter_update(sup_loss)
+                # self.parameter_update(sup_loss)
+                self.call_hook("param_update", "ParamUpdateHook", loss=sup_loss)
 
                 end_run.record()
                 torch.cuda.synchronize()
@@ -217,7 +218,8 @@ class Dash(AlgorithmBase):
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
         # parameter updates
-        self.parameter_update(total_loss)
+        # self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

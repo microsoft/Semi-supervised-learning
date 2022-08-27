@@ -41,6 +41,7 @@ name2alg = {
 }
 
 
+# TODO: move this to core
 def get_algorithm(args, net_builder, tb_log, logger):
     try:
         model = name2alg[args.algorithm](

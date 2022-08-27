@@ -74,6 +74,7 @@ class AlgorithmBase:
         self.gpu = args.gpu
         self.rank = args.rank
         self.distributed = args.distributed
+        self.world_size = args.world_size
 
         # common model related parameters
         self.it = 0

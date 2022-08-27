@@ -5,7 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool
+from semilearn.algorithms.hooks import DistAlignQueueHook 
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, concat_all_gather
 
 
 class SimMatch_Net(nn.Module):
@@ -95,40 +96,46 @@ class SimMatch(AlgorithmBase):
         self.labels_bank = torch.zeros(K, dtype=torch.long).cuda(self.gpu)
 
         # distribution alignment
-        self.da_len = da_len
-        if self.da_len:
-            self.da_queue = torch.zeros(self.da_len, self.num_classes, dtype=torch.float).cuda(self.gpu)
-            self.da_ptr = torch.zeros(1, dtype=torch.long).cuda(self.gpu)
-    
-    @torch.no_grad()
-    def distribution_alignment(self, probs):
-        probs_bt_mean = probs.mean(0)
-        ptr = int(self.da_ptr)
+        # self.da_len = da_len
+        # if self.da_len:
+        #     self.da_queue = torch.zeros(self.da_len, self.num_classes, dtype=torch.float).cuda(self.gpu)
+        #     self.da_ptr = torch.zeros(1, dtype=torch.long).cuda(self.gpu)
 
-        if self.distributed:
-            torch.distributed.all_reduce(probs_bt_mean)
-            self.da_queue[ptr] = probs_bt_mean / torch.distributed.get_world_size()
-        else:
-            self.da_queue[ptr] = probs_bt_mean
+    def set_hooks(self):
+        self.register_hook(
+            DistAlignQueueHook(num_classes=self.num_classes, queue_length=self.args.da_len, p_target_type='uniform'), 
+            "DistAlignHook")
+        super().set_hooks()
 
-        self.da_ptr[0] = (ptr + 1) % self.da_len
-        probs = probs / self.da_queue.mean(0)
-        probs = probs / probs.sum(dim=1, keepdim=True)
-        return probs.detach()
+    # @torch.no_grad()
+    # def distribution_alignment(self, probs):
+    #     probs_bt_mean = probs.mean(0)
+    #     ptr = int(self.da_ptr)
+
+    #     if self.distributed:
+    #         torch.distributed.all_reduce(probs_bt_mean)
+    #         self.da_queue[ptr] = probs_bt_mean / torch.distributed.get_world_size()
+    #     else:
+    #         self.da_queue[ptr] = probs_bt_mean
+
+    #     self.da_ptr[0] = (ptr + 1) % self.da_len
+    #     probs = probs / self.da_queue.mean(0)
+    #     probs = probs / probs.sum(dim=1, keepdim=True)
+    #     return probs.detach()
     
     # utils
-    @torch.no_grad()
-    def concat_all_gather(self, tensor):
-        """
-        Performs all_gather operation on the provided tensors.
-        *** Warning ***: torch.distributed.all_gather has no gradient.
-        """
-        tensors_gather = [torch.ones_like(tensor)
-            for _ in range(torch.distributed.get_world_size())]
-        torch.distributed.all_gather(tensors_gather, tensor)
+    # @torch.no_grad()
+    # def concat_all_gather(self, tensor):
+    #     """
+    #     Performs all_gather operation on the provided tensors.
+    #     *** Warning ***: torch.distributed.all_gather has no gradient.
+    #     """
+    #     tensors_gather = [torch.ones_like(tensor)
+    #         for _ in range(torch.distributed.get_world_size())]
+    #     torch.distributed.all_gather(tensors_gather, tensor)
 
-        output = torch.cat(tensors_gather, dim=0)
-        return output
+    #     output = torch.cat(tensors_gather, dim=0)
+    #     return output
     
 
     @torch.no_grad()
@@ -176,8 +183,10 @@ class SimMatch(AlgorithmBase):
                 if self.use_ema_teacher:
                     _, ema_feats_x_lb = self.model(x_lb)
                 ema_probs_x_ulb_w = F.softmax(ema_logits_x_ulb_w, dim=-1)
-                if self.da_len:
-                    ema_probs_x_ulb_w = self.distribution_alignment(ema_probs_x_ulb_w)
+
+                # if self.da_len:
+                #     ema_probs_x_ulb_w = self.distribution_alignment(ema_probs_x_ulb_w)
+                ema_probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", ulb_probs=ema_probs_x_ulb_w.detach())
             self.ema.restore()
 
             with torch.no_grad():
@@ -229,18 +238,16 @@ class SimMatch(AlgorithmBase):
         save_dict = super().get_save_dict()
         save_dict['mem_bank'] = self.mem_bank.cpu()
         save_dict['labels_bank'] = self.labels_bank.cpu()
-        if self.da_len:
-            save_dict['da_queue'] = self.da_queue.cpu()
-            save_dict['da_ptr'] = self.da_ptr.cpu()
+        save_dict['p_model'] = self.hooks_dict['DistAlignHook'].p_model.cpu() 
+        save_dict['p_model_ptr'] = self.hooks_dict['DistAlignHook'].p_model_ptr.cpu()
         return save_dict
     
     def load_model(self, load_path):
         checkpoint = super().load_model(load_path)
         self.mem_bank = checkpoint['mem_bank'].cuda(self.gpu)
         self.labels_bank = checkpoint['labels_bank'].cuda(self.gpu)
-        if self.da_len:
-            self.da_queue = checkpoint['da_queue'].cuda(self.gpu)
-            self.da_ptr = checkpoint['da_ptr'].cuda(self.gpu)
+        self.hooks_dict['DistAlignHook'].p_model = checkpoint['p_model'].cuda(self.args.gpu)
+        self.hooks_dict['DistAlignHook'].p_model_ptr = checkpoint['p_model_ptr'].cuda(self.args.gpu)
         return checkpoint
 
     @staticmethod
