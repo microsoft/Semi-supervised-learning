@@ -43,7 +43,7 @@
     <br />
     <a href="https://arxiv.org/abs/2208.07204">Paper</a>
     ·
-    <a href="https://github.com/microsoft/Semi-supervised-learning">Benchmark</a>
+    <a href="https://github.com/microsoft/Semi-supervised-learning/tree/main/results">Benchmark</a>
     ·
     <a href="https://colab.research.google.com/drive/1lFygK31jWyTH88ktao6Ow-5nny5-B7v5">Demo</a>
     ·
