@@ -6,7 +6,7 @@ import torch
 from semilearn.core.hooks import Hook
 from semilearn.algorithms.utils import smooth_targets
 
-class PseudoLabelHook(Hook):
+class PseudoLabelingHook(Hook):
     def __init__(self):
         super().__init__()
     
@@ -16,7 +16,7 @@ class PseudoLabelHook(Hook):
                         logits, 
                         use_hard_label=True, 
                         T=1.0,
-                        softmax=True, 
+                        softmax=True, # whether to compute softmax for logits, input must be logits
                         label_smoothing=0.0):
                         
         logits = logits.detach()

@@ -23,36 +23,36 @@ class DistAlignEMAHook(Hook):
         self.p_model = None
 
     @torch.no_grad()
-    def dist_align(self, algorithm, ulb_probs, lb_probs=None):
+    def dist_align(self, algorithm, probs_x_ulb, probs_x_lb=None):
         # update queue
-        self.update_p(algorithm, ulb_probs, lb_probs)
+        self.update_p(algorithm, probs_x_ulb, probs_x_lb)
 
         # dist align
-        ulb_probs_aligned = ulb_probs * (self.p_target + 1e-6) / (self.p_model + 1e-6)
-        ulb_probs_aligned = ulb_probs_aligned / ulb_probs_aligned.sum(dim=-1, keepdim=True)
-        return ulb_probs_aligned
+        probs_x_ulb_aligned = probs_x_ulb * (self.p_target + 1e-6) / (self.p_model + 1e-6)
+        probs_x_ulb_aligned = probs_x_ulb_aligned / probs_x_ulb_aligned.sum(dim=-1, keepdim=True)
+        return probs_x_ulb_aligned
     
 
     @torch.no_grad()
-    def update_p(self, algorithm, ulb_probs, lb_probs):
+    def update_p(self, algorithm, probs_x_ulb, probs_x_lb):
         # check device
         if not self.p_target.is_cuda:
-            self.p_target = self.p_target.to(ulb_probs.device)
+            self.p_target = self.p_target.to(probs_x_ulb.device)
 
         if algorithm.distributed and algorithm.world_size > 1:
-            if lb_probs is not None:
-                lb_probs = concat_all_gather(lb_probs)
-            ulb_probs = concat_all_gather(ulb_probs)
+            if probs_x_lb is not None:
+                probs_x_lb = concat_all_gather(probs_x_lb)
+            probs_x_ulb = concat_all_gather(probs_x_ulb)
 
-        ulb_probs = ulb_probs.detach()
+        probs_x_ulb = probs_x_ulb.detach()
         if self.p_model == None:
-            self.p_model = torch.mean(ulb_probs, dim=0)
+            self.p_model = torch.mean(probs_x_ulb, dim=0)
         else:
-            self.p_model = self.p_model * self.m + torch.mean(ulb_probs, dim=0) * (1 - self.m)
+            self.p_model = self.p_model * self.m + torch.mean(probs_x_ulb, dim=0) * (1 - self.m)
 
         if self.update_p_target:
-            assert lb_probs is not None
-            self.p_target = self.p_target * self.m + torch.mean(lb_probs, dim=0) * (1 - self.m)
+            assert probs_x_lb is not None
+            self.p_target = self.p_target * self.m + torch.mean(probs_x_lb, dim=0) * (1 - self.m)
     
     def set_p_target(self, p_target_type='uniform', p_target=None):
         assert p_target_type in ['uniform', 'gt', 'model']
@@ -91,42 +91,43 @@ class DistAlignQueueHook(Hook):
         self.p_model_ptr = torch.zeros(1, dtype=torch.long)
 
     @torch.no_grad()
-    def dist_align(self, algorithm, ulb_probs, lb_probs=None):
+    def dist_align(self, algorithm, probs_x_ulb, probs_x_lb=None):
         # update queue
-        self.update_p(algorithm, ulb_probs, lb_probs)
+        self.update_p(algorithm, probs_x_ulb, probs_x_lb)
 
         # dist align
-        ulb_probs_aligned = ulb_probs * (self.p_target.mean(dim=0) + 1e-6) / (self.p_model.mean(dim=0) + 1e-6)
-        ulb_probs_aligned = ulb_probs_aligned / ulb_probs_aligned.sum(dim=-1, keepdim=True)
-        return ulb_probs_aligned
+        probs_x_ulb_aligned = probs_x_ulb * (self.p_target.mean(dim=0) + 1e-6) / (self.p_model.mean(dim=0) + 1e-6)
+        probs_x_ulb_aligned = probs_x_ulb_aligned / probs_x_ulb_aligned.sum(dim=-1, keepdim=True)
+        return probs_x_ulb_aligned
     
     @torch.no_grad()
-    def update_p(self, algorithm, ulb_probs, lb_probs):
+    def update_p(self, algorithm, probs_x_ulb, probs_x_lb):
+        # TODO: think better way?
         # check device
         if not self.p_target.is_cuda:
-            self.p_target = self.p_target.to(ulb_probs.device)
+            self.p_target = self.p_target.to(probs_x_ulb.device)
             if self.p_target_ptr is not None:
-                self.p_target_ptr = self.p_target_ptr.to(ulb_probs.device)
+                self.p_target_ptr = self.p_target_ptr.to(probs_x_ulb.device)
         
         if not self.p_model.is_cuda:
-            self.p_model = self.p_model.to(ulb_probs.device)
-            self.p_model_ptr = self.p_model_ptr.to(ulb_probs.device)
+            self.p_model = self.p_model.to(probs_x_ulb.device)
+            self.p_model_ptr = self.p_model_ptr.to(probs_x_ulb.device)
 
 
         if algorithm.distributed and algorithm.world_size > 1:
-            if lb_probs is not None:
-                lb_probs = concat_all_gather(lb_probs)
-            ulb_probs = concat_all_gather(ulb_probs)
+            if probs_x_lb is not None:
+                probs_x_lb = concat_all_gather(probs_x_lb)
+            probs_x_ulb = concat_all_gather(probs_x_ulb)
 
-        ulb_probs = ulb_probs.detach()
+        probs_x_ulb = probs_x_ulb.detach()
         p_model_ptr = int(self.p_model_ptr)
-        self.p_model[p_model_ptr] = ulb_probs.mean(dim=0)
+        self.p_model[p_model_ptr] = probs_x_ulb.mean(dim=0)
         self.p_model_ptr[0] = (p_model_ptr + 1) % self.queue_length
 
         if self.p_target_ptr is not None:
-            assert lb_probs is not None
+            assert probs_x_lb is not None
             p_target_ptr = int(self.p_target_ptr)
-            self.p_target[p_target_ptr] = lb_probs.mean(dim=0)
+            self.p_target[p_target_ptr] = probs_x_lb.mean(dim=0)
             self.p_target_ptr[0] = (p_target_ptr + 1) % self.queue_length
     
     def set_p_target(self, p_target_type='uniform', p_target=None):

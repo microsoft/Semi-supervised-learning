@@ -3,8 +3,10 @@
 
 import torch
 
+
+from .utils import AdaMatchThresholdingHook
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.hooks import PseudoLabelHook, DistAlignEMAHook
+from semilearn.algorithms.hooks import PseudoLabelingHook, DistAlignEMAHook
 from semilearn.algorithms.utils import ce_loss, consistency_loss,  SSL_Argument, str2bool
 
 
@@ -24,10 +26,11 @@ class AdaMatch(AlgorithmBase):
         # self.ulb_prob_t = torch.ones((self.args.num_classes)).cuda(self.args.gpu) / self.args.num_classes
 
     def set_hooks(self):
-        self.register_hook(PseudoLabelHook(), "PseudoLabelHook")
+        self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
         self.register_hook(
             DistAlignEMAHook(num_classes=self.num_classes, momentum=self.args.ema_p, p_target_type='model'), 
             "DistAlignHook")
+        self.register_hook(AdaMatchThresholdingHook(), "MaskingHook")
         super().set_hooks()
 
     # @torch.no_grad()
@@ -74,7 +77,7 @@ class AdaMatch(AlgorithmBase):
             probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
 
             # distribution alignment 
-            probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", ulb_probs=probs_x_ulb_w, lb_probs=probs_x_lb)
+            probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w, probs_x_lb=probs_x_lb)
 
             # # update 
             # self.update_prob_t(probs_x_lb, probs_x_ulb_w)
@@ -85,16 +88,17 @@ class AdaMatch(AlgorithmBase):
 
 
             # calculate weight
-            max_probs, _ = probs_x_lb.max(dim=-1)
-            p_cutoff = max_probs.mean() * self.p_cutoff
-            max_probs, max_idx = probs_x_ulb_w.max(dim=-1)
-            mask = max_probs.ge(p_cutoff).to(max_probs.dtype)
+            # max_probs, _ = probs_x_lb.max(dim=-1)
+            # p_cutoff = max_probs.mean() * self.p_cutoff
+            # max_probs, max_idx = probs_x_ulb_w.max(dim=-1)
+            # mask = max_probs.ge(p_cutoff).to(max_probs.dtype)
+            mask = self.call_hook("masking", "MaskingHook", logits_x_lb=probs_x_lb, logits_x_ulb=probs_x_ulb_w, softmax_x_lb=False, softmax_x_ulb=False)
 
             # max_probs, mask = self.calculate_mask(probs_x_ulb_w)
 
             # generate unlabeled targets using pseudo label hook
-            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelHook", 
-                                          logits=logits_x_ulb_w,
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                                          logits=probs_x_ulb_w,
                                           use_hard_label=self.use_hard_label,
                                           T=self.T,
                                           softmax=False)
@@ -122,8 +126,7 @@ class AdaMatch(AlgorithmBase):
         tb_dict['train/sup_loss'] = sup_loss.item()
         tb_dict['train/unsup_loss'] = unsup_loss.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/avg_w'] = mask.mean().item()
-        tb_dict['train/avg_max_prob'] = max_probs.mean().item()
+        tb_dict['train/mask_ratio'] = mask.mean().item()
         return tb_dict
 
     def get_save_dict(self):

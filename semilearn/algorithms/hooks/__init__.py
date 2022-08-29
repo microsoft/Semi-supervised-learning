@@ -1,3 +1,3 @@
-from .pseudo_label import PseudoLabelHook
-from .masking import MaskingHook
+from .pseudo_label import PseudoLabelingHook
+from .masking import MaskingHook, FixedThresholdingHook
 from .dist_align import DistAlignEMAHook, DistAlignQueueHook

@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.hooks import DistAlignQueueHook 
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, concat_all_gather
+from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
 
 
 class SimMatch_Net(nn.Module):
@@ -105,6 +105,7 @@ class SimMatch(AlgorithmBase):
         self.register_hook(
             DistAlignQueueHook(num_classes=self.num_classes, queue_length=self.args.da_len, p_target_type='uniform'), 
             "DistAlignHook")
+        self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
 
     # @torch.no_grad()
@@ -186,7 +187,7 @@ class SimMatch(AlgorithmBase):
 
                 # if self.da_len:
                 #     ema_probs_x_ulb_w = self.distribution_alignment(ema_probs_x_ulb_w)
-                ema_probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", ulb_probs=ema_probs_x_ulb_w.detach())
+                ema_probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=ema_probs_x_ulb_w.detach())
             self.ema.restore()
 
             with torch.no_grad():
@@ -212,8 +213,9 @@ class SimMatch(AlgorithmBase):
                 probs_x_ulb_w = ema_probs_x_ulb_w
 
             # compute mask
-            max_probs = torch.max(probs_x_ulb_w, dim=-1)[0]
-            mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
+            # max_probs = torch.max(probs_x_ulb_w, dim=-1)[0]
+            # mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
+            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
             unsup_loss = consistency_loss(logits_x_ulb_s,
                                           probs_x_ulb_w,
@@ -231,7 +233,7 @@ class SimMatch(AlgorithmBase):
         tb_dict['train/sup_loss'] = sup_loss.item()
         tb_dict['train/unsup_loss'] = unsup_loss.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = 1.0 - mask.float().mean().item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
         return tb_dict
     
     def get_save_dict(self):

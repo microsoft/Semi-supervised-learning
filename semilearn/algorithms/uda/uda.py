@@ -4,7 +4,7 @@
 import torch
 import math
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.hooks import PseudoLabelHook
+from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
 from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
 
 
@@ -41,7 +41,8 @@ class UDA(AlgorithmBase):
         self.tsa_schedule = tsa_schedule
 
     def set_hooks(self):
-        self.register_hook(PseudoLabelHook(), "PseudoLabelHook")
+        self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
+        self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
 
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
@@ -65,12 +66,15 @@ class UDA(AlgorithmBase):
             sup_loss = (ce_loss(logits_x_lb, y_lb, reduction='none') * sup_mask).mean()
 
             # compute mask
-            with torch.no_grad():
-                max_probs = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)[0]
-                mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
+            # with torch.no_grad():
+            #     max_probs = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)[0]
+            #     mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
+            
+            # probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
+            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
 
             # generate unlabeled targets using pseudo label hook
-            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelHook", 
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
                                           logits=logits_x_ulb_w,
                                           use_hard_label=False,
                                           T=self.T)
@@ -97,7 +101,7 @@ class UDA(AlgorithmBase):
         tb_dict['train/sup_loss'] = sup_loss.item()
         tb_dict['train/unsup_loss'] = unsup_loss.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = 1.0 - mask.float().mean().item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
 
         return tb_dict
 

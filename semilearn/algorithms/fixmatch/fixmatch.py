@@ -5,7 +5,7 @@
 
 import torch
 from semilearn.core.algorithmbase import AlgorithmBase
-from semilearn.algorithms.hooks import PseudoLabelHook
+from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
 from semilearn.algorithms.utils import ce_loss, consistency_loss,  SSL_Argument, str2bool
 
 
@@ -40,7 +40,8 @@ class FixMatch(AlgorithmBase):
         self.use_hard_label = hard_label
     
     def set_hooks(self):
-        self.register_hook(PseudoLabelHook(), "PseudoLabelHook")
+        self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
+        self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
 
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
@@ -60,20 +61,25 @@ class FixMatch(AlgorithmBase):
                     logits_x_ulb_w = self.model(x_ulb_w)
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            
+            probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
+            # if distribution alignment hook is registered, call it 
+            # this is implemented for imbalanced algorithm - CReST
+            if self.registered_hook("DistAlignHook"):
+                probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
 
-            # TODO: add moduler distribution alignment here
-
-            # TODO: convert to moduler masking method
             # compute mask
-            with torch.no_grad():
-                max_probs = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)[0]
-                mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
+            # with torch.no_grad():
+            #     max_probs = torch.max(probs_x_ulb_w)[0]
+            #     mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
+            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
             # generate unlabeled targets using pseudo label hook
-            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelHook", 
-                                          logits=logits_x_ulb_w,
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                                          logits=probs_x_ulb_w,
                                           use_hard_label=self.use_hard_label,
-                                          T=self.T)
+                                          T=self.T,
+                                          softmax=False)
 
             unsup_loss = consistency_loss(logits_x_ulb_s,
                                           pseudo_label,
@@ -88,7 +94,7 @@ class FixMatch(AlgorithmBase):
         tb_dict['train/sup_loss'] = sup_loss.item()
         tb_dict['train/unsup_loss'] = unsup_loss.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = 1.0 - mask.float().mean().item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
         return tb_dict
 
     @staticmethod

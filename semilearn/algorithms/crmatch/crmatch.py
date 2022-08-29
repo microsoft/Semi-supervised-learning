@@ -280,7 +280,7 @@ class CRMatch(AlgorithmBase):
         tb_dict['train/sup_loss'] = Lx.item()
         tb_dict['train/unsup_loss'] = Lu.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = 1.0 - mask.float().mean().item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
         return tb_dict
 
     @staticmethod

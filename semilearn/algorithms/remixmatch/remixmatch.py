@@ -115,7 +115,7 @@ class ReMixMatch(AlgorithmBase):
                 # self.update_p(prob_x_ulb)
                 # prob_x_ulb = prob_x_ulb * self.p_target / self.p_model
                 # prob_x_ulb = (prob_x_ulb / prob_x_ulb.sum(dim=-1, keepdim=True))
-                prob_x_ulb = self.call_hook("dist_align", "DistAlignHook", ulb_probs=torch.softmax(logits_x_ulb_w, dim=1))
+                prob_x_ulb = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=torch.softmax(logits_x_ulb_w, dim=1))
 
                 sharpen_prob_x_ulb = prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()

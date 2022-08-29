@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.hooks import DistAlignQueueHook 
+from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
 from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, concat_all_gather
 
 
@@ -115,6 +115,7 @@ class CoMatch(AlgorithmBase):
         self.register_hook(
             DistAlignQueueHook(num_classes=self.num_classes, queue_length=self.args.da_len, p_target_type='uniform'), 
             "DistAlignHook")
+        self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
 
     # @torch.no_grad()
@@ -188,7 +189,7 @@ class CoMatch(AlgorithmBase):
 
                 probs = torch.softmax(logits_x_ulb_w, dim=1)            
                 # distribution alignment
-                probs = self.call_hook("dist_align", "DistAlignHook", ulb_probs=probs.detach())
+                probs = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs.detach())
                 # if self.da_len:
                 #     probs = self.distribution_alignment(probs)
 
@@ -199,9 +200,10 @@ class CoMatch(AlgorithmBase):
                     A = A / A.sum(1,keepdim=True)                    
                     probs = self.smoothing_alpha * probs + (1 - self.smoothing_alpha) * torch.mm(A, self.queue_probs)    
                 
-                max_probs, _ = torch.max(probs, dim=1)
-                mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
-                    
+                # max_probs, _ = torch.max(probs, dim=1)
+                # mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
+                mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs, softmax_x_ulb=False)    
+                
                 feats_w = torch.cat([feats_x_ulb_w, feats_x_lb],dim=0)   
                 probs_w = torch.cat([probs_orig, F.one_hot(y_lb, num_classes=self.num_classes)],dim=0)
 
@@ -232,7 +234,7 @@ class CoMatch(AlgorithmBase):
         tb_dict['train/unsup_loss'] = unsup_loss.item()
         tb_dict['train/contrast_loss'] = contrast_loss.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = 1.0 - mask.float().mean().item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
         return tb_dict
 
     def get_save_dict(self):

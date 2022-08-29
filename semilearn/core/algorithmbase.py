@@ -13,7 +13,7 @@ import torch
 import torch.nn.functional as F
 from torch.cuda.amp import autocast, GradScaler
 
-from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, LoggingHook, DistSamplerSeedHook, ParamUpdateHook, EvaluationHook, EMAHook
+from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, LoggingHook, DistSamplerSeedHook, ParamUpdateHook, EvaluationHook, EMAHook, hook
 from semilearn.core.hooks.ema import EMAHook
 
 from semilearn.datasets import DistributedSampler
@@ -437,6 +437,12 @@ class AlgorithmBase:
             if hasattr(hook, fn_name):
                 getattr(hook, fn_name)(self, *args, **kwargs)
 
+    def registered_hook(self, hook_name):
+        """
+        Check if a hook is registered
+        """
+        return hook_name in self.hooks_dict
+
 
     @staticmethod
     def get_argument():
@@ -444,3 +450,14 @@ class AlgorithmBase:
         Get specificed arguments into argparse for each algorithm
         """
         return {}
+
+
+
+class ImbAlgorithmBase(AlgorithmBase):
+    def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
+        super().__init__(args, net_builder, tb_log, logger, **kwargs)
+        # imbalanced arguments
+        self.lb_imb_ratio = self.args.lb_imb_ratio
+        self.ulb_imb_ratio = self.args.ulb_imb_ratio
+        self.imb_algorithm = self.args.imb_algorithm
+

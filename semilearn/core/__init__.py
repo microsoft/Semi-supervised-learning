@@ -1,2 +1,2 @@
 
-from .algorithmbase import AlgorithmBase
+from .algorithmbase import AlgorithmBase, ImbAlgorithmBase
