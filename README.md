@@ -254,12 +254,12 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 The USB comunity is maintained by:
 
-- Yidong Wang (),
+- Yidong Wang (yidongwang37@gmail.com), Tokyo Institute of Technology
 - Hao Chen (haoc3@andrew.cmu.edu), Carnegie Mellon University
-- Yue Fan (),
-- Wenxin Hou (),
-- Ran Tao (),
-- Jindong Wang (),
+- Yue Fan (yfan@mpi-inf.mpg.de), Max Planck Institute for Informatics
+- Wenxin Hou (wenxinhou@microsoft.com), Microsoft STCA
+- Ran Tao (rant@andrew.cmu.edu), Carnegie Mellon University
+- Jindong Wang (jindwang@microsoft.com), Microsoft Research Asia
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
