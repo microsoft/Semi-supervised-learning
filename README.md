@@ -45,9 +45,9 @@
     ·
     <a href="https://github.com/microsoft/Semi-supervised-learning">Benchmark</a>
     ·
-    <a href="https://github.com/microsoft/Semi-supervised-learning">Demo</a>
+    <a href="https://colab.research.google.com/drive/1lFygK31jWyTH88ktao6Ow-5nny5-B7v5">Demo</a>
     ·
-    <a href="https://github.com/microsoft/Semi-supervised-learning">Docs</a>
+    <a href="https://usb.readthedocs.io/en/main/">Docs</a>
     ·
     <a href="https://github.com/microsoft/Semi-supervised-learning/issues">Issue</a>
   </p>
