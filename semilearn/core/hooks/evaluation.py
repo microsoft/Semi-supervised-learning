@@ -12,6 +12,7 @@ class EvaluationHook(Hook):
     
     def after_train_step(self, algorithm):
         if self.every_n_iters(algorithm, algorithm.num_eval_iter) or self.is_last_iter(algorithm):
+            algorithm.print_fn("validating...")
             eval_dict = algorithm.evaluate('eval')
             algorithm.tb_dict.update(eval_dict)
 

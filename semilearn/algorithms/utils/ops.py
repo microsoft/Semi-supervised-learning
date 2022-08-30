@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 import torch
+import numpy as np 
 
 
 def interleave_offsets(batch, nu):
@@ -39,7 +40,7 @@ def concat_all_gather(tensor):
 
 
 @torch.no_grad()
-def mixup_one_target(self, x, y, alpha=1.0, is_bias=False):
+def mixup_one_target(x, y, alpha=1.0, is_bias=False):
     """Returns mixed inputs, mixed targets, and lambda
     """
     if alpha > 0:

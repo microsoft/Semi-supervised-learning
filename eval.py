@@ -1,8 +1,12 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+
 import os
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from semilearn.utils import net_builder, get_dataset
+from semilearn.core.utils import get_net_builder, get_dataset
 
 
 if __name__ == "__main__":
@@ -46,8 +50,7 @@ if __name__ == "__main__":
     args.save_dir = save_dir
     args.save_name = ''
     
-    _net_builder = net_builder(args.net, args.net_from_name)
-    net = _net_builder(num_classes=args.num_classes)
+    net = get_net_builder(args.net, args.net_from_name)(num_classes=args.num_classes)
     keys = net.load_state_dict(load_state_dict)
     if torch.cuda.is_available():
         net.cuda()

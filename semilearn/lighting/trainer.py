@@ -8,9 +8,7 @@ import numpy as np
 from progress.bar import Bar
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-
-from semilearn.utils import get_optimizer, get_cosine_schedule_with_warmup, get_logger
-from semilearn.algorithms.utils import EMA
+from semilearn.core.utils import get_optimizer, get_cosine_schedule_with_warmup, get_logger, EMA
 
 
 

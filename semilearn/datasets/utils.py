@@ -166,69 +166,6 @@ def get_collactor(args, net):
 
 
 
-def get_data_loader(args,
-                    dset,
-                    batch_size=None,
-                    shuffle=False,
-                    num_workers=4,
-                    pin_memory=False,
-                    data_sampler='RandomSampler',
-                    num_epochs=None,
-                    num_iters=None,
-                    generator=None,
-                    drop_last=True,
-                    distributed=False):
-    """
-    get_data_loader returns torch.utils.data.DataLoader for a Dataset.
-    All arguments are comparable with those of pytorch DataLoader.
-    However, if distributed, DistributedProxySampler, which is a wrapper of data_sampler, is used.
-    
-    Args
-        num_epochs: total batch -> (# of batches in dset) * num_epochs 
-        num_iters: total batch -> num_iters
-    """
-
-    assert batch_size is not None
-    if num_epochs is None:
-        num_epochs = args.epoch
-    if num_iters is None:
-        num_iters = args.num_train_iter
-        
-    collact_fn = get_collactor(args, args.net)
-
-    if data_sampler is None:
-        return DataLoader(dset, batch_size=batch_size, shuffle=shuffle, collate_fn=collact_fn,
-                          num_workers=num_workers, drop_last=drop_last, pin_memory=pin_memory)
-
-    if isinstance(data_sampler, str):
-        data_sampler = name2sampler[data_sampler]
-
-        if distributed:
-            assert dist.is_available()
-            num_replicas = dist.get_world_size()
-            rank = dist.get_rank()
-        else:
-            num_replicas = 1
-            rank = 0
-
-        per_epoch_steps = num_iters // num_epochs
-
-        num_samples = per_epoch_steps * batch_size * num_replicas
-
-        return DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collact_fn,
-                          pin_memory=pin_memory, sampler=data_sampler(dset, num_replicas=num_replicas, rank=rank, num_samples=num_samples),
-                          generator=generator, drop_last=drop_last)
-
-    elif isinstance(data_sampler, torch.utils.data.Sampler):
-        return DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=num_workers,
-                          collate_fn=collact_fn, pin_memory=pin_memory, sampler=data_sampler,
-                          generator=generator, drop_last=drop_last)
-
-    else:
-        raise Exception(f"unknown data sampler {data_sampler}.")
-
-
-
 def get_onehot(num_classes, idx):
     onehot = np.zeros([num_classes], dtype=np.float32)
     onehot[idx] += 1.0

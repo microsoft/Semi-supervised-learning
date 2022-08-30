@@ -8,8 +8,9 @@ import torch.nn.functional as F
 from copy import deepcopy
 
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, EMA, SSL_Argument, str2bool
-from semilearn.datasets import DistributedSampler, get_data_loader
+from semilearn.core.utils import get_data_loader # EMA
+from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool
+from semilearn.datasets import DistributedSampler
 from PIL import Image
 
 

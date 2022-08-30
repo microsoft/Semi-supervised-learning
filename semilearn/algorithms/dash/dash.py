@@ -8,7 +8,8 @@ import torch
 from .utils import DashThresholdingHook
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import PseudoLabelingHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, EMA
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
+from semilearn.core.utils import EMA    
 from semilearn.datasets import DistributedSampler
 
 class Dash(AlgorithmBase):

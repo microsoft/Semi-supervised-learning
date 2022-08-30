@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 from transformers import BertModel
-
+import os
 
 class ClassificationBert(nn.Module):
     def __init__(self, name, num_classes=2):
@@ -64,6 +64,6 @@ def bert_base_cased(pretrained=True, pretrained_path=None, **kwargs):
     return model
 
 
-def bert_base_uncased(pretrained=True,pretrained_path=None, **kwargs):
+def bert_base_uncased(pretrained=True, pretrained_path=None, **kwargs):
     model = ClassificationBert(name='bert-base-uncased', **kwargs)
     return model

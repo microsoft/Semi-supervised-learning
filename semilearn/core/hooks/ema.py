@@ -3,8 +3,7 @@
 
 
 from .hook import Hook
-
-from semilearn.algorithms.utils import EMA
+from semilearn.core.utils import EMA
 
 
 class EMAHook(Hook):

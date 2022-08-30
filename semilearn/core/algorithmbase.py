@@ -13,14 +13,9 @@ import torch
 import torch.nn.functional as F
 from torch.cuda.amp import autocast, GradScaler
 
-from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, LoggingHook, DistSamplerSeedHook, ParamUpdateHook, EvaluationHook, EMAHook, hook
-from semilearn.core.hooks.ema import EMAHook
+from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, LoggingHook, DistSamplerSeedHook, ParamUpdateHook, EvaluationHook, EMAHook
+from semilearn.core.utils import get_dataset, get_data_loader, get_optimizer, get_cosine_schedule_with_warmup, Bn_Controller
 
-from semilearn.datasets import DistributedSampler
-# TODO: regroup utils
-from semilearn.algorithms.utils import Bn_Controller, EMA
-from semilearn.datasets.utils import get_data_loader
-from semilearn.utils import get_dataset, get_optimizer, get_cosine_schedule_with_warmup
 
 
 class AlgorithmBase:
@@ -146,6 +141,7 @@ class AlgorithmBase:
         loader_dict['eval'] = get_data_loader(self.args,
                                               self.dataset_dict['eval'],
                                               self.args.eval_batch_size,
+                                              # make sure data_sampler is None for evaluation
                                               data_sampler=None,
                                               num_workers=self.args.num_workers,
                                               drop_last=False)
@@ -154,6 +150,7 @@ class AlgorithmBase:
             loader_dict['test'] =  get_data_loader(self.args,
                                                    self.dataset_dict['test'],
                                                    self.args.eval_batch_size,
+                                                   # make sure data_sampler is None for evaluation
                                                    data_sampler=None,
                                                    num_workers=self.args.num_workers,
                                                    drop_last=False)

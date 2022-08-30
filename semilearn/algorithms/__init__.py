@@ -40,17 +40,20 @@ name2alg = {
     # 'mpl': MPL
 }
 
-
-# TODO: move this to core
 def get_algorithm(args, net_builder, tb_log, logger):
+
+    # if args.imb_algorithm is not None:
+    #     alg = get_imb_algorithm(args, net_builder, tb_log, logger)
+    #     return alg
+
     try:
-        model = name2alg[args.algorithm](
+        alg = name2alg[args.algorithm](
             args=args,
             net_builder=net_builder,
             tb_log=tb_log,
             logger=logger
         )
-        return model
+        return alg
     except KeyError as e:
         print(f'Unknown algorithm: {str(e)}')
 

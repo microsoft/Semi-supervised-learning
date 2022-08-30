@@ -86,8 +86,8 @@ class MixMatch(AlgorithmBase):
             logits_x = logits[0]
             logits_u = torch.cat(logits[1:], dim=0)
 
-            sup_loss = ce_loss(logits_x, mixed_y[:num_lb], use_hard_labels=False, reduction='mean')
-            unsup_loss, _ = consistency_loss(logits_u, mixed_y[num_lb:], name='mse')
+            sup_loss = ce_loss(logits_x, mixed_y[:num_lb], reduction='mean')
+            unsup_loss = consistency_loss(logits_u, mixed_y[num_lb:], name='mse')
 
             # set ramp_up for lambda_u
             unsup_warmup = float(np.clip(self.it / (self.unsup_warm_up * self.num_train_iter), 0.0, 1.0))

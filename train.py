@@ -15,10 +15,9 @@ import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from semilearn.datasets import get_data_loader
 from semilearn.algorithms import get_algorithm
-from semilearn.utils import net_builder, get_dataset, get_optimizer, get_logger, get_port, \
-                            get_cosine_schedule_with_warmup, count_parameters, over_write_args_from_file, TBLog
+from semilearn.imb_algorithms import get_imb_algorithm
+from semilearn.core.utils import get_net_builder, get_logger, get_port, count_parameters, over_write_args_from_file, TBLog
 
 
 def main(args):
@@ -112,9 +111,12 @@ def main_worker(gpu, ngpus_per_node, args):
     logger = get_logger(args.save_name, save_path, logger_level)
     logger.info(f"Use GPU: {args.gpu} for training")
 
-    _net_builder = net_builder(args.net, args.net_from_name)
+    _net_builder = get_net_builder(args.net, args.net_from_name)
     # optimizer, scheduler, datasets, dataloaders with be set in algorithms
-    model = get_algorithm(args, _net_builder, tb_log, logger)
+    if args.imb_algorithm is not None:
+        model = get_imb_algorithm(args, _net_builder, tb_log, logger)
+    else:
+        model = get_algorithm(args, _net_builder, tb_log, logger)
     logger.info(f'Number of Trainable Params: {count_parameters(model.model)}')
 
     # SET Devices for (Distributed) DataParallel
@@ -201,13 +203,13 @@ if __name__ == "__main__":
     '''
 
     parser.add_argument('--epoch', type=int, default=1)
-    parser.add_argument('--num_train_iter', type=int, default=100,
+    parser.add_argument('--num_train_iter', type=int, default=20,
                         help='total number of training iterations')
     parser.add_argument('--num_warmup_iter', type=int, default=0,
                         help='cosine linear warmup iterations')
-    parser.add_argument('--num_eval_iter', type=int, default=50,
+    parser.add_argument('--num_eval_iter', type=int, default=10,
                         help='evaluation frequency')
-    parser.add_argument('--num_log_iter', type=int, default=10,
+    parser.add_argument('--num_log_iter', type=int, default=5,
                         help='logging frequencu')
     parser.add_argument('-nl', '--num_labels', type=int, default=400)
     parser.add_argument('-bsz', '--batch_size', type=int, default=8)
@@ -239,7 +241,7 @@ if __name__ == "__main__":
     '''  
 
     ## core algorithm setting
-    parser.add_argument('-alg', '--algorithm', type=str, default='dash', help='ssl algorithm')
+    parser.add_argument('-alg', '--algorithm', type=str, default='vat', help='ssl algorithm')
     parser.add_argument('--use_cat', type=str2bool, default=False, help='use cat operation in algorithms')
     parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)

@@ -1,50 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-import math
 import os
-import time
-import random
-from xml.etree.ElementInclude import include
-
-import torch
-from torch.optim.lr_scheduler import LambdaLR
-from torch.utils.tensorboard import SummaryWriter
+import math
 import logging
-import ruamel.yaml as yaml
+import random
+import torch
+import torch.distributed as dist
+from torch.utils.data import DataLoader
+from semilearn.datasets.utils import get_collactor, name2sampler
 
 
-
-def over_write_args_from_dict(args, dict):
-    """
-    overwrite arguments acocrding to config file
-    """
-    for k in dict:
-        setattr(args, k, dict[k])
-
-
-def over_write_args_from_file(args, yml):
-    """
-    overwrite arguments acocrding to config file
-    """
-    if yml == '':
-        return
-    with open(yml, 'r', encoding='utf-8') as f:
-        dic = yaml.load(f.read(), Loader=yaml.Loader)
-        for k in dic:
-            setattr(args, k, dic[k])
-
-
-def setattr_cls_from_kwargs(cls, kwargs):
-    # if default values are in the cls,
-    # overlap the value by kwargs
-    for key in kwargs.keys():
-        if hasattr(cls, key):
-            print(f"{key} in {cls} is overlapped by kwargs: {getattr(cls, key)} -> {kwargs[key]}")
-        setattr(cls, key, kwargs[key])
-
-
-def net_builder(net_name, from_name: bool):
+def get_net_builder(net_name, from_name: bool):
     """
     built network according to network name
     return **class** of backbone network (not instance).
@@ -54,21 +21,23 @@ def net_builder(net_name, from_name: bool):
         from_name: If True, net_buidler takes models in torch.vision models. Then, net_conf is ignored.
     """
     if from_name:
-        import torchvision.models as models
-        model_name_list = sorted(name for name in models.__dict__
+        import torchvision.models as nets
+        model_name_list = sorted(name for name in nets.__dict__
                                  if name.islower() and not name.startswith("__")
-                                 and callable(models.__dict__[name]))
+                                 and callable(nets.__dict__[name]))
 
         if net_name not in model_name_list:
             assert Exception(f"[!] Networks\' Name is wrong, check net config, \
                                expected: {model_name_list}  \
                                received: {net_name}")
         else:
-            return models.__dict__[net_name]
+            return nets.__dict__[net_name]
     else:
-        import semilearn.nets as net
-        builder = getattr(net, net_name)
+        # TODO: fix bug here
+        import semilearn.nets as nets
+        builder = getattr(nets, net_name)
         return builder
+
 
 
 def get_logger(name, save_path=None, level='INFO'):
@@ -86,11 +55,6 @@ def get_logger(name, save_path=None, level='INFO'):
         logger.addHandler(fileHandler)
 
     return logger
-
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
 
 
 def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
@@ -144,6 +108,68 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
     return dataset_dict
 
 
+def get_data_loader(args,
+                    dset,
+                    batch_size=None,
+                    shuffle=False,
+                    num_workers=4,
+                    pin_memory=False,
+                    data_sampler='RandomSampler',
+                    num_epochs=None,
+                    num_iters=None,
+                    generator=None,
+                    drop_last=True,
+                    distributed=False):
+    """
+    get_data_loader returns torch.utils.data.DataLoader for a Dataset.
+    All arguments are comparable with those of pytorch DataLoader.
+    However, if distributed, DistributedProxySampler, which is a wrapper of data_sampler, is used.
+    
+    Args
+        num_epochs: total batch -> (# of batches in dset) * num_epochs 
+        num_iters: total batch -> num_iters
+    """
+
+    assert batch_size is not None
+    if num_epochs is None:
+        num_epochs = args.epoch
+    if num_iters is None:
+        num_iters = args.num_train_iter
+        
+    collact_fn = get_collactor(args, args.net)
+
+    if data_sampler is None:
+        return DataLoader(dset, batch_size=batch_size, shuffle=shuffle, collate_fn=collact_fn,
+                          num_workers=num_workers, drop_last=drop_last, pin_memory=pin_memory)
+
+    if isinstance(data_sampler, str):
+        data_sampler = name2sampler[data_sampler]
+
+        if distributed:
+            assert dist.is_available()
+            num_replicas = dist.get_world_size()
+            rank = dist.get_rank()
+        else:
+            num_replicas = 1
+            rank = 0
+
+        per_epoch_steps = num_iters // num_epochs
+
+        num_samples = per_epoch_steps * batch_size * num_replicas
+
+        return DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collact_fn,
+                          pin_memory=pin_memory, sampler=data_sampler(dset, num_replicas=num_replicas, rank=rank, num_samples=num_samples),
+                          generator=generator, drop_last=drop_last)
+
+    elif isinstance(data_sampler, torch.utils.data.Sampler):
+        return DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=num_workers,
+                          collate_fn=collact_fn, pin_memory=pin_memory, sampler=data_sampler,
+                          generator=generator, drop_last=drop_last)
+
+    else:
+        raise Exception(f"unknown data sampler {data_sampler}.")
+
+
 def get_optimizer(net, optim_name='SGD', lr=0.1, momentum=0.9, weight_decay=0, nesterov=True, bn_wd_skip=True):
     '''
     return optimizer (name) in torch.optim.
@@ -179,7 +205,7 @@ def get_cosine_schedule_with_warmup(optimizer,
     Get cosine scheduler (LambdaLR).
     if warmup is needed, set num_warmup_steps (int) > 0.
     '''
-
+    from torch.optim.lr_scheduler import LambdaLR
     def _lr_lambda(current_step):
         '''
         _lr_lambda returns a multiplicative factor given an interger parameter epochs.
@@ -209,30 +235,3 @@ def get_port():
         return tt
     else:
         return get_port()
-
-
-class TBLog:
-    """
-    Construc tensorboard writer (self.writer).
-    The tensorboard is saved at os.path.join(tb_dir, file_name).
-    """
-
-    def __init__(self, tb_dir, file_name, use_tensorboard=False):
-        self.tb_dir = tb_dir
-        self.use_tensorboard = use_tensorboard
-        if self.use_tensorboard:
-            self.writer = SummaryWriter(os.path.join(self.tb_dir, file_name))
-            
-
-    def update(self, tb_dict, it, suffix=None, mode="train"):
-        """
-        Args
-            tb_dict: contains scalar values for updating tensorboard
-            it: contains information of iteration (int).
-            suffix: If not None, the update key has the suffix.
-        """
-        if suffix is None:
-            suffix = ''
-        if self.use_tensorboard:
-            for key, value in tb_dict.items():
-                self.writer.add_scalar(suffix + key, value, it)

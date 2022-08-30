@@ -6,14 +6,12 @@ import copy
 import torch
 import numpy as np
 
-from semilearn.algorithms.utils.misc import str2bool
-
-from .pro_dist_align import ProgressiveDistAlignEMAHook
+from .utils import ProgressiveDistAlignEMAHook
 
 from semilearn.core import ImbAlgorithmBase
-from semilearn.algorithms.utils import SSL_Argument
-from semilearn.datasets.utils import get_data_loader
-from semilearn.utils import get_dataset
+from semilearn.core.utils import get_dataset, get_data_loader
+from semilearn.algorithms.utils import SSL_Argument, str2bool
+
 
 
 class CReST(ImbAlgorithmBase):
@@ -220,12 +218,11 @@ class CReST(ImbAlgorithmBase):
 
         
 
-# TODO: add register here
-def create_crest(CoreAlgorithm, *args, **kwargs):
-    class DummyClass(CReST, CoreAlgorithm):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-    return DummyClass(*args, **kwargs)
+# def create_crest(CoreAlgorithm, *args, **kwargs):
+#     class DummyClass(CReST, CoreAlgorithm):
+#         def __init__(self, *args, **kwargs):
+#             super().__init__(*args, **kwargs)
+#     return DummyClass(*args, **kwargs)
 
 # if __name__ == '__main__':
 #     from semilearn.algorithms.fixmatch import FixMatch
