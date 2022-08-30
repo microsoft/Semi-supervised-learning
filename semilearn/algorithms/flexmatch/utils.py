@@ -12,7 +12,7 @@ class FlexMatchThresholdingHook(MaskingHook):
     """
     Adaptive Thresholding in FlexMatch
     """
-    def __init__(self, ulb_dest_len, num_classes, thresh_warmup=True, *args, **kwargs) -> None:
+    def __init__(self, ulb_dest_len, num_classes, thresh_warmup=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ulb_dest_len = ulb_dest_len
         self.num_classes = num_classes

@@ -40,7 +40,7 @@ class DistAlignEMAHook(Hook):
             self.p_target = self.p_target.to(probs_x_ulb.device)
 
         if algorithm.distributed and algorithm.world_size > 1:
-            if probs_x_lb is not None:
+            if probs_x_lb is not None and self.update_p_target:
                 probs_x_lb = concat_all_gather(probs_x_lb)
             probs_x_ulb = concat_all_gather(probs_x_ulb)
 
@@ -115,7 +115,7 @@ class DistAlignQueueHook(Hook):
 
 
         if algorithm.distributed and algorithm.world_size > 1:
-            if probs_x_lb is not None:
+            if probs_x_lb is not None and self.p_target_ptr is not None:
                 probs_x_lb = concat_all_gather(probs_x_lb)
             probs_x_ulb = concat_all_gather(probs_x_ulb)
 
