@@ -2,8 +2,8 @@
 # Licensed under the MIT License.
 # Ref: https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/sampler_seed.py
 
+from torch.utils.data import DataLoader
 from .hook import Hook
-
 from semilearn.datasets import DistributedSampler
 
 class DistSamplerSeedHook(Hook):
@@ -11,7 +11,9 @@ class DistSamplerSeedHook(Hook):
         super().__init__()
     
     def before_train_epoch(self, algorithm):
-        if isinstance(algorithm.loader_dict['train_lb'].sampler, DistributedSampler):
-            algorithm.loader_dict['train_lb'].sampler.set_epoch(algorithm.epoch)
-        if isinstance(algorithm.loader_dict['train_ulb'].sampler, DistributedSampler):
-            algorithm.loader_dict['train_ulb'].sampler.set_epoch(algorithm.epoch)
+        for name, dataloader in algorithm.loader_dict.items():
+            if not isinstance(dataloader, DataLoader):
+                continue
+
+            if isinstance(dataloader.sampler, DistributedSampler):
+                algorithm.loader_dict[name].sampler.set_epoch(algorithm.epoch)

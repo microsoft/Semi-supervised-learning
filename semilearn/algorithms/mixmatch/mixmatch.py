@@ -104,23 +104,6 @@ class MixMatch(AlgorithmBase):
         tb_dict['train/total_loss'] = total_loss.item()
         return tb_dict
 
-    # TODO: move mixup to utils
-    # def mixup_one_target(self, x, y, alpha=1.0, is_bias=False):
-    #     """Returns mixed inputs, mixed targets, and lambda
-    #     """
-    #     if alpha > 0:
-    #         lam = np.random.beta(alpha, alpha)
-    #     else:
-    #         lam = 1
-    #     if is_bias:
-    #         lam = max(lam, 1 - lam)
-
-    #     index = torch.randperm(x.size(0)).to(x.device)
-
-    #     mixed_x = lam * x + (1 - lam) * x[index]
-    #     mixed_y = lam * y + (1 - lam) * y[index]
-    #     return mixed_x, mixed_y, lam
-
     @staticmethod
     def get_argument():
         return [

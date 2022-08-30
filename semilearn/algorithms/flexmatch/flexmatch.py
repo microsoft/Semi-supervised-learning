@@ -52,30 +52,10 @@ class FlexMatch(AlgorithmBase):
         self.use_hard_label = hard_label
         self.thresh_warmup = thresh_warmup
 
-        # # how to init this
-        # self.ulb_dest_len = ulb_dest_len
-        # selected_label = torch.ones((self.ulb_dest_len,), dtype=torch.long, ) * -1
-        # self.selected_label = selected_label.cuda(self.gpu)
-        # self.classwise_acc = torch.zeros((self.num_classes,)).cuda(self.gpu)
-
     def set_hooks(self):
         self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
         self.register_hook(FlexMatchThresholdingHook(ulb_dest_len=self.args.ulb_dest_len, num_classes=self.num_classes, thresh_warmup=self.args.thresh_warmup), "MaskingHook")
         super().set_hooks()
-
-    # @torch.no_grad()
-    # def update_classwise_acc(self):
-    #     pseudo_counter = Counter(self.selected_label.tolist())
-    #     if max(pseudo_counter.values()) < self.ulb_dest_len:  # not all(5w) -1
-    #         if self.thresh_warmup:
-    #             for i in range(self.num_classes):
-    #                 self.classwise_acc[i] = pseudo_counter[i] / max(pseudo_counter.values())
-    #         else:
-    #             wo_negative_one = deepcopy(pseudo_counter)
-    #             if -1 in wo_negative_one.keys():
-    #                 wo_negative_one.pop(-1)
-    #             for i in range(self.num_classes):
-    #                 self.classwise_acc[i] = pseudo_counter[i] / max(wo_negative_one.values())
 
     def train_step(self, x_lb, y_lb, idx_ulb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
@@ -96,15 +76,6 @@ class FlexMatch(AlgorithmBase):
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             # compute mask
-            # TODO: move this into masking hook
-            # with torch.no_grad():
-            #     max_probs, max_idx = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)
-            #     # mask = max_probs.ge(p_cutoff * (class_acc[max_idx] + 1.) / 2).float()  # linear
-            #     # mask = max_probs.ge(p_cutoff * (1 / (2. - class_acc[max_idx]))).float()  # low_limit
-            #     mask = max_probs.ge(self.p_cutoff * (self.classwise_acc[max_idx] / (2. - self.classwise_acc[max_idx])))  # convex
-            #     # mask = max_probs.ge(p_cutoff * (torch.log(class_acc[max_idx] + 1.) + 0.5)/(math.log(2) + 0.5)).float()  # concave
-            #     select = max_probs.ge(self.p_cutoff)
-            #     mask = mask.to(max_probs.dtype)
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w, idx_ulb=idx_ulb)
             
             # generate unlabeled targets using pseudo label hook
@@ -119,12 +90,6 @@ class FlexMatch(AlgorithmBase):
                                           mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
-
-            # this is in hook
-            # # update classwise acc
-            # if idx_ulb[select == 1].nelement() != 0:
-            #     self.selected_label[idx_ulb[select == 1]] = pseudo_label[select == 1]
-            # self.update_classwise_acc()
 
         # parameter updates
         self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)

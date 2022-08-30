@@ -69,9 +69,6 @@ class FixMatch(AlgorithmBase):
                 probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
 
             # compute mask
-            # with torch.no_grad():
-            #     max_probs = torch.max(probs_x_ulb_w)[0]
-            #     mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
             # generate unlabeled targets using pseudo label hook

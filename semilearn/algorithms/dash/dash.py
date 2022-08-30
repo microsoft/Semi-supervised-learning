@@ -45,17 +45,9 @@ class Dash(AlgorithmBase):
     
     def init(self, T, num_wu_iter=2048, num_wu_eval_iter=100):
         self.T = T 
-        # self.gamma = gamma 
-        # self.C = C
-        # self.rho_min = rho_min
         self.num_wu_iter = num_wu_iter
         self.num_wu_eval_iter = num_wu_eval_iter
-
-        # self.rho_init = None
-        # self.rho = None
-        # self.rho_update_cnt = 0
         self.use_hard_label = False
-        # self.rho = None
         self.warmup_stage = True
 
     def set_hooks(self):
@@ -162,18 +154,6 @@ class Dash(AlgorithmBase):
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
 
-        # # adjust rho every 10 epochs
-        # if self.it % (10 * self.num_iter_per_epoch) == 0:
-        #     self.rho = self.C * (self.gamma ** -self.rho_update_cnt) * self.rho_init
-        #     self.rho = max(self.rho, self.rho_min)
-        #     self.rho_update_cnt += 1
-        
-        # # use hard labels if rho reduced 0.05
-        # if self.rho == self.rho_min:
-        #     self.use_hard_label = True
-        # else:
-        #     self.use_hard_label = False
-
         # inference and calculate sup/unsup losses
         with self.amp_cm():
             if self.use_cat:
@@ -189,15 +169,6 @@ class Dash(AlgorithmBase):
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-            # compute mask
-            # with torch.no_grad():
-            #     if self.use_hard_label:
-            #         pseudo_label = torch.argmax(logits_x_ulb_w, dim=-1).detach()
-            #     else:
-            #         pseudo_label = torch.softmax(logits_x_ulb_w / self.T, dim=-1).detach()
-            #     loss_w = ce_loss(logits_x_ulb_w, pseudo_label, use_hard_labels=self.use_hard_label, reduction='none').detach()
-            #     mask = loss_w.le(self.rho).to(logits_x_ulb_s.dtype).detach()
-
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
 
             # generate unlabeled targets using pseudo label hook
@@ -211,17 +182,9 @@ class Dash(AlgorithmBase):
                                           'ce',
                                           mask=mask)
 
-            # unsup_loss, _ = consistency_loss(logits_x_ulb_s,
-            #                                  logits_x_ulb_w,
-            #                                  'ce',
-            #                                  use_hard_labels=self.use_hard_label,
-            #                                  T=self.T,
-            #                                  mask=mask)
-
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
         # parameter updates
-        # self.parameter_update(total_loss)
         self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}

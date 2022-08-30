@@ -90,16 +90,11 @@ class SimMatch(AlgorithmBase):
         self.smoothing_alpha = smoothing_alpha
         self.da_len = da_len
 
+        # TODO：move this part into a hook
         # memeory bank
         self.mem_bank = torch.randn(proj_size, K).cuda(self.gpu)
         self.mem_bank = F.normalize(self.mem_bank, dim=0)
         self.labels_bank = torch.zeros(K, dtype=torch.long).cuda(self.gpu)
-
-        # distribution alignment
-        # self.da_len = da_len
-        # if self.da_len:
-        #     self.da_queue = torch.zeros(self.da_len, self.num_classes, dtype=torch.float).cuda(self.gpu)
-        #     self.da_ptr = torch.zeros(1, dtype=torch.long).cuda(self.gpu)
 
     def set_hooks(self):
         self.register_hook(
@@ -107,36 +102,6 @@ class SimMatch(AlgorithmBase):
             "DistAlignHook")
         self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
-
-    # @torch.no_grad()
-    # def distribution_alignment(self, probs):
-    #     probs_bt_mean = probs.mean(0)
-    #     ptr = int(self.da_ptr)
-
-    #     if self.distributed:
-    #         torch.distributed.all_reduce(probs_bt_mean)
-    #         self.da_queue[ptr] = probs_bt_mean / torch.distributed.get_world_size()
-    #     else:
-    #         self.da_queue[ptr] = probs_bt_mean
-
-    #     self.da_ptr[0] = (ptr + 1) % self.da_len
-    #     probs = probs / self.da_queue.mean(0)
-    #     probs = probs / probs.sum(dim=1, keepdim=True)
-    #     return probs.detach()
-    
-    # utils
-    # @torch.no_grad()
-    # def concat_all_gather(self, tensor):
-    #     """
-    #     Performs all_gather operation on the provided tensors.
-    #     *** Warning ***: torch.distributed.all_gather has no gradient.
-    #     """
-    #     tensors_gather = [torch.ones_like(tensor)
-    #         for _ in range(torch.distributed.get_world_size())]
-    #     torch.distributed.all_gather(tensors_gather, tensor)
-
-    #     output = torch.cat(tensors_gather, dim=0)
-    #     return output
     
 
     @torch.no_grad()
@@ -185,8 +150,6 @@ class SimMatch(AlgorithmBase):
                     _, ema_feats_x_lb = self.model(x_lb)
                 ema_probs_x_ulb_w = F.softmax(ema_logits_x_ulb_w, dim=-1)
 
-                # if self.da_len:
-                #     ema_probs_x_ulb_w = self.distribution_alignment(ema_probs_x_ulb_w)
                 ema_probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=ema_probs_x_ulb_w.detach())
             self.ema.restore()
 
@@ -213,8 +176,6 @@ class SimMatch(AlgorithmBase):
                 probs_x_ulb_w = ema_probs_x_ulb_w
 
             # compute mask
-            # max_probs = torch.max(probs_x_ulb_w, dim=-1)[0]
-            # mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
             unsup_loss = consistency_loss(logits_x_ulb_s,

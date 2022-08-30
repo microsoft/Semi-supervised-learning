@@ -53,10 +53,6 @@ class PseudoLabel(AlgorithmBase):
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             # compute mask
-            # with torch.no_grad():
-            #     max_probs = torch.max(torch.softmax(logits_x_ulb.detach(), dim=-1), dim=-1)[0]
-            #     mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
-            # probs_x_ulb_w = torch.softmax(logits_x_ulb.detach(), dim=-1)
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb)
 
             # generate unlabeled targets using pseudo label hook

@@ -66,11 +66,6 @@ class UDA(AlgorithmBase):
             sup_loss = (ce_loss(logits_x_lb, y_lb, reduction='none') * sup_mask).mean()
 
             # compute mask
-            # with torch.no_grad():
-            #     max_probs = torch.max(torch.softmax(logits_x_ulb_w.detach(), dim=-1), dim=-1)[0]
-            #     mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
-            
-            # probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
 
             # generate unlabeled targets using pseudo label hook
@@ -83,14 +78,6 @@ class UDA(AlgorithmBase):
                                           pseudo_label,
                                           'ce',
                                           mask=mask)
-
-            # unsup_loss, _ = consistency_loss(
-            #                         logits_x_ulb_s,
-            #                         logits_x_ulb_w,
-            #                         'ce',
-            #                         use_hard_labels=False,
-            #                         T=self.T,
-            #                         mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 

@@ -2,8 +2,8 @@
 # Licensed under the MIT License.
 
 import argparse
-from semilearn.algorithms.utils import str2bool
 from semilearn.algorithms import name2alg
+from semilearn.algorithms.utils import str2bool
 from semilearn.core.utils import over_write_args_from_dict, get_port
 
 

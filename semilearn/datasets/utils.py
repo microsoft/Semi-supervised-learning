@@ -29,8 +29,6 @@ def split_ssl_data(args, data, targets, num_classes,
         include_lb_to_ulb: If True, labeled data is also included in unlabeld data
     """
     data, targets = np.array(data), np.array(targets)
-    # lb_data, lbs, lb_idx, = sample_labeled_data(args, data, target, num_labels, num_classes, index)
-    # ulb_idx = np.array(sorted(list(set(range(len(data))) - set(lb_idx))))  # unlabeled_data index of data
     lb_idx, ulb_idx = sample_labeled_unlabeled_data(args, data, targets, num_classes, 
                                                     lb_num_labels, ulb_num_labels,
                                                     lb_imbalance_ratio, ulb_imbalance_ratio)
@@ -46,10 +44,6 @@ def split_ssl_data(args, data, targets, num_classes,
     
     return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
-    # if include_lb_to_ulb:
-    #     return lb_data, lbs, data, target
-    # else:
-    #     return lb_data, lbs, data[ulb_idx], target[ulb_idx]
 
 def sample_labeled_data():
     pass
@@ -72,21 +66,6 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
         lb_idx = np.load(lb_dump_path)
         ulb_idx = np.load(ulb_dump_path)
         return lb_idx, ulb_idx 
-        
-    # samples_per_class = int(num_labels / num_classes)
-
-    # lb_data = []
-    # lbs = []
-    # lb_idx = []
-    # for c in range(num_classes):
-    #     idx = np.where(target == c)[0]
-    #     idx = np.random.choice(idx, samples_per_class, False)
-    #     lb_idx.extend(idx)
-
-    #     lb_data.extend(data[idx])
-    #     lbs.extend(target[idx])
-
-    # np.save(dump_path, np.array(lb_idx))
 
     
     # get samples per class

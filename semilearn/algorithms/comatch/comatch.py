@@ -99,17 +99,12 @@ class CoMatch(AlgorithmBase):
         self.smoothing_alpha = smoothing_alpha
         self.da_len = da_len
 
+        # TODO: put this part into a hook
         # memory smoothing
         self.queue_size = int(queue_batch * (self.args.uratio + 1) * self.args.batch_size)
         self.queue_feats = torch.zeros(self.queue_size, self.args.proj_size).cuda(self.gpu)
         self.queue_probs = torch.zeros(self.queue_size, self.args.num_classes).cuda(self.gpu)
         self.queue_ptr = 0
-
-        # distribution alignment
-        # self.da_len = da_len
-        # if self.da_len:
-        #     self.da_queue = torch.zeros(self.da_len, self.num_classes, dtype=torch.float).cuda(self.gpu)
-        #     self.da_ptr = torch.zeros(1, dtype=torch.long).cuda(self.gpu)
         
     def set_hooks(self):
         self.register_hook(
@@ -117,36 +112,6 @@ class CoMatch(AlgorithmBase):
             "DistAlignHook")
         self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
-
-    # @torch.no_grad()
-    # def distribution_alignment(self, probs):
-    #     probs_bt_mean = probs.mean(0)
-    #     ptr = int(self.da_ptr)
-
-    #     if self.distributed:
-    #         torch.distributed.all_reduce(probs_bt_mean)
-    #         self.da_queue[ptr] = probs_bt_mean / torch.distributed.get_world_size()
-    #     else:
-    #         self.da_queue[ptr] = probs_bt_mean
-
-    #     self.da_ptr[0] = (ptr + 1) % self.da_len
-    #     probs = probs / self.da_queue.mean(0)
-    #     probs = probs / probs.sum(dim=1, keepdim=True)
-    #     return probs.detach()
-    
-    # utils
-    # @torch.no_grad()
-    # def concat_all_gather(self, tensor):
-    #     """
-    #     Performs all_gather operation on the provided tensors.
-    #     *** Warning ***: torch.distributed.all_gather has no gradient.
-    #     """
-    #     tensors_gather = [torch.ones_like(tensor)
-    #         for _ in range(torch.distributed.get_world_size())]
-    #     torch.distributed.all_gather(tensors_gather, tensor)
-
-    #     output = torch.cat(tensors_gather, dim=0)
-    #     return output
 
     @torch.no_grad()
     def update_bank(self, feats, probs):
@@ -190,8 +155,6 @@ class CoMatch(AlgorithmBase):
                 probs = torch.softmax(logits_x_ulb_w, dim=1)            
                 # distribution alignment
                 probs = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs.detach())
-                # if self.da_len:
-                #     probs = self.distribution_alignment(probs)
 
                 probs_orig = probs.clone()
                 # memory-smoothing 
@@ -200,8 +163,6 @@ class CoMatch(AlgorithmBase):
                     A = A / A.sum(1,keepdim=True)                    
                     probs = self.smoothing_alpha * probs + (1 - self.smoothing_alpha) * torch.mm(A, self.queue_probs)    
                 
-                # max_probs, _ = torch.max(probs, dim=1)
-                # mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
                 mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs, softmax_x_ulb=False)    
                 
                 feats_w = torch.cat([feats_x_ulb_w, feats_x_lb],dim=0)   

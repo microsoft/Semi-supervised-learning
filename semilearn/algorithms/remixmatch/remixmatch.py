@@ -75,18 +75,6 @@ class ReMixMatch(AlgorithmBase):
         self.mixup_alpha = mixup_alpha
         self.mixup_manifold = mixup_manifold
 
-        # # p(y) based on the labeled examples seen during training
-        # try:
-        #     dist_file_name = r"./data_statistics/" + self.args.dataset + '_' + str(self.args.num_labels) + '.json'
-        #     with open(dist_file_name, 'r') as f:
-        #         p_target = json.loads(f.read())
-        #         p_target = torch.tensor(p_target['distribution'])
-        #         self.p_target = p_target.cuda(self.gpu)
-        #     print('p_target:', self.p_target)
-        # except:
-        #     self.p_target = torch.ones((self.num_classes, )).to(self.gpu) / self.num_classes
-        # self.p_model = None
-
     def set_hooks(self):
         lb_class_dist = [0 for _ in range(self.num_classes)]
         for c in  self.dataset_dict['train_lb'].targets:
@@ -111,12 +99,7 @@ class ReMixMatch(AlgorithmBase):
                 # logits_x_ulb_s2 = self.model(x_ulb_s2)[0]
                 self.bn_controller.unfreeze_bn(self.model)
 
-                # prob_x_ulb = torch.softmax(logits_x_ulb_w, dim=1)
-                # self.update_p(prob_x_ulb)
-                # prob_x_ulb = prob_x_ulb * self.p_target / self.p_model
-                # prob_x_ulb = (prob_x_ulb / prob_x_ulb.sum(dim=-1, keepdim=True))
                 prob_x_ulb = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=torch.softmax(logits_x_ulb_w, dim=1))
-
                 sharpen_prob_x_ulb = prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
 
@@ -175,25 +158,6 @@ class ReMixMatch(AlgorithmBase):
         tb_dict['train/total_loss'] = total_loss.item()
 
         return tb_dict
-
-    
-    # TODO: move mixup to utils
-    # @torch.no_grad()
-    # def mixup_one_target(self, x, y, alpha=1.0, is_bias=False):
-    #     """Returns mixed inputs, mixed targets, and lambda
-    #     """
-    #     if alpha > 0:
-    #         lam = np.random.beta(alpha, alpha)
-    #     else:
-    #         lam = 1
-    #     if is_bias:
-    #         lam = max(lam, 1 - lam)
-
-    #     index = torch.randperm(x.size(0)).to(x.device)
-
-    #     mixed_x = lam * x + (1 - lam) * x[index]
-    #     mixed_y = lam * y + (1 - lam) * y[index]
-    #     return mixed_x, mixed_y, lam
 
     def get_save_dict(self):
         save_dict = super().get_save_dict()
