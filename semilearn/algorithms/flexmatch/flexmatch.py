@@ -110,8 +110,8 @@ class FlexMatch(AlgorithmBase):
 
     def load_model(self, load_path):
         checkpoint = super().load_model(load_path)
-        self.hooks_dict['MaskingHook'].classwise_acc = checkpoint['selected_label'].cuda(self.gpu)
-        self.hooks_dict['MaskingHook'].selected_label = checkpoint['classwise_acc'].cuda(self.gpu)
+        self.hooks_dict['MaskingHook'].classwise_acc = checkpoint['classwise_acc'].cuda(self.gpu)
+        self.hooks_dict['MaskingHook'].selected_label = checkpoint['selected_label'].cuda(self.gpu)
         self.print_fn("additional parameter loaded")
         return checkpoint
 
