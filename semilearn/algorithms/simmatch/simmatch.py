@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, concat_all_gather
 
 
 class SimMatch_Net(nn.Module):
@@ -106,10 +106,10 @@ class SimMatch(AlgorithmBase):
 
     @torch.no_grad()
     def update_bank(self, k, labels, index):
-        if self.distributed:
-            k = self.concat_all_gather(k)
-            labels = self.concat_all_gather(labels)
-            index = self.concat_all_gather(index)
+        if self.distributed and self.world_size > 1:
+            k = concat_all_gather(k)
+            labels = concat_all_gather(labels)
+            index = concat_all_gather(index)
         if self.use_ema_teacher:
             self.mem_bank[:, index] = k.t().detach()
         else:
