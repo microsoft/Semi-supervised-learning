@@ -241,7 +241,7 @@ if __name__ == "__main__":
     '''  
 
     ## core algorithm setting
-    parser.add_argument('-alg', '--algorithm', type=str, default='crmatch', help='ssl algorithm')
+    parser.add_argument('-alg', '--algorithm', type=str, default='fixmatch', help='ssl algorithm')
     parser.add_argument('--use_cat', type=str2bool, default=False, help='use cat operation in algorithms')
     parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     '''
 
     ## standard setting configurations
-    parser.add_argument('--data_dir', type=str, default='/media/Auriga/usb_datasets/data')
+    parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('-ds', '--dataset', type=str, default='cifar10')
     parser.add_argument('-nc', '--num_classes', type=int, default=10)
     parser.add_argument('--train_sampler', type=str, default='RandomSampler')
