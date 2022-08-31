@@ -195,6 +195,7 @@ class CRMatch(AlgorithmBase):
                 self.tb_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb, x_ulb_rot=x_ulb_rot, rot_v=rot_v))
 
                 self.call_hook("after_train_step")
+                self.it += 1
 
             self.call_hook("after_train_epoch")
 
