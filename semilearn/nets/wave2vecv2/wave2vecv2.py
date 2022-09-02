@@ -47,7 +47,18 @@ class ClassificationWave2Vec(nn.Module):
         pooled_output = torch.mean(drop_hidden, 1)
         return pooled_output
 
+    def group_matcher(self, coarse=False):
+        matcher = dict(stem=r'model.feature_projection|model.feature_extractor', blocks=r'model.encoder.layers.(\d+)')
+        return matcher
+
+    def no_weight_decay(self):
+        return []
 
 def wave2vecv2_base(pretrained=False,pretrained_path=None, **kwargs):
     model = ClassificationWave2Vec(name='facebook/wav2vec2-base-960h', **kwargs)
     return model
+
+
+if __name__ == '__main__':
+    model = wave2vecv2_base()
+    print(model)

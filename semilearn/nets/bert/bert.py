@@ -54,8 +54,13 @@ class ClassificationBert(nn.Module):
         drop_hidden = self.dropout(last_hidden)
         pooled_output = torch.mean(drop_hidden, 1)
         return pooled_output
-        
 
+    def group_matcher(self, coarse=False):
+        matcher = dict(stem=r'bert.embeddings', blocks=r'bert.encoder.layer.(\d+)')
+        return matcher
+
+    def no_weight_decay(self):
+        return []
 
 
 

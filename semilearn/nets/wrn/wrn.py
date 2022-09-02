@@ -143,6 +143,17 @@ class WideResNet(nn.Module):
         out = self.relu(self.bn1(out))
         return out
 
+    def group_matcher(self, coarse=False):
+        matcher = dict(stem=r'^conv1', blocks=r'^block(\d+)' if coarse else r'^block(\d+)\.layer.(\d+)')
+        return matcher
+
+    def no_weight_decay(self):
+        nwd = []
+        for n, _ in self.named_parameters():
+            if 'bn' in n or 'bias' in n:
+                nwd.append(n)
+        return nwd
+
 
 def wrn_28_2(pretrained=False, pretrained_path=None, **kwargs):
     model = WideResNet(first_stride=1, depth=28, widen_factor=2, **kwargs)

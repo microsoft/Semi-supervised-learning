@@ -25,7 +25,7 @@ class TimerHook(Hook):
     def after_train_step(self, algorithm):
         algorithm.end_run.record()
         torch.cuda.synchronize()
-        algorithm.tb_dict['lr'] = algorithm.optimizer.param_groups[0]['lr']
+        algorithm.tb_dict['lr'] = algorithm.optimizer.param_groups[-1]['lr']
         algorithm.tb_dict['train/prefecth_time'] = algorithm.start_batch.elapsed_time(algorithm.end_batch) / 1000.
         algorithm.tb_dict['train/run_time'] = algorithm.start_run.elapsed_time(algorithm.end_run) / 1000.
         algorithm.start_batch.record()

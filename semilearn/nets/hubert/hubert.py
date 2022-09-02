@@ -48,7 +48,19 @@ class ClassificationHubert(nn.Module):
         pooled_output = torch.mean(drop_hidden, 1)
         return pooled_output
 
+    def group_matcher(self, coarse=False):
+        matcher = dict(stem=r'model.feature_projection|model.feature_extractor|model.encoder.pos_conv_embed', blocks=r'model.encoder.layers.(\d+)')
+        return matcher
+
+    def no_weight_decay(self):
+        return []
+
 
 def hubert_base(pretrained=False, pretrained_path=None, **kwargs):
     model = ClassificationHubert(name='facebook/hubert-base-ls960', **kwargs)
     return model
+
+
+if __name__ == '__main__':
+    model = hubert_base()
+    print(model)

@@ -9,7 +9,7 @@ import torch
 import torch.distributed as dist
 from torch.utils.data import DataLoader
 from semilearn.datasets.utils import get_collactor, name2sampler
-
+from semilearn.nets.utils import param_groups_layer_decay, param_groups_weight_decay
 
 def get_net_builder(net_name, from_name: bool):
     """
@@ -170,29 +170,42 @@ def get_data_loader(args,
         raise Exception(f"unknown data sampler {data_sampler}.")
 
 
-def get_optimizer(net, optim_name='SGD', lr=0.1, momentum=0.9, weight_decay=0, nesterov=True, bn_wd_skip=True):
+def get_optimizer(net, optim_name='SGD', lr=0.1, momentum=0.9, weight_decay=0, layer_decay=1.0, nesterov=True, bn_wd_skip=True):
     '''
     return optimizer (name) in torch.optim.
     If bn_wd_skip, the optimizer does not apply
     weight decay regularization on parameters in batch normalization.
     '''
+    assert layer_decay <= 1.0
 
-    decay = []
-    no_decay = []
-    for name, param in net.named_parameters():
-        if ('bn' in name or 'bias' in name) and bn_wd_skip:
-            no_decay.append(param)
-        else:
-            decay.append(param)
+    no_decay = {}
+    if hasattr(net, 'no_weight_decay') and bn_wd_skip:
+        no_decay = net.no_weight_decay()
+    
+    if layer_decay != 1.0:
+        per_param_args = param_groups_layer_decay(net, lr, weight_decay, no_weight_decay_list=no_decay, layer_decay=layer_decay)
+    else:
+        per_param_args = param_groups_weight_decay(net, weight_decay, no_weight_decay_list=no_decay)
 
-    per_param_args = [{'params': decay},
-                      {'params': no_decay, 'weight_decay': 0.0}]
+    # decay = []
+    # no_decay = []
+    # for name, param in net.named_parameters():
+    #     if ('bn' in name or 'bias' in name) and bn_wd_skip:
+    #         no_decay.append(param)
+    #     else:
+    #         decay.append(param)
+
+    # per_param_args = [{'params': decay},
+    #                   {'params': no_decay, 'weight_decay': 0.0}]
+
+    print(per_param_args)
 
     if optim_name == 'SGD':
         optimizer = torch.optim.SGD(per_param_args, lr=lr, momentum=momentum, weight_decay=weight_decay,
                                     nesterov=nesterov)
     elif optim_name == 'AdamW':
         optimizer = torch.optim.AdamW(per_param_args, lr=lr, weight_decay=weight_decay)
+
     return optimizer
 
 

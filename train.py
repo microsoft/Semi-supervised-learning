@@ -194,7 +194,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_dir', type=str, default='./saved_models')
     parser.add_argument('-sn', '--save_name', type=str, default='fixmatch')
     parser.add_argument('--resume', action='store_true')
-    parser.add_argument('--load_path', type=str, default=None)
+    parser.add_argument('--load_path', type=str)
     parser.add_argument('-o', '--overwrite', action='store_true', default=True)
     parser.add_argument('--use_tensorboard', action='store_true', help='Use tensorboard to plot and save curves, otherwise save the curves locally.')
 
@@ -227,11 +227,12 @@ if __name__ == "__main__":
     parser.add_argument('--lr', type=float, default=3e-2)
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--weight_decay', type=float, default=5e-4)
+    parser.add_argument('--layer_decay', type=float, default=0.75, help='layer-wise learning rate decay, default to 1.0 which means no layer decay')
 
     '''
     Backbone Net Configurations
     '''
-    parser.add_argument('--net', type=str, default='wrn_28_2')
+    parser.add_argument('--net', type=str, default='bert_base_uncased')
     parser.add_argument('--net_from_name', type=str2bool, default=False)
     parser.add_argument('--use_pretrain', default=False, type=str2bool)
     parser.add_argument('--pretrain_path', default='', type=str)
@@ -254,7 +255,7 @@ if __name__ == "__main__":
     '''
 
     ## standard setting configurations
-    parser.add_argument('--data_dir', type=str, default='./data')
+    parser.add_argument('--data_dir', type=str, default='/media/Auriga/usb_datasets/data')
     parser.add_argument('-ds', '--dataset', type=str, default='cifar10')
     parser.add_argument('-nc', '--num_classes', type=int, default=10)
     parser.add_argument('--train_sampler', type=str, default='RandomSampler')

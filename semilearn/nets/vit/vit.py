@@ -228,6 +228,14 @@ class VisionTransformer(nn.Module):
         output = self.head(x)
         return output
 
+    def no_weight_decay(self):
+        return {'pos_embed', 'cls_token'}
+    
+    def group_matcher(self, coarse=False):
+        return dict(
+            stem=r'^cls_token|pos_embed|patch_embed',  # stem and embed
+            blocks=[(r'^blocks\.(\d+)', None), (r'^norm', (99999,))]
+        )
 
 def vit_tiny_patch2_32(pretrained=False, pretrained_path=None, **kwargs):
     """ ViT-Tiny (Vit-Ti/2)

@@ -159,7 +159,7 @@ class AlgorithmBase:
 
     def set_optimizer(self):
         self.print_fn("Create optimizer and scheduler")
-        optimizer = get_optimizer(self.model, self.args.optim, self.args.lr, self.args.momentum, self.args.weight_decay)
+        optimizer = get_optimizer(self.model, self.args.optim, self.args.lr, self.args.momentum, self.args.weight_decay, self.args.layer_decay)
         scheduler = get_cosine_schedule_with_warmup(optimizer,
                                                     self.num_train_iter,
                                                     num_warmup_steps=self.args.num_warmup_iter)
