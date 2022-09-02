@@ -80,6 +80,8 @@
 
 ## News and Updates
 
+- [09/02/2022] We are working on optimizing codes. We will share the logs and model checkpoints as we did in TorchSSL.
+
 - [08/21/2022] USB has been released!
 
 <!-- Introduction -->
