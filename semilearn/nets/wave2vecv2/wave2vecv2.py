@@ -37,7 +37,8 @@ class ClassificationWave2Vec(nn.Module):
             return pooled_output
 
         logits = self.classifier(pooled_output)
-        return logits
+        result_dict = {'logits':logits, 'feat':pooled_output}
+        return result_dict
 
     def extract(self, x):
         out_dict = self.model(x, output_hidden_states=True, return_dict=True)

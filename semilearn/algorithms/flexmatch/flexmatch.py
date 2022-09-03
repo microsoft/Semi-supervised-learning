@@ -64,14 +64,17 @@ class FlexMatch(AlgorithmBase):
         with self.amp_cm():
             if self.use_cat:
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
-                logits = self.model(inputs)
-                logits_x_lb = logits[:num_lb]
-                logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:].chunk(2)
+                outputs = self.model(inputs)
+                logits_x_lb = outputs['logits'][:num_lb]
+                logits_x_ulb_w, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(2)
             else:
-                logits_x_lb = self.model(x_lb)
-                logits_x_ulb_s = self.model(x_ulb_s)
+                outs_x_lb = self.model(x_lb) 
+                logits_x_lb = outs_x_lb['logits']
+                outs_x_ulb_s = self.model(x_ulb_s)
+                logits_x_ulb_s = outs_x_ulb_s['logits']
                 with torch.no_grad():
-                    logits_x_ulb_w = self.model(x_ulb_w)
+                    outs_x_ulb_w = self.model(x_ulb_w)
+                    logits_x_ulb_w = outs_x_ulb_w['logits']
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 

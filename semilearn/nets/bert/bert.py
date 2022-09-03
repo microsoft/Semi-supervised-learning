@@ -39,13 +39,12 @@ class ClassificationBert(nn.Module):
         if only_feat:
             return pooled_output
         
-        logits = self.classifier(pooled_output)
+        result_dict = {'logits':logits, 'feat':pooled_output}
 
         if return_embed:
-            embed = out_dict['hidden_states'][0]
-            return embed, logits
-        else:
-            return logits
+            result_dict['embed'] = out_dict['hidden_states'][0]
+            
+        return result_dict
         
         
     def extract(self, x):

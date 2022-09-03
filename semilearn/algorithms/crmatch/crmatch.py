@@ -100,13 +100,15 @@ class CRMatch_Net(nn.Module):
         else:
             raise NotImplementedError
         logits = self.backbone(feat_maps, only_fc=True)
+        results_dict = {'logits':logits, 'logits_ds':logits_ds, 'feat':feat_maps}
         # feat_flat = torch.mean(feat_maps, dim=(2, 3))
         # logits = self.backbone(feat_flat, only_fc=True)
         if self.use_rot:
             logits_rot = self.rot_classifier(feat_maps)
+            results_dict['logits_rot'] = logits_rot
         else:
-            logits_rot = None
-        return logits, logits_rot, logits_ds
+            results_dict['logits_rot'] = None
+        return results_dict
 
 
 class CRMatch(AlgorithmBase):
@@ -133,10 +135,6 @@ class CRMatch(AlgorithmBase):
         super().__init__(args, net_builder,  tb_log, logger)
         # crmatch specificed arguments
         self.init(p_cutoff=args.p_cutoff, hard_label=args.hard_label)
-        self.model_backbone = self.model
-        self.model = CRMatch_Net(self.model_backbone, args, use_rot=self.use_rot)
-        self.ema_model = CRMatch_Net(self.ema_model, args, use_rot=self.use_rot)
-        self.ema_model.load_state_dict(self.model.state_dict())
         
 
     def init(self, p_cutoff, hard_label=True):
@@ -159,6 +157,18 @@ class CRMatch(AlgorithmBase):
                                                            distributed=self.distributed)
             loader_dict['train_ulb_rot_iter'] = iter(loader_dict['train_ulb_rot'])
         return loader_dict
+
+    def set_model(self):
+        model = super().set_model()
+        model = CRMatch_Net(model, self.args, use_rot=self.use_rot)
+        return model
+    
+    def set_ema_model(self):
+        ema_model = self.net_builder(num_classes=self.num_classes)
+        ema_model = CRMatch_Net(ema_model, self.args, use_rot=self.use_rot)
+        ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
+        return ema_model
+
 
     def train(self):
         self.model.train()
@@ -213,15 +223,22 @@ class CRMatch(AlgorithmBase):
                     inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s, x_ulb_rot), dim=0).contiguous()
                 else:
                     inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s), dim=0).contiguous()
-                logits, logits_rot, logits_ds = self.model(inputs)
+                outputs = self.model(inputs)
+                logits, logits_rot, logits_ds = outputs['logits'], outputs['logits_rot'], outputs['logits_ds']
                 logits_x_lb = logits[:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:num_lb + 2 * num_ulb].chunk(2)
                 logits_ds_w, logits_ds_s = logits_ds[num_lb:num_lb + 2 * num_ulb].chunk(2)
             else:
-                logits_x_lb, _, _ = self.model(x_lb)
-                logits_x_ulb_s, _, logits_ds_s = self.model(x_ulb_s)
+                outs_x_lb = self.model(x_lb)
+                logits_x_lb = outs_x_lb['logits']
+                # logits_x_lb, _, _ = self.model(x_lb)
+                
+                outs_x_ulb_s = self.model(x_ulb_s)
+                logits_x_ulb_s,logits_ds_s = outs_x_ulb_s['logits'], outs_x_ulb_s['logits_ds']
+                # logits_x_ulb_s, _, logits_ds_s = self.model(x_ulb_s)
                 with torch.no_grad():
-                    logits_x_ulb_w, _, logits_ds_w = self.model(x_ulb_w)
+                    outs_x_ulb_w = self.model(x_ulb_w)
+                    logits_x_ulb_w, logits_ds_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds']
                
 
             with torch.no_grad():
@@ -240,7 +257,7 @@ class CRMatch(AlgorithmBase):
                 if self.use_cat:
                     logits_rot = logits_rot[num_lb + 2 * num_ulb:]
                 else:
-                    _, logits_rot, _ = self.model(x_ulb_rot)
+                    logits_rot = self.model(x_ulb_rot)['logits_rot']
                 Lrot = ce_loss(logits_rot, rot_v, reduction='mean')
                 total_loss += Lrot
 
@@ -253,6 +270,7 @@ class CRMatch(AlgorithmBase):
         tb_dict['train/total_loss'] = total_loss.item()
         tb_dict['train/mask_ratio'] = mask.float().mean().item()
         return tb_dict
+
 
     @staticmethod
     def get_argument():

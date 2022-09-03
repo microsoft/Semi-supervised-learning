@@ -48,8 +48,12 @@ class MixMatch(AlgorithmBase):
         with self.amp_cm():
             with torch.no_grad():
                 self.bn_controller.freeze_bn(self.model)
-                logits_x_ulb_w1 = self.model(x_ulb_w)
-                logits_x_ulb_w2 = self.model(x_ulb_s)
+                outs_x_ulb_w1 = self.model(x_ulb_w)
+                logits_x_ulb_w1 = outs_x_ulb_w1['logits']
+                # logits_x_ulb_w1 = self.model(x_ulb_w)
+                outs_x_ulb_w2 = self.model(x_ulb_s)
+                logits_x_ulb_w2 = outs_x_ulb_w2['logits']
+                # logits_x_ulb_w2 = self.model(x_ulb_s)
                 self.bn_controller.unfreeze_bn(self.model)
                 
                 # avg
@@ -58,13 +62,15 @@ class MixMatch(AlgorithmBase):
                 # sharpening
                 sharpen_prob_x_ulb = avg_prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
+            
+            outs_x_lb = self.model(x_lb)
 
             # with torch.no_grad():
             # Pseudo Label
             input_labels = torch.cat([F.one_hot(y_lb, self.num_classes), sharpen_prob_x_ulb, sharpen_prob_x_ulb], dim=0)
             # Mix up
             if self.mixup_manifold:
-                inputs = torch.cat((self.model(x_lb, only_feat=True), self.model(x_ulb_w, only_feat=True), self.model(x_ulb_s, only_feat=True)))
+                inputs = torch.cat((outs_x_lb['feat'], outs_x_ulb_w1['feat'], outs_x_ulb_w2['feat']))
             else:
                 inputs = torch.cat([x_lb, x_ulb_w, x_ulb_s])
             mixed_x, mixed_y, _ = mixup_one_target(inputs, input_labels,
@@ -73,12 +79,20 @@ class MixMatch(AlgorithmBase):
             mixed_x = list(torch.split(mixed_x, num_lb))
             mixed_x = interleave(mixed_x, num_lb)
 
-            logits = [self.model(mixed_x[0], only_fc=self.mixup_manifold)]
-            # calculate BN for only the first batch
-            self.bn_controller.freeze_bn(self.model)
-            for ipt in mixed_x[1:]:
-                logits.append(self.model(ipt, only_fc=self.mixup_manifold))
-            self.bn_controller.unfreeze_bn(self.model)
+            if self.mixup_manifold:
+                logits = [self.model(mixed_x[0], only_fc=self.mixup_manifold)]
+                # calculate BN for only the first batch
+                self.bn_controller.freeze_bn(self.model)
+                for ipt in mixed_x[1:]:
+                    logits.append(self.model(ipt, only_fc=self.mixup_manifold))
+                self.bn_controller.unfreeze_bn(self.model)
+            else:
+                logits = [self.model(mixed_x[0])['logits']]
+                # calculate BN for only the first batch
+                self.bn_controller.freeze_bn(self.model)
+                for ipt in mixed_x[1:]:
+                    logits.append(self.model(ipt)['logits'])
+                self.bn_controller.unfreeze_bn(self.model)
 
             # put interleaved samples back
             logits = interleave(logits, num_lb)
@@ -103,6 +117,7 @@ class MixMatch(AlgorithmBase):
         tb_dict['train/unsup_loss'] = unsup_loss.item()
         tb_dict['train/total_loss'] = total_loss.item()
         return tb_dict
+
 
     @staticmethod
     def get_argument():

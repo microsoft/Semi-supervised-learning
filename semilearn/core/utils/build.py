@@ -187,19 +187,6 @@ def get_optimizer(net, optim_name='SGD', lr=0.1, momentum=0.9, weight_decay=0, l
     else:
         per_param_args = param_groups_weight_decay(net, weight_decay, no_weight_decay_list=no_decay)
 
-    # decay = []
-    # no_decay = []
-    # for name, param in net.named_parameters():
-    #     if ('bn' in name or 'bias' in name) and bn_wd_skip:
-    #         no_decay.append(param)
-    #     else:
-    #         decay.append(param)
-
-    # per_param_args = [{'params': decay},
-    #                   {'params': no_decay, 'weight_decay': 0.0}]
-
-    # print(per_param_args)
-
     if optim_name == 'SGD':
         optimizer = torch.optim.SGD(per_param_args, lr=lr, momentum=momentum, weight_decay=weight_decay,
                                     nesterov=nesterov)

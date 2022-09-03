@@ -41,21 +41,22 @@ class VAT(AlgorithmBase):
         self.vat_eps = vat_eps
         self.vat_embed = vat_embed
 
-
     def train_step(self, x_lb, y_lb, x_ulb_w):
 
         with self.amp_cm():
-            logits_x_lb = self.model(x_lb)
+            logits_x_lb = self.model(x_lb)['logits']
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             if self.vat_embed:
                 self.bn_controller.freeze_bn(self.model)
+                outs_x_ulb_w = self.model(x_ulb_w, return_embed=True)
+                ul_x_embed, ul_y = outs_x_ulb_w['embed'], outs_x_ulb_w['logits']
                 ul_x_embed, ul_y = self.model(x_ulb_w, return_embed=True)
                 unsup_loss = self.vat_loss(self.model, x_ulb_w, ul_y, eps=self.vat_eps, ul_x_embed=ul_x_embed, vat_embed=True)
                 self.bn_controller.unfreeze_bn(self.model)
             else:
                 self.bn_controller.freeze_bn(self.model)
-                ul_y = self.model(x_ulb_w)
+                ul_y = self.model(x_ulb_w)['logits']
                 unsup_loss = self.vat_loss(self.model, x_ulb_w, ul_y, eps=self.vat_eps)
                 self.bn_controller.unfreeze_bn(self.model)
 
@@ -88,9 +89,9 @@ class VAT(AlgorithmBase):
 
             if vat_embed:
                 y_hat = model({'attention_mask': ul_x['attention_mask'],
-                               'inputs_embeds': ul_x_embed.detach() + d})
+                               'inputs_embeds': ul_x_embed.detach() + d})['embed']
             else:
-                y_hat = model(ul_x + d)
+                y_hat = model(ul_x + d)['logits']
 
             delta_kl = self.kl_div_with_logit(ul_y.detach(), y_hat)
             delta_kl.backward()
@@ -105,9 +106,9 @@ class VAT(AlgorithmBase):
 
         if vat_embed:
             y_hat = model({'attention_mask': ul_x['attention_mask'],
-                           'inputs_embeds': ul_x_embed + r_adv.detach()})
+                           'inputs_embeds': ul_x_embed + r_adv.detach()})['embed']
         else:
-            y_hat = model(ul_x + r_adv.detach())
+            y_hat = model(ul_x + r_adv.detach())['logits']
 
         delta_kl = self.kl_div_with_logit(ul_y.detach(), y_hat)
         return delta_kl

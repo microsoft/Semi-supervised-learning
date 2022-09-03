@@ -226,7 +226,8 @@ class VisionTransformer(nn.Module):
             return x
 
         output = self.head(x)
-        return output
+        result_dict = {'logits':output, 'feat':x}
+        return result_dict
 
     def no_weight_decay(self):
         return {'pos_embed', 'cls_token'}

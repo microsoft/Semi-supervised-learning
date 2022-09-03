@@ -27,7 +27,7 @@ class FullySupervised(AlgorithmBase):
         # inference and calculate sup/unsup losses
         with self.amp_cm():
 
-            logits_x_lb = self.model(x_lb)
+            logits_x_lb = self.model(x_lb)['logits']
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 

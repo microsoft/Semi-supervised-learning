@@ -34,11 +34,14 @@ class PiModel(AlgorithmBase):
         # inference and calculate sup/unsup losses
         with self.amp_cm():
 
-            logits_x_lb = self.model(x_lb)
+            outs_x_lb = self.model(x_lb)
+            logits_x_lb = outs_x_lb['logits']
             # calculate BN only for the first batch
             self.bn_controller.freeze_bn(self.model)
-            logits_x_ulb_w = self.model(x_ulb_w)
-            logits_x_ulb_s = self.model(x_ulb_s)
+            outs_x_ulb_w = self.model(x_ulb_w)
+            logits_x_ulb_w = outs_x_ulb_w['logits']
+            outs_x_ulb_s = self.model(x_ulb_s)
+            logits_x_ulb_s = outs_x_ulb_s['logits']
             self.bn_controller.unfreeze_bn(self.model)
 
 

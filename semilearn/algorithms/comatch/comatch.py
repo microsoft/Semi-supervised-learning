@@ -31,7 +31,7 @@ class CoMatch_Net(nn.Module):
         feat = self.backbone(x, only_feat=True)
         logits = self.backbone(feat, only_fc=True)
         feat_proj = self.l2norm(self.mlp_proj(feat))
-        return logits, feat_proj 
+        return {'logits':logits, 'feat':feat_proj}
 
 
 def comatch_contrastive_loss(feats_x_ulb_s_0, feats_x_ulb_s_1, Q, T=0.2):
@@ -82,13 +82,6 @@ class CoMatch(AlgorithmBase):
                   contrast_p_cutoff=args.contrast_p_cutoff, hard_label=args.hard_label, 
                   queue_batch=args.queue_batch, smoothing_alpha=args.smoothing_alpha, da_len=args.da_len)
         self.lambda_c = args.contrast_loss_ratio
-        
-        # TODO put this part into a rewrite set_model
-        # warp model
-        backbone = self.model
-        self.model = CoMatch_Net(backbone, proj_size=self.args.proj_size)
-        self.ema_model = CoMatch_Net(self.ema_model, proj_size=self.args.proj_size)
-        self.ema_model.load_state_dict(self.model.state_dict())
 
     def init(self, T, p_cutoff, contrast_p_cutoff, hard_label=True, queue_batch=128, smoothing_alpha=0.999, da_len=256):
         self.T = T 
@@ -113,6 +106,18 @@ class CoMatch(AlgorithmBase):
         self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
 
+    def set_model(self):
+        model = super().set_model()
+        model = CoMatch_Net(model, proj_size=self.args.proj_size)
+        return model
+    
+    def set_ema_model(self):
+        ema_model = self.net_builder(num_classes=self.num_classes)
+        ema_model = CoMatch_Net(ema_model, proj_size=self.args.proj_size)
+        ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
+        return ema_model
+
+
     @torch.no_grad()
     def update_bank(self, feats, probs):
         if self.distributed and self.world_size > 1:
@@ -132,16 +137,21 @@ class CoMatch(AlgorithmBase):
         with self.amp_cm():
             if self.use_cat:
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s_0, x_ulb_s_1))
-                logits, feats = self.model(inputs)
+                outputs = self.model(inputs)
+                logits, feats = outputs['logits'], outputs['feat']
                 logits_x_lb, feats_x_lb = logits[:num_lb], feats[:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s_0, _ = logits[num_lb:].chunk(3)
                 feats_x_ulb_w, feats_x_ulb_s_0, feats_x_ulb_s_1 = feats[num_lb:].chunk(3)
-            else:            
-                logits_x_lb, feats_x_lb = self.model(x_lb)
-                logits_x_ulb_s_0, feats_x_ulb_s_0 = self.model(x_ulb_s_0)
-                _, feats_x_ulb_s_1 = self.model(x_ulb_s_1)
+            else:       
+                outs_x_lb = self.model(x_lb)     
+                logits_x_lb, feats_x_lb = outs_x_lb['logits'], outs_x_lb['feat']
+                outs_x_ulb_s_0 = self.model(x_ulb_s_0)
+                logits_x_ulb_s_0, feats_x_ulb_s_0 = outs_x_ulb_s_0['logits'], outs_x_ulb_s_0['feat']
+                outs_x_ulb_s_1 = self.model(x_ulb_s_1)
+                feats_x_ulb_s_1 = outs_x_ulb_s_1['feat']
                 with torch.no_grad():
-                    logits_x_ulb_w, feats_x_ulb_w = self.model(x_ulb_w)
+                    outs_x_ulb_w = self.model(x_ulb_w)
+                    logits_x_ulb_w, feats_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['feat']
 
             # supervised loss
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')

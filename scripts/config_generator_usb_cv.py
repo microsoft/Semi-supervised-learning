@@ -302,6 +302,9 @@ def exp_usb_cv(label_amount):
                     net = 'vit_tiny_patch2_32'
                     pretrain_name = 'vit_tiny_patch2_32_mlp_im_1k_32.pth'
 
+                    lr = 5e-4
+                    layer_decay = 0.5 
+
                 elif dataset == 'cifar100':
                     num_classes = 100
                     num_labels = label_amount[1] * num_classes

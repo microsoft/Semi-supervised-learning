@@ -30,7 +30,7 @@ class SimMatch_Net(nn.Module):
         feat = self.backbone(x, only_feat=True)
         logits = self.backbone(feat, only_fc=True)
         feat_proj = self.l2norm(self.mlp_proj(feat))
-        return logits, feat_proj 
+        return {'logits':logits, 'feat':feat_proj}
 
 
 
@@ -72,14 +72,8 @@ class SimMatch(AlgorithmBase):
             self.use_ema_teacher = False
             self.ema_bank = 0.7
         args.K = args.lb_dest_len
-        self.init(T=args.T, p_cutoff=args.p_cutoff, proj_size=args.proj_size, K=args.K, smoothing_alpha=args.smoothing_alpha, da_len=args.da_len)
         self.lambda_in = args.in_loss_ratio
-    
-        # warp model
-        backbone = self.model
-        self.model = SimMatch_Net(backbone, proj_size=self.args.proj_size)
-        self.ema_model = SimMatch_Net(self.ema_model, proj_size=self.args.proj_size)
-        self.ema_model.load_state_dict(self.model.state_dict())
+        self.init(T=args.T, p_cutoff=args.p_cutoff, proj_size=args.proj_size, K=args.K, smoothing_alpha=args.smoothing_alpha, da_len=args.da_len)
     
 
     def init(self, T, p_cutoff, proj_size, K, smoothing_alpha, da_len=0):
@@ -102,7 +96,18 @@ class SimMatch(AlgorithmBase):
             "DistAlignHook")
         self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
+
+    def set_model(self): 
+        model = super().set_model()
+        model = SimMatch_Net(model, proj_size=self.args.proj_size)
+        return model
     
+    def set_ema_model(self):
+        ema_model = self.net_builder(num_classes=self.num_classes)
+        ema_model = SimMatch_Net(ema_model, proj_size=self.args.proj_size)
+        ema_model.load_state_dict(self.model.state_dict())
+        return ema_model    
+
 
     @torch.no_grad()
     def update_bank(self, k, labels, index):
@@ -116,7 +121,6 @@ class SimMatch(AlgorithmBase):
             self.mem_bank[:, index] = F.normalize(self.ema_bank * self.mem_bank[:, index] + (1 - self.ema_bank) * k.t().detach())
         self.labels_bank[index] = labels.detach()
     
-
     def train_step(self, idx_lb, x_lb, y_lb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
         num_ulb = len(x_ulb_w['input_ids']) if isinstance(x_ulb_w, dict) else x_ulb_w.shape[0]
@@ -132,14 +136,24 @@ class SimMatch(AlgorithmBase):
                 # logits_x_lb, ema_feats_x_lb = logits[:num_lb], feats[:num_lb]
                 # logits_x_ulb_s, feats_x_ulb_s = logits[num_lb:], feats[num_lb:]
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
-                logits, feats = self.model(inputs)
+                outputs = self.model(inputs)
+                logits, feats = outputs['logits'], outputs['feats']
+                # logits, feats = self.model(inputs)
                 logits_x_lb, ema_feats_x_lb = logits[:num_lb], feats[:num_lb]
                 ema_logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:].chunk(2)
                 ema_feats_x_ulb_w, feats_x_ulb_s = feats[num_lb:].chunk(2)
             else:
-                logits_x_lb, ema_feats_x_lb = self.model(x_lb)
-                ema_logits_x_ulb_w, ema_feats_x_ulb_w = self.model(x_ulb_w)
-                logits_x_ulb_s, feats_x_ulb_s = self.model(x_ulb_s)
+                outs_x_lb = self.model(x_lb)
+                logits_x_lb, ema_feats_x_lb  = outs_x_lb['logits'], outs_x_lb['feat']
+                # logits_x_lb, ema_feats_x_lb = self.model(x_lb)
+
+                outs_x_ulb_w = self.model(x_ulb_w)
+                ema_logits_x_ulb_w, ema_feats_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['feat']
+                # ema_logits_x_ulb_w, ema_feats_x_ulb_w = self.model(x_ulb_w)
+
+                outs_x_ulb_s = self.model(x_ulb_s)
+                logits_x_ulb_s, feats_x_ulb_s = outs_x_ulb_s['logits'], outs_x_ulb_s['feat']
+                # logits_x_ulb_s, feats_x_ulb_s = self.model(x_ulb_s)
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
@@ -147,9 +161,8 @@ class SimMatch(AlgorithmBase):
             with torch.no_grad():
                 # ema teacher model
                 if self.use_ema_teacher:
-                    _, ema_feats_x_lb = self.model(x_lb)
+                    ema_feats_x_lb = self.model(x_lb)['feat']
                 ema_probs_x_ulb_w = F.softmax(ema_logits_x_ulb_w, dim=-1)
-
                 ema_probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=ema_probs_x_ulb_w.detach())
             self.ema.restore()
 

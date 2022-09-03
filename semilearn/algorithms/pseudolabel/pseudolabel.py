@@ -44,10 +44,12 @@ class PseudoLabel(AlgorithmBase):
         # inference and calculate sup/unsup losses
         with self.amp_cm():
 
-            logits_x_lb = self.model(x_lb)
+            outs_x_lb = self.model(x_lb)
+            logits_x_lb = outs_x_lb['logits']
             # calculate BN only for the first batch
             self.bn_controller.freeze_bn(self.model)
-            logits_x_ulb = self.model(x_ulb_w)
+            outs_x_ulb = self.model(x_ulb_w)
+            logits_x_ulb = outs_x_ulb['logits']
             self.bn_controller.unfreeze_bn(self.model)
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')

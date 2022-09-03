@@ -136,7 +136,8 @@ class WideResNetVar(nn.Module):
             return out
 
         output = self.fc(out)
-        return output
+        result_dict = {'logits':output, 'feat':out}
+        return result_dict
     
     
     def extract(self, x):
