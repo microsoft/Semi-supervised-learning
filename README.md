@@ -30,24 +30,24 @@
 <br />
 <div align="center">
   <a href="https://github.com/microsoft/Semi-supervised-learning">
-    <img src="figures/logo.png" alt="Logo" width="400" height="160">
+    <img src="figures/logo.png" alt="Logo" width="400">
   </a>
 
-<h3 align="center">USB</h3>
+<!-- <h3 align="center">USB</h3> -->
 
 <p align="center">
-    A Unified Semi-supervised Learning Benchmark for CV, NLP, Audio
+    <strong>USB</strong>: A Unified Semi-supervised learning benchmark for CV, NLP, and Audio
     <!-- <br />
     <a href="https://github.com/microsoft/Semi-supervised-learning"><strong>Explore the docs »</strong></a>
     <br /> -->
     <br />
-    <a href="https://github.com/microsoft/Semi-supervised-learning">Paper</a>
+    <a href="https://arxiv.org/abs/2208.07204">Paper</a>
     ·
-    <a href="https://github.com/microsoft/Semi-supervised-learning">Benchmark</a>
+    <a href="https://github.com/microsoft/Semi-supervised-learning/tree/main/results">Benchmark</a>
     ·
-    <a href="https://github.com/microsoft/Semi-supervised-learning">Demo</a>
+    <a href="https://colab.research.google.com/drive/1lFygK31jWyTH88ktao6Ow-5nny5-B7v5">Demo</a>
     ·
-    <a href="https://github.com/microsoft/Semi-supervised-learning">Docs</a>
+    <a href="https://usb.readthedocs.io/en/main/">Docs</a>
     ·
     <a href="https://github.com/microsoft/Semi-supervised-learning/issues">Issue</a>
   </p>
@@ -79,6 +79,8 @@
 <!-- News and Updates -->
 
 ## News and Updates
+
+- [09/02/2022] We are working on optimizing codes. We will share the logs and model checkpoints as we did in TorchSSL.
 
 - [08/21/2022] USB has been released!
 
@@ -254,12 +256,12 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 The USB comunity is maintained by:
 
-- Yidong Wang (),
+- Yidong Wang (yidongwang37@gmail.com), Tokyo Institute of Technology
 - Hao Chen (haoc3@andrew.cmu.edu), Carnegie Mellon University
-- Yue Fan (),
-- Wenxin Hou (),
-- Ran Tao (),
-- Jindong Wang (),
+- Yue Fan (yfan@mpi-inf.mpg.de), Max Planck Institute for Informatics
+- Wenxin Hou (wenxinhou@microsoft.com), Microsoft STCA
+- Ran Tao (rant@andrew.cmu.edu), Carnegie Mellon University
+- Jindong Wang (jindwang@microsoft.com), Microsoft Research Asia
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -270,15 +272,14 @@ The USB comunity is maintained by:
 Please cite us if you fine USB helpful for your project/paper:
 
 ```
-@misc{usb2022,
+@inproceedings{usb2022,
   doi = {10.48550/ARXIV.2208.07204},
   url = {https://arxiv.org/abs/2208.07204},
   author = {Wang, Yidong and Chen, Hao and Fan, Yue and Sun, Wang and Tao, Ran and Hou, Wenxin and Wang, Renjie and Yang, Linyi and Zhou, Zhi and Guo, Lan-Zhe and Qi, Heli and Wu, Zhen and Li, Yu-Feng and Nakamura, Satoshi and Ye, Wei and Savvides, Marios and Raj, Bhiksha and Shinozaki, Takahiro and Schiele, Bernt and Wang, Jindong and Xie, Xing and Zhang, Yue},
   keywords = {Machine Learning (cs.LG), Artificial Intelligence (cs.AI), Computer Vision and Pattern Recognition (cs.CV), FOS: Computer and information sciences, FOS: Computer and information sciences},
   title = {USB: A Unified Semi-supervised Learning Benchmark},
   publisher = {arXiv},
-  year = {2022},
-  copyright = {Creative Commons Attribution 4.0 International}
+  year = {2022}
 }
 ```
 
