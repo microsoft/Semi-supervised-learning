@@ -198,7 +198,7 @@ def get_optimizer(net, optim_name='SGD', lr=0.1, momentum=0.9, weight_decay=0, l
     # per_param_args = [{'params': decay},
     #                   {'params': no_decay, 'weight_decay': 0.0}]
 
-    print(per_param_args)
+    # print(per_param_args)
 
     if optim_name == 'SGD':
         optimizer = torch.optim.SGD(per_param_args, lr=lr, momentum=momentum, weight_decay=weight_decay,
