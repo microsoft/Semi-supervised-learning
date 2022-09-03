@@ -35,8 +35,11 @@ def setattr_cls_from_kwargs(cls, kwargs):
             print(f"{key} in {cls} is overlapped by kwargs: {getattr(cls, key)} -> {kwargs[key]}")
         setattr(cls, key, kwargs[key])
 
+
 def count_parameters(model):
+    # count trainable parameters
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 
 class TBLog:
     """

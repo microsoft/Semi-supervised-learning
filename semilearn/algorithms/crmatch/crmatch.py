@@ -10,6 +10,7 @@ from PIL import Image
 
 from semilearn.core import AlgorithmBase
 from semilearn.core.utils import get_data_loader
+from semilearn.algorithms.hooks import FixedThresholdingHook
 from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool
 
 
@@ -169,6 +170,10 @@ class CRMatch(AlgorithmBase):
         ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
         return ema_model
 
+    def set_hooks(self):
+        self.register_hook(FixedThresholdingHook(), "MaskingHook")
+        super().set_hooks()
+
 
     def train(self):
         self.model.train()
@@ -239,12 +244,8 @@ class CRMatch(AlgorithmBase):
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w, logits_ds_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds']
-               
-
-            with torch.no_grad():
-                pseudo_label = torch.softmax(logits_x_ulb_w, dim=-1)
-                max_probs, y_ulb = torch.max(pseudo_label, dim=-1)
-                mask = max_probs.ge(self.p_cutoff).float()
+            
+            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)    
 
             Lx = ce_loss(logits_x_lb, y_lb, reduction='mean')
             Lu = (ce_loss(logits_x_ulb_s, y_ulb, reduction='none') * mask).mean()

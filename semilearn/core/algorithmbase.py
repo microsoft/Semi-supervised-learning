@@ -1,13 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from typing import OrderedDict, Union
-
 import os
 import contextlib
 import numpy as np
 from inspect import signature
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from collections import OrderedDict
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
 import torch
 import torch.nn.functional as F
@@ -15,7 +14,6 @@ from torch.cuda.amp import autocast, GradScaler
 
 from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, LoggingHook, DistSamplerSeedHook, ParamUpdateHook, EvaluationHook, EMAHook
 from semilearn.core.utils import get_dataset, get_data_loader, get_optimizer, get_cosine_schedule_with_warmup, Bn_Controller
-
 
 
 class AlgorithmBase:
@@ -245,8 +243,6 @@ class AlgorithmBase:
             
             self.call_hook("before_train_epoch")
 
-            # for (idx_lb, x_lb, y_lb), (idx_ulb, x_ulb_w, x_ulb_s) in zip(self.loader_dict['train_lb'],
-            #                                                              self.loader_dict['train_ulb']):
             for data_lb, data_ulb in zip(self.loader_dict['train_lb'],
                                          self.loader_dict['train_ulb']):
                 # prevent the training iterations exceed args.num_train_iter
@@ -254,7 +250,6 @@ class AlgorithmBase:
                     break
 
                 self.call_hook("before_train_step")
-                # self.tb_dict = self.train_step(**self.process_batch(idx_lb=idx_lb, x_lb=x_lb, y_lb=y_lb, idx_ulb=idx_ulb, x_ulb_w=x_ulb_w, x_ulb_s=x_ulb_s))
                 self.tb_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb))
                 self.call_hook("after_train_step")
                 self.it += 1
@@ -289,10 +284,9 @@ class AlgorithmBase:
 
                 num_batch = y.shape[0]
                 total_num += num_batch
-                if self.algorithm in ['crmatch', 'comatch', 'simmatch']:
-                    logits, *_ = self.model(x)
-                else:
-                    logits = self.model(x)
+
+                logits = self.model(x)['logits']
+                
                 loss = F.cross_entropy(logits, y, reduction='mean')
                 y_true.extend(y.cpu().tolist())
                 y_pred.extend(torch.max(logits, dim=-1)[1].cpu().tolist())
@@ -302,10 +296,8 @@ class AlgorithmBase:
         y_true = np.array(y_true)
         y_pred = np.array(y_pred)
         y_logits = np.concatenate(y_logits)
-        # y_probs = np.concatenate(y_probs)
         top1 = accuracy_score(y_true, y_pred)
-        # top5 = top_k_accuracy_score(y_true, y_logits, k=5)
-        # top5 = 0
+        balanced_top1 = balanced_accuracy_score(y_true, y_pred)
         precision = precision_score(y_true, y_pred, average='macro')
         recall = recall_score(y_true, y_pred, average='macro')
         F1 = f1_score(y_true, y_pred, average='macro')
@@ -316,7 +308,7 @@ class AlgorithmBase:
         self.model.train()
 
         eval_dict = {eval_dest+'/loss': total_loss / total_num, eval_dest+'/top-1-acc': top1, 
-                     eval_dest+'/precision': precision, eval_dest+'/recall': recall, eval_dest+'/F1': F1}
+                     eval_dest+'/balanced_acc': balanced_top1, eval_dest+'/precision': precision, eval_dest+'/recall': recall, eval_dest+'/F1': F1}
         if return_logits:
             eval_dict[eval_dest+'/logits'] = y_logits
         return eval_dict

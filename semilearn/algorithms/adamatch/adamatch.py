@@ -102,19 +102,6 @@ class AdaMatch(AlgorithmBase):
         self.print_fn("additional parameter loaded")
         return checkpoint
 
-    @torch.no_grad()
-    def concat_all_gather(self, tensor):
-        """
-        Performs all_gather operation on the provided tensors.
-        *** Warning ***: torch.distributed.all_gather has no gradient.
-        """
-        tensors_gather = [torch.ones_like(tensor)
-            for _ in range(torch.distributed.get_world_size())]
-        torch.distributed.all_gather(tensors_gather, tensor)
-
-        output = torch.cat(tensors_gather, dim=0)
-        return output
-
     @staticmethod
     def get_argument():
         return [

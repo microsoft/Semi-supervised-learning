@@ -25,7 +25,7 @@ amp: False
 clip: 0.0
 net: hubert_base
 net_from_name: False
-data_dir: /media/Auriga/usb_datasets/data
+data_dir: ./data
 dataset: esc50
 train_sampler: RandomSampler
 num_classes: 50

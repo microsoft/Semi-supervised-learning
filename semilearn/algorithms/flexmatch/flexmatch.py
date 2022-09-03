@@ -3,8 +3,6 @@
 # Licensed under the MIT License.
 
 import torch
-# from copy import deepcopy
-# from collections import Counter
 
 from .utils import FlexMatchThresholdingHook
 

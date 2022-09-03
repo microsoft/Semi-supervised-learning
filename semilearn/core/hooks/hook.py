@@ -6,7 +6,6 @@
 class Hook:
     stages = ('before_run', 
               'before_train_epoch', 'before_train_step', 'after_train_step', 'after_train_epoch',
-              # 'before_eval_epoch', 'after_eval_epoch',
               'after_run')
 
     def before_train_epoch(self, algorithm):

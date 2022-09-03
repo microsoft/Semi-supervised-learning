@@ -7,6 +7,7 @@ overwrite: True
 use_tensorboard: True
 epoch: 200
 num_train_iter: 204800
+num_log_iter: 512
 num_eval_iter: 2048
 batch_size: 8
 eval_batch_size: 16
@@ -17,14 +18,15 @@ ema_m: 0.0
 img_size: 96
 crop_ratio: 0.875
 optim: AdamW
-lr: 5e-05
+lr: 0.0001
+layer_decay: 0.95
 momentum: 0.9
 weight_decay: 0.0005
 amp: False
 clip: 0.0
 net: vit_base_patch16_96
 net_from_name: False
-data_dir: /media/Auriga/usb_datasets/data
+data: ./data
 dataset: stl10
 train_sampler: RandomSampler
 num_classes: 10

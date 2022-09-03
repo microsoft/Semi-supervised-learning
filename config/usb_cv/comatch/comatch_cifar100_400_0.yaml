@@ -7,6 +7,7 @@ overwrite: True
 use_tensorboard: True
 epoch: 200
 num_train_iter: 204800
+num_log_iter: 512
 num_eval_iter: 2048
 batch_size: 8
 eval_batch_size: 16
@@ -27,14 +28,15 @@ da_len: 32
 img_size: 32
 crop_ratio: 0.875
 optim: AdamW
-lr: 5e-05
+lr: 0.0005
+layer_decay: 0.5
 momentum: 0.9
 weight_decay: 0.0005
 amp: False
 clip: 0.0
 net: vit_small_patch2_32
 net_from_name: False
-data_dir: /media/Auriga/usb_datasets/data
+data: ./data
 dataset: cifar100
 train_sampler: RandomSampler
 num_classes: 100
@@ -43,7 +45,7 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10071
+dist_url: tcp://127.0.0.1:10066
 dist_backend: nccl
 gpu: None
 use_pretrain: True

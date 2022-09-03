@@ -24,7 +24,7 @@ amp: False
 clip: 0.0
 net: bert_base_uncased
 net_from_name: False
-data_dir: /media/Auriga/usb_datasets/data
+data_dir: ./data
 dataset: yahoo_answers
 train_sampler: RandomSampler
 num_classes: 10
