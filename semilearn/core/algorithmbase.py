@@ -184,13 +184,7 @@ class AlgorithmBase:
         self.register_hook(LoggingHook(), None, "LOW")
 
         # for hooks to be called in train_step, name it for simpler calling
-        self.register_hook(ParamUpdateHook(), "ParamUpdateHook", "NORMAL")
-
-        # call set hooks
-        self.hooks_dict = OrderedDict()
-        for hook in self._hooks:
-            self.hooks_dict[hook.name] = hook
-
+        self.register_hook(ParamUpdateHook(), "ParamUpdateHook")
 
     def process_batch(self, **kwargs):
         """
@@ -407,6 +401,11 @@ class AlgorithmBase:
         
         if not inserted:
             self._hooks.insert(0, hook)
+
+        # call set hooks
+        self.hooks_dict = OrderedDict()
+        for hook in self._hooks:
+            self.hooks_dict[hook.name] = hook
         
 
 
