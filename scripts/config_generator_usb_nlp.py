@@ -67,7 +67,7 @@ def create_usb_nlp_config(alg, seed,
     elif alg == 'adamatch':
         cfg['hard_label'] = True
         cfg['T'] = 0.5
-        cfg['p_cutoff'] = 0.9
+        cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
         cfg['ema_p'] = 0.999
     elif alg == 'flexmatch':
