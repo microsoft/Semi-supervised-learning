@@ -179,8 +179,7 @@ def create_usb_nlp_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    # cfg['data_dir'] = './data'
-    cfg['data_dir'] = '/media/Auriga/usb_datasets/data'
+    cfg['data_dir'] = './data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
@@ -266,9 +265,9 @@ def exp_usb_nlp(label_amount):
 
 if __name__ == '__main__':
     if not os.path.exists('./saved_models/usb_nlp/'):
-        os.mkdir('./saved_models/usb_nlp/')
+        os.makedirs('./saved_models/usb_nlp/', exist_ok=True)
     if not os.path.exists('./config/usb_nlp/'):
-        os.mkdir('./config/usb_nlp/')
+        os.makedirs('./config/usb_nlp/', exist_ok=True)
 
 
     # usb nlp
