@@ -18,7 +18,7 @@ if __name__ == "__main__":
     '''
     Backbone Net Configurations
     '''
-    parser.add_argument('--net', type=str, default='wrn_28_8')
+    parser.add_argument('--net', type=str, default='wrn_28_2')
     parser.add_argument('--net_from_name', type=bool, default=False)
 
     '''
@@ -26,8 +26,8 @@ if __name__ == "__main__":
     '''
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--data_dir', type=str, default='./data')
-    parser.add_argument('--dataset', type=str, default='cifar100')
-    parser.add_argument('--num_classes', type=int, default=100)    
+    parser.add_argument('--dataset', type=str, default='cifar10')
+    parser.add_argument('--num_classes', type=int, default=10)
     parser.add_argument('--img_size', type=int, default=32)
     parser.add_argument('--crop_ratio', type=int, default=0.875)
     parser.add_argument('--max_length', type=int, default=512)
@@ -57,11 +57,14 @@ if __name__ == "__main__":
     net.eval()
     
     # specify these arguments manually 
-    args.num_labels = 400
+    args.num_labels = 40
+    args.ulb_num_labels = 49600
+    args.lb_imb_ratio = 1
+    args.ulb_imb_ratio = 1
     args.seed = 0
     args.epoch = 1
     args.num_train_iter = 1024
-    dataset_dict = get_dataset(args, 'fixmatch', args.dataset, args.num_labels, args.num_classes, args.seed, args.data_dir, False)
+    dataset_dict = get_dataset(args, 'fixmatch', args.dataset, args.num_labels, args.num_classes, args.data_dir, False)
     eval_dset = dataset_dict['eval']
     eval_loader = DataLoader(eval_dset, batch_size=args.batch_size, drop_last=False, shuffle=False, num_workers=4)
  
