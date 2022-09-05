@@ -55,8 +55,8 @@ class ClassificationBert(nn.Module):
         pooled_output = torch.mean(drop_hidden, 1)
         return pooled_output
 
-    def group_matcher(self, coarse=False):
-        matcher = dict(stem=r'bert.embeddings', blocks=r'bert.encoder.layer.(\d+)')
+    def group_matcher(self, coarse=False, prefix=''):
+        matcher = dict(stem=r'^{}bert.embeddings'.format(prefix), blocks=r'^{}bert.encoder.layer.(\d+)'.format(prefix))
         return matcher
 
     def no_weight_decay(self):

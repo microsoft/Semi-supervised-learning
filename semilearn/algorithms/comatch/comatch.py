@@ -33,6 +33,10 @@ class CoMatch_Net(nn.Module):
         feat_proj = self.l2norm(self.mlp_proj(feat))
         return {'logits':logits, 'feat':feat_proj}
 
+    def group_matcher(self, coarse=False):
+        matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
+        return matcher
+
 
 def comatch_contrastive_loss(feats_x_ulb_s_0, feats_x_ulb_s_1, Q, T=0.2):
     # embedding similarity
@@ -114,7 +118,6 @@ class CoMatch(AlgorithmBase):
     def set_ema_model(self):
         ema_model = self.net_builder(num_classes=self.num_classes)
         ema_model = CoMatch_Net(ema_model, proj_size=self.args.proj_size)
-        print(self.model)
         ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
         return ema_model
 

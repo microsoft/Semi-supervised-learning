@@ -40,6 +40,12 @@ class ReMixMatch_Net(nn.Module):
         elif isinstance(m, nn.Linear):
             nn.init.xavier_normal_(m.weight.data)
             m.bias.data.zero_()
+    
+    def group_matcher(self, coarse=False):
+        matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
+        return matcher
+
+
 
 
 class ReMixMatch(AlgorithmBase):

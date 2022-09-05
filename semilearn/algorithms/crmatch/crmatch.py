@@ -111,6 +111,10 @@ class CRMatch_Net(nn.Module):
             results_dict['logits_rot'] = None
         return results_dict
 
+    def group_matcher(self, coarse=False):
+        matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
+        return matcher
+
 
 class CRMatch(AlgorithmBase):
     """

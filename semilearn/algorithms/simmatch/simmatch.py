@@ -32,7 +32,9 @@ class SimMatch_Net(nn.Module):
         feat_proj = self.l2norm(self.mlp_proj(feat))
         return {'logits':logits, 'feat':feat_proj}
 
-
+    def group_matcher(self, coarse=False):
+        matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
+        return matcher
 
 class SimMatch(AlgorithmBase):
     """

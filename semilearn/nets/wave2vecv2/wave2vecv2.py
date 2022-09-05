@@ -48,8 +48,8 @@ class ClassificationWave2Vec(nn.Module):
         pooled_output = torch.mean(drop_hidden, 1)
         return pooled_output
 
-    def group_matcher(self, coarse=False):
-        matcher = dict(stem=r'model.feature_projection|model.feature_extractor', blocks=r'model.encoder.layers.(\d+)')
+    def group_matcher(self, coarse=False, prefix=''):
+        matcher = dict(stem=r'^{}model.feature_projection|^{}model.feature_extractor'.format(prefix, prefix), blocks=r'^{}model.encoder.layers.(\d+)'.format(prefix))
         return matcher
 
     def no_weight_decay(self):
