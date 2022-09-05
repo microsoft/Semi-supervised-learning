@@ -16,9 +16,10 @@ uratio: 1
 use_cat: False
 ema_m: 0.0
 optim: AdamW
-lr: 2e-05
+lr: 5e-05
 momentum: 0.9
 weight_decay: 2e-05
+layer_decay: 0.75
 amp: False
 clip: 0.0
 net: wave2vecv2_base

@@ -24,6 +24,7 @@ optim: AdamW
 lr: 2e-05
 momentum: 0.9
 weight_decay: 2e-05
+layer_decay: 1.0
 amp: False
 clip: 0.0
 net: wave2vecv2_base

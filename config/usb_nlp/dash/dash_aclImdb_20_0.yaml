@@ -10,7 +10,7 @@ num_train_iter: 102400
 num_warmup_iter: 5120
 num_eval_iter: 2048
 num_labels: 20
-batch_size: 4
+batch_size: 8
 eval_batch_size: 8
 gamma: 1.27
 C: 1.0001
@@ -23,9 +23,10 @@ uratio: 1
 use_cat: False
 ema_m: 0.0
 optim: AdamW
-lr: 5e-06
+lr: 5e-05
 momentum: 0.9
 weight_decay: 0.0005
+layer_decay: 0.75
 amp: False
 clip: 0.0
 net: bert_base_uncased

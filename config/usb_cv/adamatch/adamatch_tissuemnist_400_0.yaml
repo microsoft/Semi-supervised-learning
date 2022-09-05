@@ -17,7 +17,7 @@ uratio: 1
 ema_m: 0.0
 hard_label: True
 T: 0.5
-p_cutoff: 0.9
+p_cutoff: 0.95
 ulb_loss_ratio: 1.0
 ema_p: 0.999
 img_size: 32

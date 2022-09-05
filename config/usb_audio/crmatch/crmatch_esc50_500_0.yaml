@@ -20,9 +20,10 @@ uratio: 1
 use_cat: False
 ema_m: 0.0
 optim: AdamW
-lr: 2e-05
+lr: 0.0001
 momentum: 0.9
 weight_decay: 2e-05
+layer_decay: 0.85
 amp: False
 clip: 0.0
 net: hubert_base
@@ -38,6 +39,6 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: False
-dist_url: tcp://127.0.0.1:10061
+dist_url: tcp://127.0.0.1:10056
 dist_backend: nccl
 gpu: None

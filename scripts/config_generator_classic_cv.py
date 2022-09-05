@@ -196,8 +196,7 @@ def create_classific_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    # cfg['data_dir'] = './data'
-    cfg['data_dir'] = '/media/Auriga/usb_datasets/data'
+    cfg['data_dir'] = './data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
@@ -234,7 +233,7 @@ def exp_classific_cv(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'mpl', 'crmatch', 'comatch', 'simmatch', 'adamatch']
+            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch']
     datasets = ['cifar100', 'svhn', 'stl10', 'cifar10']
 
     # seeds = [0, 1, 2] 

@@ -10,7 +10,7 @@ num_train_iter: 102400
 num_warmup_iter: 5120
 num_eval_iter: 2048
 num_labels: 40
-batch_size: 4
+batch_size: 8
 eval_batch_size: 8
 hard_label: False
 p_cutoff: 0.95
@@ -26,9 +26,10 @@ uratio: 1
 use_cat: False
 ema_m: 0.0
 optim: AdamW
-lr: 5e-06
+lr: 5e-05
 momentum: 0.9
 weight_decay: 0.0005
+layer_decay: 0.65
 amp: False
 clip: 0.0
 net: bert_base_uncased
@@ -43,6 +44,6 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: False
-dist_url: tcp://127.0.0.1:10074
+dist_url: tcp://127.0.0.1:10068
 dist_backend: nccl
 gpu: None

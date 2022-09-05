@@ -37,7 +37,7 @@ def create_configuration(cfg, cfg_file):
 
 def create_usb_nlp_config(alg, seed,
                           dataset, net, num_classes, num_labels,
-                          port, lr, weight_decay, max_length, warmup_epoch=5, amp=False):
+                          port, lr, weight_decay, layer_decay, max_length, warmup_epoch=5, amp=False):
     cfg = {}
     cfg['algorithm'] = alg
 
@@ -56,7 +56,7 @@ def create_usb_nlp_config(alg, seed,
 
     cfg['num_eval_iter'] = 2048
     cfg['num_labels'] = num_labels
-    cfg['batch_size'] = 4
+    cfg['batch_size'] = 8
     cfg['eval_batch_size'] = 8
 
     if alg == 'fixmatch':
@@ -75,18 +75,6 @@ def create_usb_nlp_config(alg, seed,
         cfg['T'] = 0.5
         cfg['thresh_warmup'] = True
         cfg['p_cutoff'] = 0.95
-        cfg['ulb_loss_ratio'] = 1.0
-    elif alg == 'freematch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['ema_p'] = 0.999
-        cfg['ent_loss_ratio'] = 0.01
-    elif alg == 'softmatch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['dist_align'] = True
-        cfg['ema_p'] = 0.999
-        cfg['n_sigma'] = 2
         cfg['ulb_loss_ratio'] = 1.0
     elif alg == 'uda':
         cfg['tsa_schedule'] = 'exp'
@@ -171,6 +159,7 @@ def create_usb_nlp_config(alg, seed,
     cfg['lr'] = lr
     cfg['momentum'] = 0.9
     cfg['weight_decay'] = weight_decay
+    cfg['layer_decay'] = layer_decay
     cfg['amp'] = amp
     cfg['clip'] = 0.0
 
@@ -215,7 +204,7 @@ def exp_usb_nlp(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'mpl', 'comatch', 'crmatch', 'simmatch', 'adamatch']
+            'pimodel', 'vat', 'dash', 'comatch', 'crmatch', 'simmatch', 'adamatch']
     datasets = ['aclImdb', 'ag_news', 'amazon_review', 'dbpedia', 'yahoo_answers', 'yelp_review']
 
     # seeds = [0, 1, 2]  # 1, 22, 333
@@ -226,9 +215,6 @@ def exp_usb_nlp(label_amount):
     net = 'bert_base_uncased'
     weight_decay = 5e-4
     max_length = 512
-    # lr = 
-    lr = 5e-6
-    tau = 0.95
 
     for alg in algs:
         for dataset in datasets:
@@ -237,27 +223,46 @@ def exp_usb_nlp(label_amount):
                 if dataset == 'aclImdb':
                     num_classes = 2
                     num_labels = label_amount[0] * num_classes
+
+                    lr = 5e-5
+                    layer_decay = 0.75
+
                 elif dataset == 'ag_news':
                     num_classes = 4
                     num_labels = label_amount[1] * num_classes
+
+                    lr = 5e-5
+                    layer_decay = 0.65
+
                 elif dataset == 'amazon_review':
                     num_classes = 5
                     num_labels = label_amount[2] * num_classes
+
+                    lr = 1e-5
+                    layer_decay = 0.75
+
                 elif dataset == 'dbpedia':
                     num_classes = 14
                     num_labels = label_amount[3] * num_classes
                 elif dataset == 'yahoo_answers':
                     num_classes = 10
                     num_labels = label_amount[4] * num_classes
+
+                    lr = 1e-4
+                    layer_decay = 0.65
+
                 elif dataset == 'yelp_review':
                     num_classes = 5
                     num_labels = label_amount[5] * num_classes
+
+                    lr = 5e-5
+                    layer_decay = 0.75
 
                 port = dist_port[count]
                 # prepare the configuration file
                 cfg = create_usb_nlp_config(alg, seed,
                                             dataset, net, num_classes, num_labels,
-                                            port, lr, weight_decay, max_length)
+                                            port, lr, weight_decay, layer_decay, max_length)
                 count += 1
                 create_configuration(cfg, config_file)
 
