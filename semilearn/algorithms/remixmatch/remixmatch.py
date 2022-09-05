@@ -138,7 +138,7 @@ class ReMixMatch(AlgorithmBase):
             # with torch.no_grad():
             input_labels = torch.cat([F.one_hot(y_lb, self.num_classes), sharpen_prob_x_ulb, sharpen_prob_x_ulb, sharpen_prob_x_ulb], dim=0)
             if self.mixup_manifold:
-                inputs = torch.cat(outs_x_lb['feat'], outs_x_ulb_s_0['feat'], outs_x_ulb_s_1['feat'],  outs_x_ulb_w['feat'])
+                inputs = torch.cat([outs_x_lb['feat'], outs_x_ulb_s_0['feat'], outs_x_ulb_s_1['feat'],  outs_x_ulb_w['feat']], dim=0)
             else:
                 inputs = torch.cat([x_lb, x_ulb_s_0, x_ulb_s_1, x_ulb_w])
             mixed_x, mixed_y, _ = mixup_one_target(inputs, input_labels, self.mixup_alpha, is_bias=True)
