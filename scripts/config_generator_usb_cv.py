@@ -217,7 +217,7 @@ def create_usb_cv_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    cfg['data'] = './data'
+    cfg['data_dir'] = './data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
