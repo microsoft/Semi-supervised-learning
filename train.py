@@ -78,7 +78,7 @@ def get_config():
     '''  
 
     ## core algorithm setting
-    parser.add_argument('-alg', '--algorithm', type=str, default='fixmatch', help='ssl algorithm')
+    parser.add_argument('-alg', '--algorithm', type=str, default='adamatch', help='ssl algorithm')
     parser.add_argument('--use_cat', type=str2bool, default=False, help='use cat operation in algorithms')
     parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)
@@ -91,7 +91,7 @@ def get_config():
     '''
 
     ## standard setting configurations
-    parser.add_argument('--data_dir', type=str, default='/media/Auriga/usb_datasets/data')
+    parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('-ds', '--dataset', type=str, default='cifar10')
     parser.add_argument('-nc', '--num_classes', type=int, default=10)
     parser.add_argument('--train_sampler', type=str, default='RandomSampler')
@@ -140,10 +140,12 @@ def get_config():
 
     # add algorithm specific parameters
     args = parser.parse_args()
+    over_write_args_from_file(args, args.c)
     for argument in name2alg[args.algorithm].get_argument():
         parser.add_argument(argument.name, type=argument.type, default=argument.default, help=argument.help)
 
     args = parser.parse_args()
+    over_write_args_from_file(args, args.c)
     return args
 
 
@@ -312,7 +314,6 @@ def main_worker(gpu, ngpus_per_node, args):
 
 if __name__ == "__main__":
     args = get_config()
-    over_write_args_from_file(args, args.c)
     port = get_port()
     args.dist_url = "tcp://127.0.0.1:" + str(port)
     main(args)
