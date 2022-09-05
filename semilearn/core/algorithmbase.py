@@ -80,7 +80,7 @@ class AlgorithmBase:
         self.dataset_dict = self.set_dataset()
 
         # cv, nlp, speech builder different arguments
-        self.model = net_builder(num_classes=self.num_classes, pretrained=self.args.use_pretrain, pretrained_path=self.args.pretrain_path)
+        self.model = self.set_model()
         self.ema_model = self.set_ema_model()
 
         # build optimizer and scheduler
@@ -162,6 +162,10 @@ class AlgorithmBase:
                                                     self.num_train_iter,
                                                     num_warmup_steps=self.args.num_warmup_iter)
         return optimizer, scheduler
+
+    def set_model(self):
+        model = self.net_builder(num_classes=self.num_classes, pretrained=self.args.use_pretrain, pretrained_path=self.args.pretrain_path)
+        return model
 
     def set_ema_model(self):
         """
