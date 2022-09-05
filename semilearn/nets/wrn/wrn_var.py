@@ -149,8 +149,8 @@ class WideResNetVar(nn.Module):
         out = self.relu(self.bn1(out))
         return out
 
-    def group_matcher(self, coarse=False):
-        matcher = dict(stem=r'^conv1', blocks=r'^block(\d+)' if coarse else r'^block(\d+)\.(\d+)')
+    def group_matcher(self, coarse=False, prefix=''):
+        matcher = dict(stem=r'^{}conv1'.format(prefix), blocks=r'^{}block(\d+)'.format(prefix) if coarse else r'^{}block(\d+)\.layer.(\d+)'.format(prefix))
         return matcher
 
     def no_weight_decay(self):
