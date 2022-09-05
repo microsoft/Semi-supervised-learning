@@ -42,8 +42,8 @@ def create_usb_cv_config(alg, seed,
     cfg['algorithm'] = alg
 
     # save config
-    # cfg['save_dir'] = './saved_models/'
-    cfg['save_dir'] = '/mnt/default/projects/USB_formal_0904_to_release/usb_cv/saved_models/'
+    cfg['save_dir'] = './saved_models/'
+    # cfg['save_dir'] = '/mnt/default/projects/USB_formal_0904_to_release/usb_cv/saved_models/'
     cfg['save_name'] = None
     cfg['resume'] = False
     cfg['load_path'] = None
@@ -236,8 +236,8 @@ def create_usb_cv_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    # cfg['data'] = '/media/Auriga/usb_datasets/data'
-    cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data'
+    cfg['data'] = '/media/Auriga/usb_datasets/data'
+    # cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
