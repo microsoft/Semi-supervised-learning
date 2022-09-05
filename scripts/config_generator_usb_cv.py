@@ -42,7 +42,8 @@ def create_usb_cv_config(alg, seed,
     cfg['algorithm'] = alg
 
     # save config
-    cfg['save_dir'] = './saved_models/usb_cv'
+    # cfg['save_dir'] = './saved_models/'
+    cfg['save_dir'] = '/mnt/default/projects/USB_formal_0904_to_release/usb_cv/saved_models/'
     cfg['save_name'] = None
     cfg['resume'] = False
     cfg['load_path'] = None
@@ -102,6 +103,24 @@ def create_usb_cv_config(alg, seed,
         cfg['ulb_loss_ratio'] = 1.0
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 10.0
+    elif alg == 'freematch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['ema_p'] = 0.999
+        cfg['ent_loss_ratio'] = 0.001
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+    elif alg == 'softmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['dist_align'] = True
+        cfg['dist_uniform'] = True
+        cfg['per_class'] = False
+        cfg['ema_p'] = 0.999
+        cfg['ulb_loss_ratio'] = 1.0
+        cfg['n_sigma'] = 2
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
     elif alg == 'pseudolabel':
         cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
@@ -217,7 +236,8 @@ def create_usb_cv_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    cfg['data'] = './data'
+    # cfg['data'] = '/media/Auriga/usb_datasets/data'
+    cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
@@ -255,12 +275,12 @@ def exp_usb_cv(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch']
+             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'softmatch', 'freematch']
     datasets = ['cifar100', 'eurosat', 'semi_aves', 'tissuemnist', 'stl10']
     # algs = ['fixmatch', 'flexmatch', 'comatch', 'simmatch']
     # datasets = ['imagenet']
     # seeds = [0, 1, 2]  # 1, 22, 333
-    seeds = [0]
+    seeds = [0, 1, 2]
 
     dist_port = range(10001, 11120, 1)
     count = 0
