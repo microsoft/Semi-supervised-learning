@@ -114,6 +114,7 @@ class CoMatch(AlgorithmBase):
     def set_ema_model(self):
         ema_model = self.net_builder(num_classes=self.num_classes)
         ema_model = CoMatch_Net(ema_model, proj_size=self.args.proj_size)
+        print(self.model)
         ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
         return ema_model
 

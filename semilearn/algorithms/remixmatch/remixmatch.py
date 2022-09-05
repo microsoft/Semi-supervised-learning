@@ -69,11 +69,11 @@ class ReMixMatch(AlgorithmBase):
             kl loss weight
     """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
-        super().__init__(args, net_builder,  tb_log, logger)
         # remixmatch specificed arguments
         self.lambda_rot = args.rot_loss_ratio
         self.lambda_kl = args.kl_loss_ratio
         self.use_rot = self.lambda_rot > 0
+        super().__init__(args, net_builder,  tb_log, logger)
         self.init(T=args.T, unsup_warm_up=args.unsup_warm_up, mixup_alpha=args.mixup_alpha, mixup_manifold=args.mixup_manifold)
 
     def init(self, T, unsup_warm_up=0.4, mixup_alpha=0.5, mixup_manifold=False):
