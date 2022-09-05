@@ -245,7 +245,9 @@ class CRMatch(AlgorithmBase):
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w, logits_ds_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds']
             
-            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)    
+            with torch.no_grad():
+                y_ulb = torch.argmax(logits_x_ulb_w, dim=-1)
+                mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)    
 
             Lx = ce_loss(logits_x_lb, y_lb, reduction='mean')
             Lu = (ce_loss(logits_x_ulb_s, y_ulb, reduction='none') * mask).mean()
