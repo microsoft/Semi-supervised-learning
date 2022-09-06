@@ -1,8 +1,8 @@
 algorithm: flexmatch
-save_dir: ./saved_models/usb_cv
+save_dir: ./saved_models/usb_cv/
 save_name: flexmatch_eurosat_20_0
 resume: True
-load_path: ./saved_models/usb_cv/flexmatch_eurosat_20_0/latest_model.pth
+load_path: ./saved_models/usb_cv//flexmatch_eurosat_20_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 epoch: 200
@@ -31,7 +31,7 @@ amp: False
 clip: 0.0
 net: vit_small_patch2_32
 net_from_name: False
-data: ./data
+data_dir: ./data
 dataset: eurosat
 train_sampler: RandomSampler
 num_classes: 10

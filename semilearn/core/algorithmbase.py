@@ -59,7 +59,6 @@ class AlgorithmBase:
 
         # commaon utils arguments
         self.tb_log = tb_log
-        self.logger = logger 
         self.print_fn = print if logger is None else logger.info
         self.ngpus_per_node = torch.cuda.device_count()
         self.loss_scaler = GradScaler()
@@ -79,15 +78,15 @@ class AlgorithmBase:
         # build dataset
         self.dataset_dict = self.set_dataset()
 
+        # build data loader
+        self.loader_dict = self.set_data_loader()
+
         # cv, nlp, speech builder different arguments
         self.model = self.set_model()
         self.ema_model = self.set_ema_model()
 
         # build optimizer and scheduler
         self.optimizer, self.scheduler = self.set_optimizer()
-
-        # build data loader
-        self.loader_dict = self.set_data_loader()
 
         # other arguments specific to the algorithm
         # self.init(**kwargs)
@@ -110,7 +109,7 @@ class AlgorithmBase:
         dataset_dict = get_dataset(self.args, self.algorithm, self.args.dataset, self.args.num_labels, self.args.num_classes, self.args.data_dir)
         self.args.ulb_dest_len = len(dataset_dict['train_ulb']) if dataset_dict['train_ulb'] is not None else 0
         self.args.lb_dest_len = len(dataset_dict['train_lb'])
-        self.logger.info("unlabeled data number: {}, labeled data number {}".format(self.args.ulb_dest_len, self.args.lb_dest_len))
+        self.print_fn("unlabeled data number: {}, labeled data number {}".format(self.args.ulb_dest_len, self.args.lb_dest_len))
         if self.rank == 0 and self.distributed:
             torch.distributed.barrier()
         return dataset_dict

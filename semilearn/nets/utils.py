@@ -76,6 +76,7 @@ def param_groups_weight_decay(
         weight_decay=1e-5,
         no_weight_decay_list=()
 ):
+    # Ref: https://github.com/rwightman/pytorch-image-models
     no_weight_decay_list = set(no_weight_decay_list)
     decay = []
     no_decay = []
@@ -131,6 +132,7 @@ def group_parameters(
         output_values=False,
         reverse=False,
 ):
+    # Ref: https://github.com/rwightman/pytorch-image-models
     return group_with_matcher(
         module.named_parameters(), group_matcher, output_values=output_values, reverse=reverse)
 
@@ -146,6 +148,7 @@ def param_groups_layer_decay(
     """
     Parameter groups for layer-wise lr decay & weight decay
     Based on BEiT: https://github.com/microsoft/unilm/blob/master/beit/optim_factory.py#L58
+    # Ref: https://github.com/rwightman/pytorch-image-models
     """
     no_weight_decay_list = set(no_weight_decay_list)
     param_group_names = {}  # NOTE for debugging
@@ -206,6 +209,7 @@ def group_with_matcher(
         output_values: bool = False,
         reverse: bool = False
 ):
+    # Ref: https://github.com/rwightman/pytorch-image-models
     if isinstance(group_matcher, dict):
         # dictionary matcher contains a dict of raw-string regex expr that must be compiled
         compiled = []

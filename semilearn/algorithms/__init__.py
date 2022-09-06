@@ -41,11 +41,6 @@ name2alg = {
 }
 
 def get_algorithm(args, net_builder, tb_log, logger):
-
-    # if args.imb_algorithm is not None:
-    #     alg = get_imb_algorithm(args, net_builder, tb_log, logger)
-    #     return alg
-
     try:
         alg = name2alg[args.algorithm](
             args=args,

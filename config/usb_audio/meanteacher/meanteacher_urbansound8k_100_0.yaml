@@ -37,6 +37,6 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: False
-dist_url: tcp://127.0.0.1:10038
+dist_url: tcp://127.0.0.1:10043
 dist_backend: nccl
 gpu: None

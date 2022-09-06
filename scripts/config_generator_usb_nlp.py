@@ -53,7 +53,7 @@ def create_usb_nlp_config(alg, seed,
     cfg['epoch'] = 100
     cfg['num_train_iter'] = 1024 * 100
     cfg['num_warmup_iter'] = int(1024 * warmup_epoch)
-
+    cfg['num_log_iter'] = 256
     cfg['num_eval_iter'] = 2048
     cfg['num_labels'] = num_labels
     cfg['batch_size'] = 8
@@ -203,7 +203,7 @@ def exp_usb_nlp(label_amount):
         os.mkdir(save_path)
 
 
-    algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'remixmatch', 'mixmatch', 'meanteacher',
+    algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
             'pimodel', 'vat', 'dash', 'comatch', 'crmatch', 'simmatch', 'adamatch']
     datasets = ['aclImdb', 'ag_news', 'amazon_review', 'dbpedia', 'yahoo_answers', 'yelp_review']
 
