@@ -89,7 +89,7 @@ class VAT(AlgorithmBase):
 
             if vat_embed:
                 y_hat = model({'attention_mask': ul_x['attention_mask'],
-                               'inputs_embeds': ul_x_embed.detach() + d})['embed']
+                               'inputs_embeds': ul_x_embed.detach() + d}, return_embed=True)['embed']
             else:
                 y_hat = model(ul_x + d)['logits']
 
@@ -106,7 +106,7 @@ class VAT(AlgorithmBase):
 
         if vat_embed:
             y_hat = model({'attention_mask': ul_x['attention_mask'],
-                           'inputs_embeds': ul_x_embed + r_adv.detach()})['embed']
+                           'inputs_embeds': ul_x_embed + r_adv.detach()}, return_embed=True)['embed']
         else:
             y_hat = model(ul_x + r_adv.detach())['logits']
 
