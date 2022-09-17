@@ -612,13 +612,13 @@ class MedMNIST(Dataset):
 
         if self.split == 'train':
             self.data = npz_file['train_images']
-            self.labels = npz_file['train_labels'].reshape(-1)
+            self.targets = npz_file['train_labels'].reshape(-1)
         elif self.split == 'val':
             self.data = npz_file['val_images']
-            self.labels = npz_file['val_labels'].reshape(-1)
+            self.targets = npz_file['val_labels'].reshape(-1)
         elif self.split == 'test':
             self.data = npz_file['test_images']
-            self.labels = npz_file['test_labels'].reshape(-1)
+            self.targets = npz_file['test_labels'].reshape(-1)
         else:
             raise ValueError
 
@@ -658,7 +658,7 @@ class MedMNIST(Dataset):
 class MedMNIST2D(MedMNIST, BasicDataset):
 
     def __sample__(self, idx):
-        img, target = self.data[idx], self.labels[idx].astype(int)
+        img, target = self.data[idx], self.targets[idx].astype(int)
         img = Image.fromarray(img)
 
         if self.as_rgb:
@@ -668,7 +668,7 @@ class MedMNIST2D(MedMNIST, BasicDataset):
     def save(self, folder, postfix="png", write_csv=True):
 
         save2d(imgs=self.data,
-               labels=self.labels,
+               labels=self.targets,
                img_folder=os.path.join(folder, self.flag),
                split=self.split,
                postfix=postfix,
@@ -700,7 +700,7 @@ class MedMNIST3D(MedMNIST):
             img: an array of 1x28x28x28 or 3x28x28x28 (if `as_RGB=True`), in [0,1]
             target: np.array of `L` (L=1 for single-label)
         '''
-        img, target = self.data[index], self.labels[index].astype(int)
+        img, target = self.data[index], self.targets[index].astype(int)
 
         img = np.stack([img/255.]*(3 if self.as_rgb else 1), axis=0)
 
@@ -717,7 +717,7 @@ class MedMNIST3D(MedMNIST):
         assert postfix == "gif"
 
         save3d(imgs=self.data,
-               labels=self.labels,
+               labels=self.targets,
                img_folder=os.path.join(folder, self.flag),
                split=self.split,
                postfix=postfix,
@@ -902,7 +902,7 @@ def get_medmnist(args, alg, dataset_name, num_labels, num_classes, data_dir='./d
     base_dataset = name2class[dataset_name](alg, split="train", root=data_dir, download=True, as_rgb=True)
     num_classes = len(INFO[dataset_name]["label"])
 
-    train_targets = base_dataset.labels
+    train_targets = base_dataset.targets
     train_data = base_dataset.data  # np.ndarray, uint8
     assert len(train_targets) == len(train_data), "EuroSat dataset has an error!!!"
 
@@ -931,8 +931,8 @@ def get_medmnist(args, alg, dataset_name, num_labels, num_classes, data_dir='./d
     train_unlabeled_dataset = name2class[dataset_name](alg, root=data_dir, split="train", is_ulb=True, transform=transform_weak, transform_strong=transform_strong, as_rgb=True)
     train_labeled_dataset.data = train_labeled_data
     train_unlabeled_dataset.data = train_unlabeled_data
-    train_labeled_dataset.labels = train_labeled_targets
-    train_unlabeled_dataset.labels = train_unlabeled_targets
+    train_labeled_dataset.targets = train_labeled_targets
+    train_unlabeled_dataset.targets = train_unlabeled_targets
     val_dataset = []
     test_dataset = name2class[dataset_name](alg, root=data_dir, split="test", transform=transform_val, download=True, as_rgb=True)
 
