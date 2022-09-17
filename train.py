@@ -63,7 +63,7 @@ def get_config():
     parser.add_argument('--lr', type=float, default=3e-2)
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--weight_decay', type=float, default=5e-4)
-    parser.add_argument('--layer_decay', type=float, default=0.75, help='layer-wise learning rate decay, default to 1.0 which means no layer decay')
+    parser.add_argument('--layer_decay', type=float, default=1.0, help='layer-wise learning rate decay, default to 1.0 which means no layer decay')
 
     '''
     Backbone Net Configurations
@@ -79,7 +79,7 @@ def get_config():
 
     ## core algorithm setting
     parser.add_argument('-alg', '--algorithm', type=str, default='fixmatch', help='ssl algorithm')
-    parser.add_argument('--use_cat', type=str2bool, default=False, help='use cat operation in algorithms')
+    parser.add_argument('--use_cat', type=str2bool, default=True, help='use cat operation in algorithms')
     parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)
 
@@ -104,7 +104,7 @@ def get_config():
 
     ## cv dataset arguments
     parser.add_argument('--img_size', type=int, default=32)
-    parser.add_argument('--crop_ratio', type=float, default=0.95)
+    parser.add_argument('--crop_ratio', type=float, default=0.875)
 
     ## nlp dataset arguments 
     parser.add_argument('--max_length', type=int, default=512)

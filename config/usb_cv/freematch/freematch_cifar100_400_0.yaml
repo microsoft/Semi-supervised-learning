@@ -28,6 +28,7 @@ momentum: 0.9
 weight_decay: 0.0005
 amp: False
 clip: 0.0
+use_cat: True
 net: vit_small_patch2_32
 net_from_name: False
 data_dir: ./data

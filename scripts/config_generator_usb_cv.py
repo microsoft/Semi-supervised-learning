@@ -228,6 +228,7 @@ def create_usb_cv_config(alg, seed,
     cfg['weight_decay'] = weight_decay
     cfg['amp'] = amp
     cfg['clip'] = 0.0
+    cfg['use_cat'] = True
 
     # net config
     cfg['net'] = net

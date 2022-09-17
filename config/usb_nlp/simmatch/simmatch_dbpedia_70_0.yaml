@@ -8,6 +8,7 @@ use_tensorboard: True
 epoch: 100
 num_train_iter: 102400
 num_warmup_iter: 5120
+num_log_iter: 256
 num_eval_iter: 2048
 num_labels: 70
 batch_size: 8

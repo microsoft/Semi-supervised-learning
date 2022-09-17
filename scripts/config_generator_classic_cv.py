@@ -188,8 +188,10 @@ def create_classific_config(alg, seed,
     cfg['lr'] = 0.03
     cfg['momentum'] = 0.9
     cfg['weight_decay'] = weight_decay
+    cfg['layer_decay'] = 1.0
     cfg['amp'] = False
     cfg['clip'] = 0.0
+    cfg['use_cat'] = True
 
     # net config
     cfg['net'] = net
