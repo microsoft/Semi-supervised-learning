@@ -36,6 +36,39 @@ def setattr_cls_from_kwargs(cls, kwargs):
         setattr(cls, key, kwargs[key])
 
 
+def send_model_cuda(args, model):
+    if not torch.cuda.is_available():
+        raise Exception('ONLY GPU TRAINING IS SUPPORTED')
+    elif args.distributed:
+        ngpus_per_node = torch.cuda.device_count()  # number of gpus of each node
+
+        if args.gpu is not None:
+            torch.cuda.set_device(args.gpu)
+
+            '''
+            batch_size: batch_size per node -> batch_size per gpu
+            workers: workers per node -> workers per gpu
+            '''
+            args.batch_size = int(args.batch_size / ngpus_per_node)
+            model.cuda(args.gpu)
+            model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+            model = torch.nn.parallel.DistributedDataParallel(model, broadcast_buffers=False,
+                                                                     find_unused_parameters=True,
+                                                                     device_ids=[args.gpu])
+        else:
+            # if arg.gpu is None, DDP will divide and allocate batch_size
+            # to all available GPUs if device_ids are not set.
+            model.cuda()
+            model = torch.nn.parallel.DistributedDataParallel(model,  broadcast_buffers=False, 
+                                                                      find_unused_parameters=True)
+    elif args.gpu is not None:
+        torch.cuda.set_device(args.gpu)
+        model = model.cuda(args.gpu)
+    else:
+        model = torch.nn.DataParallel(model).cuda()
+    return model
+
+
 def count_parameters(model):
     # count trainable parameters
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -113,26 +146,19 @@ class EMA:
 
     def register(self):
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                self.shadow[name] = param.data.clone()
+            self.shadow[name] = param.data.clone()
 
     def update(self):
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                assert name in self.shadow
-                new_average = (1.0 - self.decay) * param.data + self.decay * self.shadow[name]
-                self.shadow[name] = new_average.clone()
+            new_average = (1.0 - self.decay) * param.data + self.decay * self.shadow[name]
+            self.shadow[name] = new_average.clone()
 
     def apply_shadow(self):
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                assert name in self.shadow
-                self.backup[name] = param.data
-                param.data = self.shadow[name]
+            self.backup[name] = param.data
+            param.data = self.shadow[name]
 
     def restore(self):
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                assert name in self.backup
-                param.data = self.backup[name]
+            param.data = self.backup[name]
         self.backup = {}

@@ -139,7 +139,7 @@ class SimMatch(AlgorithmBase):
                 # logits_x_ulb_s, feats_x_ulb_s = logits[num_lb:], feats[num_lb:]
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
                 outputs = self.model(inputs)
-                logits, feats = outputs['logits'], outputs['feats']
+                logits, feats = outputs['logits'], outputs['feat']
                 # logits, feats = self.model(inputs)
                 logits_x_lb, ema_feats_x_lb = logits[:num_lb], feats[:num_lb]
                 ema_logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:].chunk(2)

@@ -317,7 +317,7 @@ class AlgorithmBase:
         # base arguments for all models
         save_dict = {
             'model': self.model.state_dict(),
-            'ema_model': self.ema_model_state_dict,
+            'ema_model': self.ema_model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict(),
             'loss_scaler': self.loss_scaler.state_dict(),
@@ -333,12 +333,6 @@ class AlgorithmBase:
         save model and specified parameters for resume
         """
         save_filename = os.path.join(save_path, save_name)
-        # copy EMA parameters to ema_model for saving with model as temp
-        self.model.eval()
-        self.ema.apply_shadow()
-        self.ema_model_state_dict = self.model.state_dict()
-        self.ema.restore()
-        self.model.train()
         save_dict = self.get_save_dict()
         torch.save(save_dict, save_filename)
         self.print_fn(f"model saved: {save_filename}")
@@ -350,7 +344,7 @@ class AlgorithmBase:
         """
         checkpoint = torch.load(load_path, map_location='cpu')
         self.model.load_state_dict(checkpoint['model'])
-        self.ema_model.load_state_dict(self.check_prefix_state_dict(checkpoint['ema_model']))
+        self.ema_model.load_state_dict(checkpoint['ema_model'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.scheduler.load_state_dict(checkpoint['scheduler'])
         self.loss_scaler.load_state_dict(checkpoint['loss_scaler'])
