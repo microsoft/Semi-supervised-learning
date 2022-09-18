@@ -15,14 +15,14 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='semilearn',
-    version='0.1.4',
+    version='0.2.0',
     description='Unfied Semi-Supervised Learning Benchmark',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/microsoft/Semi-supervised-learning',
     author='Yidong Wang*, Hao Chen*, Yue Fan*, Wang Sun, Ran Tao, Wenxin Hou, Renjie Wang, Heli Qi, Zhen Wu,' 
            'Satoshi Nakamura, Wei Ye, Marios Savvides, Bhiksha Raj, Takahiro Shinozaki, Bernt Schiele, Jindong Wang, Xing Xie, Yue Zhang',
-    author_email='yidongwang37@gmail.com, haoc3@andrew.cmu.edu, yuefan@mpi-inf.mpg.de',
+    author_email='yidongwang37@gmail.com, haoc3@andrew.cmu.edu, yuefan@mpi-inf.mpg.de, jindwang@microsoft.com',
 
     # Note that this is a string of words separated by whitespace, not a list.
     keywords='pytorch semi-supervised-learning',
