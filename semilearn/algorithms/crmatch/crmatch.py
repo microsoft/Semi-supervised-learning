@@ -6,11 +6,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from copy import deepcopy
-
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, EMA, SSL_Argument, str2bool
-from semilearn.datasets import DistributedSampler, get_data_loader
 from PIL import Image
+
+from semilearn.core import AlgorithmBase
+from semilearn.core.utils import get_data_loader
+from semilearn.algorithms.hooks import FixedThresholdingHook
+from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool
 
 
 def rotate_img(img, rot):
@@ -100,13 +101,19 @@ class CRMatch_Net(nn.Module):
         else:
             raise NotImplementedError
         logits = self.backbone(feat_maps, only_fc=True)
+        results_dict = {'logits':logits, 'logits_ds':logits_ds, 'feat':feat_maps}
         # feat_flat = torch.mean(feat_maps, dim=(2, 3))
         # logits = self.backbone(feat_flat, only_fc=True)
         if self.use_rot:
             logits_rot = self.rot_classifier(feat_maps)
+            results_dict['logits_rot'] = logits_rot
         else:
-            logits_rot = None
-        return logits, logits_rot, logits_ds
+            results_dict['logits_rot'] = None
+        return results_dict
+
+    def group_matcher(self, coarse=False):
+        matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
+        return matcher
 
 
 class CRMatch(AlgorithmBase):
@@ -128,55 +135,53 @@ class CRMatch(AlgorithmBase):
                 If True, targets have [Batch size] shape with int values. If False, the target is vector
         """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
+        self.lambda_rot = args.rot_loss_ratio
+        self.use_rot = self.lambda_rot > 0
         super().__init__(args, net_builder,  tb_log, logger)
         # crmatch specificed arguments
         self.init(p_cutoff=args.p_cutoff, hard_label=args.hard_label)
-        self.lambda_rot = args.rot_loss_ratio
-        self.use_rot = self.lambda_rot > 0
-        self.model_backbone = self.model
-        self.model = CRMatch_Net(self.model_backbone, args, use_rot=self.use_rot)
-        self.ema_model = CRMatch_Net(self.ema_model, args, use_rot=self.use_rot)
-        self.ema_model.load_state_dict(self.model.state_dict())
         
 
     def init(self, p_cutoff, hard_label=True):
         self.p_cutoff = p_cutoff
         self.use_hard_label = hard_label
 
-
-    def set_data_loader(self, loader_dict):
-        self.loader_dict = loader_dict
-        self.print_fn(f'[!] data loader keys: {self.loader_dict.keys()}')
+    def set_data_loader(self):
+        loader_dict = super().set_data_loader()
 
         if self.use_rot:
-            x_ulb_rot = deepcopy(self.loader_dict['train_ulb'].dataset.data)
-            dataset_ulb_rot = RotNet(x_ulb_rot, transform=self.loader_dict['train_lb'].dataset.transform)
-            self.loader_dict['train_ulb_rot'] = get_data_loader(self.args,
-                                                                dataset_ulb_rot,
-                                                                self.args.batch_size,
-                                                                data_sampler=self.args.train_sampler,
-                                                                num_iters=self.args.num_train_iter,
-                                                                num_epochs=self.args.epoch,
-                                                                num_workers=4 * self.args.num_workers,
-                                                                distributed=self.args.distributed)
-            self.loader_dict['train_ulb_rot_iter'] = iter(self.loader_dict['train_ulb_rot'])
+            x_ulb_rot = deepcopy(loader_dict['train_ulb'].dataset.data)
+            dataset_ulb_rot = RotNet(x_ulb_rot, transform=loader_dict['train_lb'].dataset.transform)
+            loader_dict['train_ulb_rot'] = get_data_loader(self.args,
+                                                           dataset_ulb_rot,
+                                                           self.args.batch_size,
+                                                           data_sampler=self.args.train_sampler,
+                                                           num_iters=self.num_train_iter,
+                                                           num_epochs=self.epochs,
+                                                           num_workers=4 * self.args.num_workers,
+                                                           distributed=self.distributed)
+            loader_dict['train_ulb_rot_iter'] = iter(loader_dict['train_ulb_rot'])
+        return loader_dict
+
+    def set_model(self):
+        model = super().set_model()
+        model = CRMatch_Net(model, self.args, use_rot=self.use_rot)
+        return model
+    
+    def set_ema_model(self):
+        ema_model = self.net_builder(num_classes=self.num_classes)
+        ema_model = CRMatch_Net(ema_model, self.args, use_rot=self.use_rot)
+        ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
+        return ema_model
+
+    def set_hooks(self):
+        self.register_hook(FixedThresholdingHook(), "MaskingHook")
+        super().set_hooks()
+
 
     def train(self):
-        # EMA Init
         self.model.train()
-        self.ema = EMA(self.model, self.ema_m)
-        self.ema.register()
-        if self.resume == True:
-            self.ema.load(self.ema_model)
-            # eval_dict = self.evaluate()
-            # self.print_fn(eval_dict)
-
-        # for gpu profiling
-        start_batch = torch.cuda.Event(enable_timing=True)
-        end_batch = torch.cuda.Event(enable_timing=True)
-        start_run = torch.cuda.Event(enable_timing=True)
-        end_run = torch.cuda.Event(enable_timing=True)
-        start_batch.record()
+        self.call_hook("before_run")
 
         for epoch in range(self.epochs):
             self.epoch = epoch
@@ -185,21 +190,14 @@ class CRMatch(AlgorithmBase):
             if self.it > self.num_train_iter:
                 break
                 
-            if isinstance(self.loader_dict['train_lb'].sampler, DistributedSampler):
-                self.loader_dict['train_lb'].sampler.set_epoch(epoch)
-            if isinstance(self.loader_dict['train_ulb'].sampler, DistributedSampler):
-                self.loader_dict['train_ulb'].sampler.set_epoch(epoch)
-            if 'train_ulb_rot' in self.loader_dict and isinstance(self.loader_dict['train_ulb_rot'].sampler, DistributedSampler):
-                self.loader_dict['train_ulb_rot'].sampler.set_epoch(epoch)
+            self.call_hook("before_train_epoch")
             
             for data_lb, data_ulb in zip(self.loader_dict['train_lb'], self.loader_dict['train_ulb']):
                 # prevent the training iterations exceed args.num_train_iter
                 if self.it > self.num_train_iter:
                     break
 
-                end_batch.record()
-                torch.cuda.synchronize()
-                start_run.record()
+                self.call_hook("before_train_step")
 
                 if self.use_rot:
                     try:
@@ -215,20 +213,12 @@ class CRMatch(AlgorithmBase):
 
                 self.tb_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb, x_ulb_rot=x_ulb_rot, rot_v=rot_v))
 
-                end_run.record()
-                torch.cuda.synchronize()
+                self.call_hook("after_train_step")
+                self.it += 1
 
-                # tensorboard_dict update
-                self.tb_dict['lr'] = self.optimizer.param_groups[0]['lr']
-                self.tb_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
-                self.tb_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
+            self.call_hook("after_train_epoch")
 
-                self.after_train_step()
-                start_batch.record()
-
-        eval_dict = self.evaluate()
-        eval_dict.update({'eval/best_acc': self.best_eval_acc, 'eval/best_it': self.best_it})
-        return eval_dict
+        self.call_hook("after_run")
 
 
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s, x_ulb_rot=None, rot_v=None):
@@ -242,21 +232,26 @@ class CRMatch(AlgorithmBase):
                     inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s, x_ulb_rot), dim=0).contiguous()
                 else:
                     inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s), dim=0).contiguous()
-                logits, logits_rot, logits_ds = self.model(inputs)
+                outputs = self.model(inputs)
+                logits, logits_rot, logits_ds = outputs['logits'], outputs['logits_rot'], outputs['logits_ds']
                 logits_x_lb = logits[:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:num_lb + 2 * num_ulb].chunk(2)
                 logits_ds_w, logits_ds_s = logits_ds[num_lb:num_lb + 2 * num_ulb].chunk(2)
             else:
-                logits_x_lb, _, _ = self.model(x_lb)
-                logits_x_ulb_s, _, logits_ds_s = self.model(x_ulb_s)
+                outs_x_lb = self.model(x_lb)
+                logits_x_lb = outs_x_lb['logits']
+                # logits_x_lb, _, _ = self.model(x_lb)
+                
+                outs_x_ulb_s = self.model(x_ulb_s)
+                logits_x_ulb_s,logits_ds_s = outs_x_ulb_s['logits'], outs_x_ulb_s['logits_ds']
+                # logits_x_ulb_s, _, logits_ds_s = self.model(x_ulb_s)
                 with torch.no_grad():
-                    logits_x_ulb_w, _, logits_ds_w = self.model(x_ulb_w)
-               
-
+                    outs_x_ulb_w = self.model(x_ulb_w)
+                    logits_x_ulb_w, logits_ds_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds']
+            
             with torch.no_grad():
-                pseudo_label = torch.softmax(logits_x_ulb_w, dim=-1)
-                max_probs, y_ulb = torch.max(pseudo_label, dim=-1)
-                mask = max_probs.ge(self.p_cutoff).float()
+                y_ulb = torch.argmax(logits_x_ulb_w, dim=-1)
+                mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)    
 
             Lx = ce_loss(logits_x_lb, y_lb, reduction='mean')
             Lu = (ce_loss(logits_x_ulb_s, y_ulb, reduction='none') * mask).mean()
@@ -269,19 +264,20 @@ class CRMatch(AlgorithmBase):
                 if self.use_cat:
                     logits_rot = logits_rot[num_lb + 2 * num_ulb:]
                 else:
-                    _, logits_rot, _ = self.model(x_ulb_rot)
+                    logits_rot = self.model(x_ulb_rot)['logits_rot']
                 Lrot = ce_loss(logits_rot, rot_v, reduction='mean')
                 total_loss += Lrot
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = Lx.item()
         tb_dict['train/unsup_loss'] = Lu.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = 1.0 - mask.float().mean().item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
         return tb_dict
+
 
     @staticmethod
     def get_argument():

@@ -1,12 +1,13 @@
 algorithm: simmatch
-save_dir: ./saved_models/usb_cv
+save_dir: ./saved_models/usb_cv/
 save_name: simmatch_eurosat_40_0
 resume: True
-load_path: ./saved_models/usb_cv/simmatch_eurosat_40_0/latest_model.pth
+load_path: ./saved_models/usb_cv//simmatch_eurosat_40_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 epoch: 200
 num_train_iter: 204800
+num_log_iter: 512
 num_eval_iter: 2048
 batch_size: 8
 eval_batch_size: 16
@@ -26,10 +27,12 @@ img_size: 32
 crop_ratio: 0.875
 optim: AdamW
 lr: 5e-05
+layer_decay: 1.0
 momentum: 0.9
 weight_decay: 0.0005
 amp: False
 clip: 0.0
+use_cat: True
 net: vit_small_patch2_32
 net_from_name: False
 data_dir: ./data
@@ -41,7 +44,7 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10077
+dist_url: tcp://127.0.0.1:10072
 dist_backend: nccl
 gpu: None
 use_pretrain: True

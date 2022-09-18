@@ -13,7 +13,7 @@ from .vat import VAT
 from .remixmatch import ReMixMatch
 from .crmatch import CRMatch
 from .dash import Dash
-from .mpl import MPL
+# from .mpl import MPL
 from .fullysupervised import FullySupervised
 from .comatch import CoMatch
 from .simmatch import SimMatch
@@ -37,19 +37,18 @@ name2alg = {
     'comatch': CoMatch,
     'simmatch': SimMatch,
     'dash': Dash,
-    'mpl': MPL
+    # 'mpl': MPL
 }
-
 
 def get_algorithm(args, net_builder, tb_log, logger):
     try:
-        model = name2alg[args.algorithm](
+        alg = name2alg[args.algorithm](
             args=args,
             net_builder=net_builder,
             tb_log=tb_log,
             logger=logger
         )
-        return model
+        return alg
     except KeyError as e:
         print(f'Unknown algorithm: {str(e)}')
 

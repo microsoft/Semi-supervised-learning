@@ -22,8 +22,10 @@ optim: SGD
 lr: 0.03
 momentum: 0.9
 weight_decay: 0.0005
+layer_decay: 1.0
 amp: False
 clip: 0.0
+use_cat: True
 net: wrn_28_2
 net_from_name: False
 data_dir: ./data
@@ -35,6 +37,6 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10050
+dist_url: tcp://127.0.0.1:10046
 dist_backend: nccl
 gpu: None

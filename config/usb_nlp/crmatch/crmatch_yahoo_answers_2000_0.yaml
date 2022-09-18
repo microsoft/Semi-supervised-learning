@@ -8,9 +8,10 @@ use_tensorboard: True
 epoch: 100
 num_train_iter: 102400
 num_warmup_iter: 5120
+num_log_iter: 256
 num_eval_iter: 2048
 num_labels: 2000
-batch_size: 4
+batch_size: 8
 eval_batch_size: 8
 hard_label: True
 p_cutoff: 0.95
@@ -20,9 +21,10 @@ uratio: 1
 use_cat: False
 ema_m: 0.0
 optim: AdamW
-lr: 5e-06
+lr: 0.0001
 momentum: 0.9
 weight_decay: 0.0005
+layer_decay: 0.65
 amp: False
 clip: 0.0
 net: bert_base_uncased

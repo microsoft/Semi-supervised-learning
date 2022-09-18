@@ -30,6 +30,7 @@ import random
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 from semilearn.datasets.augmentation import RandAugment, RandomResizedCropAndInterpolation, str_to_interp_mode
+from semilearn.datasets.utils import split_ssl_data
 from .datasetbase import BasicDataset
 
 
@@ -39,7 +40,7 @@ dataset_std = (0.5, 0.5, 0.5)
 num_classes = 10
 
 
-def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', seed=1):
+def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
 
     crop_size = args.img_size
     crop_ratio = args.crop_ratio
@@ -91,15 +92,9 @@ def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', 
 
 
     data_dir = os.path.join(data_dir, dataset.lower())
-
-    # if transform_train is None:
-    #     transform_train = transform_train_eurosat
-    # if transform_val is None:
-    #     transform_val = transform_val_eurosat
-    # strong_transform = copy.deepcopy(transform_train)
-    # strong_transform.transforms.insert(0, RandAugment(3, 5))
-
     base_dataset = EuroSat(alg, data_dir, split="trainval")
+
+
     # num_classes = 10
     n_labeled_per_class = int(num_labels // num_classes)
 
@@ -109,19 +104,23 @@ def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', 
 
     # shuffle the dataset
     shuffle_index = list(range(len(train_ids)))
-    random.Random(seed).shuffle(shuffle_index)
+    np.random.shuffle(shuffle_index)
     total_targets = train_targets[shuffle_index]
     total_idxs = train_ids[shuffle_index]
 
-    train_labeled_idxs, _, train_unlabeled_idxs, _ = balanced_selection(total_idxs, total_targets,
-                                                                        num_classes, n_labeled_per_class)
-
+    train_labeled_idxs, _, train_unlabeled_idxs, _ = split_ssl_data(args, total_idxs, total_targets, num_classes, 
+                                                                    lb_num_labels=num_labels,
+                                                                    ulb_num_labels=args.ulb_num_labels,
+                                                                    lb_imbalance_ratio=args.lb_imb_ratio,
+                                                                    ulb_imbalance_ratio=args.ulb_imb_ratio,
+                                                                    include_lb_to_ulb=include_lb_to_ulb)
     # construct datasets for training and testing
     if alg == 'fullysupervised':
         if len(train_unlabeled_idxs) == len(total_idxs):
             train_labeled_idxs = train_unlabeled_idxs 
         else:
             train_labeled_idxs = np.concatenate([train_labeled_idxs, train_unlabeled_idxs])
+    
     train_labeled_dataset = EuroSat(alg, data_dir, split="trainval", idx_list=train_labeled_idxs, transform=transform_weak)
     train_unlabeled_dataset = EuroSat(alg, data_dir, split="trainval", is_ulb=True, idx_list=train_unlabeled_idxs, transform=transform_weak, transform_strong=transform_strong)
     val_dataset = EuroSat(alg, data_dir, split="test", transform=transform_val)

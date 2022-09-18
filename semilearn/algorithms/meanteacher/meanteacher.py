@@ -3,7 +3,7 @@
 
 import torch
 import numpy as np
-from semilearn.algorithms.algorithmbase import AlgorithmBase
+from semilearn.core import AlgorithmBase
 from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
 
 
@@ -35,30 +35,34 @@ class MeanTeacher(AlgorithmBase):
         # inference and calculate sup/unsup losses
         with self.amp_cm():
 
-            logits_x_lb = self.model(x_lb)
+            outs_x_lb = self.model(x_lb)
+            logits_x_lb = outs_x_lb['logits']
 
             self.ema.apply_shadow()
             with torch.no_grad():
                 self.bn_controller.freeze_bn(self.model)
-                logits_x_ulb_w = self.model(x_ulb_w)
+                outs_x_ulb_w = self.model(x_ulb_w)
+                logits_x_ulb_w = outs_x_ulb_w['logits'] # self.model(x_ulb_w)
                 self.bn_controller.unfreeze_bn(self.model)
             self.ema.restore()
 
             self.bn_controller.freeze_bn(self.model)
-            logits_x_ulb_s = self.model(x_ulb_s)
+            outs_x_ulb_s = self.model(x_ulb_s)
+            logits_x_ulb_s = outs_x_ulb_w['logits']
             self.bn_controller.unfreeze_bn(self.model)
 
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
-            unsup_loss, _ = consistency_loss(logits_x_ulb_s,
-                                             logits_x_ulb_w,
-                                             'mse')
+            unsup_loss = consistency_loss(logits_x_ulb_s,
+                                          torch.softmax(logits_x_ulb_w.detach(), dim=-1),
+                                          'mse')
             
+            # TODO: move this into masking
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()

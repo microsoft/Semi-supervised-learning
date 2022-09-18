@@ -233,7 +233,8 @@ class ResNet50(nn.Module):
             return x
 
         out = self.fc(x)
-        return out
+        result_dict = {'logits':out, 'feat':x}
+        return result_dict
 
     
     def extract(self, x):
@@ -247,7 +248,19 @@ class ResNet50(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
         return x
+    
 
-def resnet50(pretrained=False, **kwargs):
+    def group_matcher(self, coarse=False, prefix=''):
+        matcher = dict(stem=r'^{}conv1|^{}bn1|^{}maxpool'.format(prefix, prefix, prefix), blocks=r'^{}layer(\d+)'.format(prefix) if coarse else r'^{}layer(\d+)\.(\d+)'.format(prefix))
+        return matcher
+
+    def no_weight_decay(self):
+        nwd = []
+        for n, _ in self.named_parameters():
+            if 'bn' in n or 'bias' in n:
+                nwd.append(n)
+        return nwd
+
+def resnet50(pretrained=False, pretrained_path=None, **kwargs):
     model = ResNet50(**kwargs)
     return model

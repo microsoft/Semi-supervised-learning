@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 from transformers import BertModel
-
+import os
 
 class ClassificationBert(nn.Module):
     def __init__(self, name, num_classes=2):
@@ -40,12 +40,12 @@ class ClassificationBert(nn.Module):
             return pooled_output
         
         logits = self.classifier(pooled_output)
+        result_dict = {'logits':logits, 'feat':pooled_output}
 
         if return_embed:
-            embed = out_dict['hidden_states'][0]
-            return embed, logits
-        else:
-            return logits
+            result_dict['embed'] = out_dict['hidden_states'][0]
+            
+        return result_dict
         
         
     def extract(self, x):
@@ -54,8 +54,13 @@ class ClassificationBert(nn.Module):
         drop_hidden = self.dropout(last_hidden)
         pooled_output = torch.mean(drop_hidden, 1)
         return pooled_output
-        
 
+    def group_matcher(self, coarse=False, prefix=''):
+        matcher = dict(stem=r'^{}bert.embeddings'.format(prefix), blocks=r'^{}bert.encoder.layer.(\d+)'.format(prefix))
+        return matcher
+
+    def no_weight_decay(self):
+        return []
 
 
 
@@ -64,6 +69,6 @@ def bert_base_cased(pretrained=True, pretrained_path=None, **kwargs):
     return model
 
 
-def bert_base_uncased(pretrained=True,pretrained_path=None, **kwargs):
+def bert_base_uncased(pretrained=True, pretrained_path=None, **kwargs):
     model = ClassificationBert(name='bert-base-uncased', **kwargs)
     return model

@@ -37,7 +37,7 @@ def create_configuration(cfg, cfg_file):
 
 def create_usb_audio_config(alg, seed,
                              dataset, net, num_classes, num_labels,
-                             port, lr, weight_decay, max_length_seconds, sample_rate):
+                             port, lr, weight_decay, layer_decay, max_length_seconds, sample_rate):
     cfg = {}
     cfg['algorithm'] = alg
 
@@ -52,6 +52,7 @@ def create_usb_audio_config(alg, seed,
     cfg['epoch'] = 100
     cfg['num_train_iter'] = 1024 * 100
     cfg['num_eval_iter'] = 2048
+    cfg['num_log_iter'] = 256
     cfg['num_warmup_iter'] = int(1024 * 5)
 
     cfg['num_labels'] = num_labels
@@ -66,7 +67,7 @@ def create_usb_audio_config(alg, seed,
     elif alg == 'adamatch':
         cfg['hard_label'] = True
         cfg['T'] = 0.5
-        cfg['p_cutoff'] = 0.9
+        cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
         cfg['ema_p'] = 0.999
     elif alg == 'flexmatch':
@@ -75,18 +76,6 @@ def create_usb_audio_config(alg, seed,
         cfg['thresh_warmup'] = True
         cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
-    elif alg == 'freematch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['ema_p'] = 0.999
-        cfg['ent_loss_ratio'] = 0.01
-    elif alg == 'softmatch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['dist_align'] = True
-        cfg['ema_p'] = 0.999
-        cfg['ulb_loss_ratio'] = 1.0
-        cfg['n_sigma'] = 3
     elif alg == 'uda':
         cfg['tsa_schedule'] = 'none'
         cfg['T'] = 0.4
@@ -169,6 +158,7 @@ def create_usb_audio_config(alg, seed,
     cfg['lr'] = lr
     cfg['momentum'] = 0.9
     cfg['weight_decay'] = weight_decay
+    cfg['layer_decay'] = layer_decay
     cfg['amp'] = False
     cfg['clip'] = 0.0
 
@@ -213,8 +203,8 @@ def exp_usb_speech(label_amount):
         os.mkdir(save_path)
 
 
-    algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'mpl', 'crmatch', 'comatch', 'simmatch', 'adamatch']
+    algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
+            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch']
     datasets = ['esc50', 'fsdnoisy', 'urbansound8k', 'gtzan', 'superbks']
 
     # seeds = [0, 1, 2]  # 1, 22, 333
@@ -234,26 +224,36 @@ def exp_usb_speech(label_amount):
                     num_labels = label_amount[0] * num_classes
                     max_length_seconds = 5.0
                     net = 'hubert_base'
+                    lr = 1e-4
+                    layer_decay = 0.85
                 elif dataset == 'fsdnoisy':
                     num_classes = 20
-                    num_labels = label_amount[1] * num_classes
+                    num_labels = 1773
                     max_length_seconds = 5.0
                     net = 'hubert_base'
+                    lr = 5e-4
+                    layer_decay = 0.75
                 elif dataset == 'urbansound8k':
                     num_classes = 10
                     num_labels = label_amount[2] * num_classes
                     max_length_seconds = 4.0
                     net = 'hubert_base'
+                    lr = 5e-5
+                    layer_decay = 0.75
                 elif dataset == 'gtzan':
                     num_classes = 10
                     num_labels = label_amount[3] * num_classes
                     max_length_seconds = 3.0
                     net = 'wave2vecv2_base'
+                    lr = 2e-5
+                    layer_decay = 1.0
                 elif dataset == 'superbks':
                     num_classes = 10
                     num_labels = label_amount[4] * num_classes
                     max_length_seconds = 1.0
                     net = 'wave2vecv2_base'
+                    lr = 5e-5
+                    layer_decay = 0.75
                 elif dataset == 'superbsi':
                     num_classes = 1251
                     num_labels = label_amount[5] * num_classes
@@ -263,16 +263,16 @@ def exp_usb_speech(label_amount):
                 # prepare the configuration file
                 cfg = create_usb_audio_config(alg, seed,
                                               dataset, net, num_classes, num_labels,
-                                              port, 2e-5, weight_decay, max_length_seconds, sampling_rate)
+                                              port, lr, weight_decay, layer_decay, max_length_seconds, sampling_rate)
                 count += 1
                 create_configuration(cfg, config_file)
 
 
 if __name__ == '__main__':
     if not os.path.exists('./saved_models/usb_audio/'):
-        os.mkdir('./saved_models/usb_audio/')
+        os.makedirs('./saved_models/usb_audio/', exist_ok=True)
     if not os.path.exists('./config/usb_audio/'):
-        os.mkdir('./config/usb_audio/')
+        os.makedirs('./config/usb_audio/', exist_ok=True)
 
     # usb speech
     label_amount = {

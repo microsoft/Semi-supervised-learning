@@ -9,7 +9,7 @@ import math
 
 from torchvision import transforms
 from .datasetbase import BasicDataset
-from semilearn.datasets.augmentation import RandAugment, RandomResizedCropAndInterpolation, str_to_interp_mode
+from semilearn.datasets.augmentation import RandAugment, RandomResizedCropAndInterpolation
 from semilearn.datasets.utils import split_ssl_data
 
 
@@ -21,7 +21,7 @@ std['cifar10'] = [0.229, 0.224, 0.225]
 std['cifar100'] = [x / 255 for x in [68.2, 65.4, 70.4]]
 
 
-def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data'):
+def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
     
     data_dir = os.path.join(data_dir, name.lower())
     dset = getattr(torchvision.datasets, name.upper())
@@ -54,29 +54,50 @@ def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data'):
         transforms.Normalize(mean[name], std[name],)
     ])
 
-    lb_data, lb_targets, ulb_data, ulb_targets = split_ssl_data(args, data, targets, num_labels, num_classes, None, True)
+    lb_data, lb_targets, ulb_data, ulb_targets = split_ssl_data(args, data, targets, num_classes, 
+                                                                lb_num_labels=num_labels,
+                                                                ulb_num_labels=args.ulb_num_labels,
+                                                                lb_imbalance_ratio=args.lb_imb_ratio,
+                                                                ulb_imbalance_ratio=args.ulb_imb_ratio,
+                                                                include_lb_to_ulb=include_lb_to_ulb)
+    
+    lb_count = [0 for _ in range(num_classes)]
+    ulb_count = [0 for _ in range(num_classes)]
+    for c in lb_targets:
+        lb_count[c] += 1
+    for c in ulb_targets:
+        ulb_count[c] += 1
+    print("lb count: {}".format(lb_count))
+    print("ulb count: {}".format(ulb_count))
+    # lb_count = lb_count / lb_count.sum()
+    # ulb_count = ulb_count / ulb_count.sum()
+    # args.lb_class_dist = lb_count
+    # args.ulb_class_dist = ulb_count
+
     if alg == 'fullysupervised':
-        if len(ulb_data) == len(data):
-            lb_data = ulb_data 
-            lb_targets = ulb_targets
-        else:
-            lb_data = np.concatenate([lb_data, ulb_data], axis=0)
-            lb_targets = np.concatenate([lb_targets, ulb_targets], axis=0)
+        lb_data = data
+        lb_targets = targets
+        # if len(ulb_data) == len(data):
+        #     lb_data = ulb_data 
+        #     lb_targets = ulb_targets
+        # else:
+        #     lb_data = np.concatenate([lb_data, ulb_data], axis=0)
+        #     lb_targets = np.concatenate([lb_targets, ulb_targets], axis=0)
     
     # output the distribution of labeled data for remixmatch
-    count = [0 for _ in range(num_classes)]
-    for c in lb_targets:
-        count[c] += 1
-    dist = np.array(count, dtype=float)
-    dist = dist / dist.sum()
-    dist = dist.tolist()
-    out = {"distribution": dist}
-    output_file = r"./data_statistics/"
-    output_path = output_file + str(name) + '_' + str(num_labels) + '.json'
-    if not os.path.exists(output_file):
-        os.makedirs(output_file, exist_ok=True)
-    with open(output_path, 'w') as w:
-        json.dump(out, w)
+    # count = [0 for _ in range(num_classes)]
+    # for c in lb_targets:
+    #     count[c] += 1
+    # dist = np.array(count, dtype=float)
+    # dist = dist / dist.sum()
+    # dist = dist.tolist()
+    # out = {"distribution": dist}
+    # output_file = r"./data_statistics/"
+    # output_path = output_file + str(name) + '_' + str(num_labels) + '.json'
+    # if not os.path.exists(output_file):
+    #     os.makedirs(output_file, exist_ok=True)
+    # with open(output_path, 'w') as w:
+    #     json.dump(out, w)
 
     lb_dset = BasicDataset(alg, lb_data, lb_targets, num_classes, transform_weak, False, None, False)
 

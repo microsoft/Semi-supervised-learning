@@ -32,7 +32,7 @@ def get_transform(mean, std, crop_size, train=True, crop_ratio=0.95):
                                    transforms.Normalize(mean, std)])
 
 
-def get_svhn(args, alg, name, num_labels, num_classes, data_dir='./data'):
+def get_svhn(args, alg, name, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
 
     crop_size = args.img_size
     crop_ratio = args.crop_ratio
@@ -75,14 +75,17 @@ def get_svhn(args, alg, name, num_labels, num_classes, data_dir='./data'):
     targets = np.concatenate([targets_b, targets_e])
     del data_b, data_e
     del targets_b, targets_e
-    lb_data, lb_targets, ulb_data, ulb_targets = split_ssl_data(args, data, targets, num_labels, num_classes, None, True)
+    
+
+    lb_data, lb_targets, ulb_data, ulb_targets = split_ssl_data(args, data, targets, num_classes, 
+                                                                lb_num_labels=num_labels,
+                                                                ulb_num_labels=args.ulb_num_labels,
+                                                                lb_imbalance_ratio=args.lb_imb_ratio,
+                                                                ulb_imbalance_ratio=args.ulb_imb_ratio,
+                                                                include_lb_to_ulb=include_lb_to_ulb)
     if alg == 'fullysupervised':
-        if len(ulb_data) == len(data):
-            lb_data = ulb_data 
-            lb_targets = ulb_targets
-        else:
-            lb_data = np.concatenate([lb_data, ulb_data], axis=0)
-            lb_targets = np.concatenate([lb_targets, ulb_targets], axis=0)
+        lb_data = data
+        lb_targets = targets
                 
     # output the distribution of labeled data for remixmatch
     count = [0 for _ in range(num_classes)]

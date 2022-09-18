@@ -66,7 +66,7 @@ def create_classific_config(alg, seed,
     elif alg == 'adamatch':
         cfg['hard_label'] = True
         cfg['T'] = 0.5
-        cfg['p_cutoff'] = 0.9
+        cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
         cfg['ema_p'] = 0.999
         cfg['uratio'] = 7
@@ -188,8 +188,10 @@ def create_classific_config(alg, seed,
     cfg['lr'] = 0.03
     cfg['momentum'] = 0.9
     cfg['weight_decay'] = weight_decay
+    cfg['layer_decay'] = 1.0
     cfg['amp'] = False
     cfg['clip'] = 0.0
+    cfg['use_cat'] = True
 
     # net config
     cfg['net'] = net
@@ -233,7 +235,7 @@ def exp_classific_cv(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'mpl', 'crmatch', 'comatch', 'simmatch', 'adamatch']
+            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch']
     datasets = ['cifar100', 'svhn', 'stl10', 'cifar10']
 
     # seeds = [0, 1, 2] 

@@ -37,7 +37,8 @@ class ClassificationWave2Vec(nn.Module):
             return pooled_output
 
         logits = self.classifier(pooled_output)
-        return logits
+        result_dict = {'logits':logits, 'feat':pooled_output}
+        return result_dict
 
     def extract(self, x):
         out_dict = self.model(x, output_hidden_states=True, return_dict=True)
@@ -47,7 +48,18 @@ class ClassificationWave2Vec(nn.Module):
         pooled_output = torch.mean(drop_hidden, 1)
         return pooled_output
 
+    def group_matcher(self, coarse=False, prefix=''):
+        matcher = dict(stem=r'^{}model.feature_projection|^{}model.feature_extractor'.format(prefix, prefix), blocks=r'^{}model.encoder.layers.(\d+)'.format(prefix))
+        return matcher
+
+    def no_weight_decay(self):
+        return []
 
 def wave2vecv2_base(pretrained=False,pretrained_path=None, **kwargs):
     model = ClassificationWave2Vec(name='facebook/wav2vec2-base-960h', **kwargs)
     return model
+
+
+if __name__ == '__main__':
+    model = wave2vecv2_base()
+    print(model)

@@ -38,7 +38,8 @@ class ClassificationHubert(nn.Module):
             return pooled_output
 
         logits = self.classifier(pooled_output)
-        return logits
+        result_dict = {'logits':logits, 'feat':pooled_output}
+        return result_dict
 
     def extract(self, x):
         out_dict = self.model(x, output_hidden_states=True, return_dict=True)
@@ -48,7 +49,19 @@ class ClassificationHubert(nn.Module):
         pooled_output = torch.mean(drop_hidden, 1)
         return pooled_output
 
+    def group_matcher(self, coarse=False, prefix=''):
+        matcher = dict(stem=r'^{}model.feature_projection|^{}model.feature_extractor|^{}model.encoder.pos_conv_embed'.format(prefix, prefix, prefix), blocks=r'^{}model.encoder.layers.(\d+)'.format(prefix))
+        return matcher
+
+    def no_weight_decay(self):
+        return []
+
 
 def hubert_base(pretrained=False, pretrained_path=None, **kwargs):
     model = ClassificationHubert(name='facebook/hubert-base-ls960', **kwargs)
     return model
+
+
+if __name__ == '__main__':
+    model = hubert_base()
+    print(model)

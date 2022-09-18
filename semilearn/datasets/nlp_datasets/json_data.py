@@ -54,7 +54,12 @@ def get_json_dset(args, alg='fixmatch', dataset='acmIb', num_labels=40, num_clas
             lb_dset = BasicDataset(alg, train_sen_list, train_label_list, num_classes, False,onehot)
             return lb_dset, None, dev_dset, test_dset
         
-        lb_sen_list, lb_label_list, ulb_sen_list, ulb_label_list = split_ssl_data(args, train_sen_list, train_label_list, num_labels, num_classes, index, include_lb_to_ulb)
+        lb_sen_list, lb_label_list, ulb_sen_list, ulb_label_list = split_ssl_data(args, train_sen_list, train_label_list, num_classes, 
+                                                                    lb_num_labels=num_labels,
+                                                                    ulb_num_labels=args.ulb_num_labels,
+                                                                    lb_imbalance_ratio=args.lb_imb_ratio,
+                                                                    ulb_imbalance_ratio=args.ulb_imb_ratio,
+                                                                    include_lb_to_ulb=include_lb_to_ulb)
 
         # output the distribution of labeled data for remixmatch
         count = [0 for _ in range(num_classes)]

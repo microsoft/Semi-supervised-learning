@@ -32,7 +32,7 @@ class DistributedSampler(Sampler):
 
         if not isinstance(num_samples, int) or num_samples <= 0:
             raise ValueError("num_samples should be a positive integeral "
-                             "value, but got num_samples={}".format(self.num_samples))
+                             "value, but got num_samples={}".format(num_samples))
 
         if num_replicas is None:
             if not dist.is_available():

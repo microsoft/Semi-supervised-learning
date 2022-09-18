@@ -5,9 +5,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, EMA, SSL_Argument, str2bool
-from semilearn.datasets import DistributedSampler
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, concat_all_gather
 
 
 class CoMatch_Net(nn.Module):
@@ -31,7 +31,11 @@ class CoMatch_Net(nn.Module):
         feat = self.backbone(x, only_feat=True)
         logits = self.backbone(feat, only_fc=True)
         feat_proj = self.l2norm(self.mlp_proj(feat))
-        return logits, feat_proj 
+        return {'logits':logits, 'feat':feat_proj}
+
+    def group_matcher(self, coarse=False):
+        matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
+        return matcher
 
 
 def comatch_contrastive_loss(feats_x_ulb_s_0, feats_x_ulb_s_1, Q, T=0.2):
@@ -82,11 +86,6 @@ class CoMatch(AlgorithmBase):
                   contrast_p_cutoff=args.contrast_p_cutoff, hard_label=args.hard_label, 
                   queue_batch=args.queue_batch, smoothing_alpha=args.smoothing_alpha, da_len=args.da_len)
         self.lambda_c = args.contrast_loss_ratio
-        # warp model
-        backbone = self.model
-        self.model = CoMatch_Net(backbone, proj_size=self.args.proj_size)
-        self.ema_model = CoMatch_Net(self.ema_model, proj_size=self.args.proj_size)
-        self.ema_model.load_state_dict(self.model.state_dict())
 
     def init(self, T, p_cutoff, contrast_p_cutoff, hard_label=True, queue_batch=128, smoothing_alpha=0.999, da_len=256):
         self.T = T 
@@ -97,53 +96,37 @@ class CoMatch(AlgorithmBase):
         self.smoothing_alpha = smoothing_alpha
         self.da_len = da_len
 
+        # TODO: put this part into a hook
         # memory smoothing
         self.queue_size = int(queue_batch * (self.args.uratio + 1) * self.args.batch_size)
         self.queue_feats = torch.zeros(self.queue_size, self.args.proj_size).cuda(self.gpu)
         self.queue_probs = torch.zeros(self.queue_size, self.args.num_classes).cuda(self.gpu)
         self.queue_ptr = 0
+        
+    def set_hooks(self):
+        self.register_hook(
+            DistAlignQueueHook(num_classes=self.num_classes, queue_length=self.args.da_len, p_target_type='uniform'), 
+            "DistAlignHook")
+        self.register_hook(FixedThresholdingHook(), "MaskingHook")
+        super().set_hooks()
 
-        # distribution alignment
-        self.da_len = da_len
-        if self.da_len:
-            self.da_queue = torch.zeros(self.da_len, self.num_classes, dtype=torch.float).cuda(self.gpu)
-            self.da_ptr = torch.zeros(1, dtype=torch.long).cuda(self.gpu)
-
-    @torch.no_grad()
-    def distribution_alignment(self, probs):
-        probs_bt_mean = probs.mean(0)
-        ptr = int(self.da_ptr)
-
-        if self.distributed:
-            torch.distributed.all_reduce(probs_bt_mean)
-            self.da_queue[ptr] = probs_bt_mean / torch.distributed.get_world_size()
-        else:
-            self.da_queue[ptr] = probs_bt_mean
-
-        self.da_ptr[0] = (ptr + 1) % self.da_len
-        probs = probs / self.da_queue.mean(0)
-        probs = probs / probs.sum(dim=1, keepdim=True)
-        return probs.detach()
+    def set_model(self):
+        model = super().set_model()
+        model = CoMatch_Net(model, proj_size=self.args.proj_size)
+        return model
     
-    # utils
-    @torch.no_grad()
-    def concat_all_gather(self, tensor):
-        """
-        Performs all_gather operation on the provided tensors.
-        *** Warning ***: torch.distributed.all_gather has no gradient.
-        """
-        tensors_gather = [torch.ones_like(tensor)
-            for _ in range(torch.distributed.get_world_size())]
-        torch.distributed.all_gather(tensors_gather, tensor)
+    def set_ema_model(self):
+        ema_model = self.net_builder(num_classes=self.num_classes)
+        ema_model = CoMatch_Net(ema_model, proj_size=self.args.proj_size)
+        ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
+        return ema_model
 
-        output = torch.cat(tensors_gather, dim=0)
-        return output
 
     @torch.no_grad()
     def update_bank(self, feats, probs):
-        if self.distributed:
-            feats = self.concat_all_gather(feats)
-            probs = self.concat_all_gather(probs)
+        if self.distributed and self.world_size > 1:
+            feats = concat_all_gather(feats)
+            probs = concat_all_gather(probs)
         # update memory bank
         length = feats.shape[0]
         self.queue_feats[self.queue_ptr:self.queue_ptr + length, :] = feats
@@ -158,16 +141,21 @@ class CoMatch(AlgorithmBase):
         with self.amp_cm():
             if self.use_cat:
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s_0, x_ulb_s_1))
-                logits, feats = self.model(inputs)
+                outputs = self.model(inputs)
+                logits, feats = outputs['logits'], outputs['feat']
                 logits_x_lb, feats_x_lb = logits[:num_lb], feats[:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s_0, _ = logits[num_lb:].chunk(3)
                 feats_x_ulb_w, feats_x_ulb_s_0, feats_x_ulb_s_1 = feats[num_lb:].chunk(3)
-            else:            
-                logits_x_lb, feats_x_lb = self.model(x_lb)
-                logits_x_ulb_s_0, feats_x_ulb_s_0 = self.model(x_ulb_s_0)
-                _, feats_x_ulb_s_1 = self.model(x_ulb_s_1)
+            else:       
+                outs_x_lb = self.model(x_lb)     
+                logits_x_lb, feats_x_lb = outs_x_lb['logits'], outs_x_lb['feat']
+                outs_x_ulb_s_0 = self.model(x_ulb_s_0)
+                logits_x_ulb_s_0, feats_x_ulb_s_0 = outs_x_ulb_s_0['logits'], outs_x_ulb_s_0['feat']
+                outs_x_ulb_s_1 = self.model(x_ulb_s_1)
+                feats_x_ulb_s_1 = outs_x_ulb_s_1['feat']
                 with torch.no_grad():
-                    logits_x_ulb_w, feats_x_ulb_w = self.model(x_ulb_w)
+                    outs_x_ulb_w = self.model(x_ulb_w)
+                    logits_x_ulb_w, feats_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['feat']
 
             # supervised loss
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
@@ -180,8 +168,7 @@ class CoMatch(AlgorithmBase):
 
                 probs = torch.softmax(logits_x_ulb_w, dim=1)            
                 # distribution alignment
-                if self.da_len:
-                    probs = self.distribution_alignment(probs)
+                probs = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs.detach())
 
                 probs_orig = probs.clone()
                 # memory-smoothing 
@@ -190,22 +177,17 @@ class CoMatch(AlgorithmBase):
                     A = A / A.sum(1,keepdim=True)                    
                     probs = self.smoothing_alpha * probs + (1 - self.smoothing_alpha) * torch.mm(A, self.queue_probs)    
                 
-                max_probs, _ = torch.max(probs, dim=1)
-                mask = max_probs.ge(self.p_cutoff).to(max_probs.dtype)
-                    
+                mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs, softmax_x_ulb=False)    
+                
                 feats_w = torch.cat([feats_x_ulb_w, feats_x_lb],dim=0)   
                 probs_w = torch.cat([probs_orig, F.one_hot(y_lb, num_classes=self.num_classes)],dim=0)
 
                 self.update_bank(feats_w, probs_w)
 
-
-            unsup_loss, _ = consistency_loss(logits_x_ulb_s_0,
-                                             probs,
-                                             'ce',
-                                             use_hard_labels=False,
-                                             T=1.0,
-                                             mask=mask,
-                                             softmax=False)
+            unsup_loss = consistency_loss(logits_x_ulb_s_0,
+                                          probs,
+                                          'ce',
+                                          mask=mask)
 
             # pseudo-label graph with self-loop
             Q = torch.mm(probs, probs.t())       
@@ -219,7 +201,7 @@ class CoMatch(AlgorithmBase):
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_c * contrast_loss
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
 
         tb_dict = {}
@@ -227,7 +209,7 @@ class CoMatch(AlgorithmBase):
         tb_dict['train/unsup_loss'] = unsup_loss.item()
         tb_dict['train/contrast_loss'] = contrast_loss.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = 1.0 - mask.float().mean().item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
         return tb_dict
 
     def get_save_dict(self):
@@ -236,9 +218,10 @@ class CoMatch(AlgorithmBase):
         save_dict['queue_probs'] = self.queue_probs.cpu()
         save_dict['queue_size'] = self.queue_size
         save_dict['queue_ptr'] = self.queue_ptr
-        if self.da_len:
-            save_dict['da_queue'] = self.da_queue.cpu()
-            save_dict['da_ptr'] = self.da_ptr.cpu()
+        save_dict['p_model'] = self.hooks_dict['DistAlignHook'].p_model.cpu() 
+        save_dict['p_model_ptr'] = self.hooks_dict['DistAlignHook'].p_model_ptr.cpu()
+        # save_dict['p_target'] = self.hooks_dict['DistAlignHook'].p_target.cpu() 
+        # save_dict['p_target_ptr'] = self.hooks_dict['DistAlignHook'].p_target_ptr.cpu()
         return save_dict
 
     def load_model(self, load_path):
@@ -247,9 +230,10 @@ class CoMatch(AlgorithmBase):
         self.queue_probs = checkpoint['queue_probs'].cuda(self.gpu)
         self.queue_size = checkpoint['queue_size']
         self.queue_ptr = checkpoint['queue_ptr']
-        if self.da_len:
-            self.da_queue = checkpoint['da_queue'].cuda(self.gpu)
-            self.da_ptr = checkpoint['da_ptr'].cuda(self.gpu)
+        self.hooks_dict['DistAlignHook'].p_model = checkpoint['p_model'].cuda(self.args.gpu)
+        self.hooks_dict['DistAlignHook'].p_model_ptr = checkpoint['p_model_ptr'].cuda(self.args.gpu)
+        # self.hooks_dict['DistAlignHook'].p_target = checkpoint['p_target'].cuda(self.args.gpu)
+        # self.hooks_dict['DistAlignHook'].p_target_ptr = checkpoint['p_target_ptr'].cuda(self.args.gpu)
         return checkpoint
 
 

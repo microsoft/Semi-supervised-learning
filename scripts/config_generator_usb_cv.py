@@ -37,12 +37,12 @@ def create_configuration(cfg, cfg_file):
 
 def create_usb_cv_config(alg, seed,
                         dataset, net, num_classes, num_labels, img_size, crop_ratio,
-                        port, lr, weight_decay, pretrain_path, warmup=5, amp=False):
+                        port, lr, weight_decay, layer_decay, pretrain_path, warmup=5, amp=False):
     cfg = {}
     cfg['algorithm'] = alg
 
     # save config
-    cfg['save_dir'] = './saved_models/usb_cv'
+    cfg['save_dir'] = './saved_models/usb_cv/'
     cfg['save_name'] = None
     cfg['resume'] = False
     cfg['load_path'] = None
@@ -53,16 +53,17 @@ def create_usb_cv_config(alg, seed,
     if dataset == 'imagenet':
         cfg['epoch'] = 500
         cfg['num_train_iter'] = 1024 * 500
+        cfg['num_log_iter'] = 512
         cfg['num_eval_iter'] = 5120
         cfg['batch_size'] = 256
         cfg['eval_batch_size'] = 512
     else:
         cfg['epoch'] = 200
         cfg['num_train_iter'] = 1024 * 200
+        cfg['num_log_iter'] = 512
         cfg['num_eval_iter'] = 2048
         cfg['batch_size'] = 8
         cfg['eval_batch_size'] = 16
-    
     
     cfg['num_warmup_iter'] = int(1024 * warmup)
     cfg['num_labels'] = num_labels
@@ -81,7 +82,7 @@ def create_usb_cv_config(alg, seed,
     elif alg == 'adamatch':
         cfg['hard_label'] = True
         cfg['T'] = 0.5
-        cfg['p_cutoff'] = 0.9
+        cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
         cfg['ema_p'] = 0.999
     elif alg == 'flexmatch':
@@ -100,6 +101,24 @@ def create_usb_cv_config(alg, seed,
         cfg['ulb_loss_ratio'] = 1.0
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 10.0
+    elif alg == 'freematch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['ema_p'] = 0.999
+        cfg['ent_loss_ratio'] = 0.001
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+    elif alg == 'softmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['dist_align'] = True
+        cfg['dist_uniform'] = True
+        cfg['per_class'] = False
+        cfg['ema_p'] = 0.999
+        cfg['ulb_loss_ratio'] = 1.0
+        cfg['n_sigma'] = 2
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
     elif alg == 'pseudolabel':
         cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
@@ -204,10 +223,12 @@ def create_usb_cv_config(alg, seed,
     # optim config
     cfg['optim'] = 'AdamW'
     cfg['lr'] = lr
+    cfg['layer_decay'] = layer_decay
     cfg['momentum'] = 0.9
     cfg['weight_decay'] = weight_decay
     cfg['amp'] = amp
     cfg['clip'] = 0.0
+    cfg['use_cat'] = True
 
     # net config
     cfg['net'] = net
@@ -252,9 +273,8 @@ def exp_usb_cv(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-             'pimodel', 'vat', 'dash', 'mpl', 'crmatch', 'comatch', 'simmatch', 'adamatch']
+             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'softmatch', 'freematch']
     datasets = ['cifar100', 'eurosat', 'semi_aves', 'tissuemnist', 'stl10']
-
     # algs = ['fixmatch', 'flexmatch', 'comatch', 'simmatch']
     # datasets = ['imagenet']
     # seeds = [0, 1, 2]  # 1, 22, 333
@@ -265,7 +285,7 @@ def exp_usb_cv(label_amount):
     
     pretrain_path = 'https://github.com/microsoft/Semi-supervised-learning/releases/download/v.0.0.0'
     weight_decay = 5e-4
-    lr = 5e-5
+    # lr = 5e-5
     warmup = 5
     amp = False
 
@@ -282,6 +302,9 @@ def exp_usb_cv(label_amount):
                     net = 'vit_tiny_patch2_32'
                     pretrain_name = 'vit_tiny_patch2_32_mlp_im_1k_32.pth'
 
+                    lr = 5e-4
+                    layer_decay = 0.5 
+
                 elif dataset == 'cifar100':
                     num_classes = 100
                     num_labels = label_amount[1] * num_classes
@@ -292,6 +315,9 @@ def exp_usb_cv(label_amount):
                     crop_ratio = 0.875
                     net = 'vit_small_patch2_32'
                     pretrain_name = 'vit_small_patch2_32_mlp_im_1k_32.pth'
+
+                    lr = 5e-4
+                    layer_decay = 0.5 
 
 
                 elif dataset == 'svhn':
@@ -312,16 +338,23 @@ def exp_usb_cv(label_amount):
 
                     net = 'vit_base_patch16_96'
                     pretrain_name = 'mae_pretrain_vit_base.pth'
+
+                    lr = 1e-4
+                    layer_decay - 0.65 
                 
                 elif dataset == 'semi_aves':
                     num_classes = 200
-                    num_labels = label_amount[4] * num_classes
+                    # num_labels = label_amount[4] * num_classes
+                    num_labels = 3959
 
                     img_size = 224
                     crop_ratio = 0.875
 
                     net = 'vit_small_patch16_224'
                     pretrain_name = 'vit_small_patch16_224_mlp_im_1k_224.pth'
+
+                    lr = 1e-3
+                    layer_decay = 0.65
                 
                 # NOTE: resize to 32 x 32
                 elif dataset == 'eurosat':
@@ -333,16 +366,22 @@ def exp_usb_cv(label_amount):
 
                     net = 'vit_small_patch2_32'
                     pretrain_name = 'vit_small_patch2_32_mlp_im_1k_32.pth'
+
+                    lr = 5e-5
+                    layer_decay = 1.0
                 
                 elif dataset == 'tissuemnist':
 
-                    num_classes = 10
+                    num_classes = 8
                     num_labels = label_amount[6] * num_classes
                     img_size = 32
                     crop_ratio = 0.95
 
                     net = 'vit_tiny_patch2_32'
                     pretrain_name = 'vit_tiny_patch2_32_mlp_im_1k_32.pth'
+
+                    lr = 5e-5
+                    layer_decay = 0.95
 
                 elif dataset == 'imagenet':
                     net = 'vit_base_path16_224'
@@ -360,16 +399,16 @@ def exp_usb_cv(label_amount):
                 # prepare the configuration file
                 cfg = create_usb_cv_config(alg, seed,
                                            dataset, net, num_classes, num_labels, img_size, crop_ratio,
-                                           port, lr, weight_decay, pretrain_path=os.path.join(pretrain_path, pretrain_name),
+                                           port, lr, weight_decay, layer_decay, pretrain_path=os.path.join(pretrain_path, pretrain_name),
                                            warmup=warmup, amp=amp)
                 count += 1
                 create_configuration(cfg, config_file)
 
 if __name__ == '__main__':
     if not os.path.exists('./saved_models/usb_cv/'):
-        os.mkdir('./saved_models/usb_cv/')
+        os.makedirs('./saved_models/usb_cv/', exist_ok=True)
     if not os.path.exists('./config/usb_cv/'):
-        os.mkdir('./config/usb_cv/')
+        os.makedirs('./config/usb_cv/', exist_ok=True)
 
     label_amount = {'s': [2, 2, 2, 4, 2, 2, 10],
                     'm': [4, 4, 4, 10, 2, 4, 50]}

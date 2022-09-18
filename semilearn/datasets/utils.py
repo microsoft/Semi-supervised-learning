@@ -11,13 +11,16 @@ from semilearn.datasets.samplers import DistributedSampler
 from io import BytesIO
 
 # TODO: better way
-base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 
 name2sampler = {'RandomSampler': DistributedSampler}
 
 
-def split_ssl_data(args, data, target, num_labels, num_classes, index=None, include_lb_to_ulb=True):
+def split_ssl_data(args, data, targets, num_classes,
+                   lb_num_labels, ulb_num_labels=None,
+                   lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
+                   lb_index=None, ulb_index=None, include_lb_to_ulb=True):
     """
     data & target is splitted into labeled and unlabeld data.
     
@@ -25,71 +28,102 @@ def split_ssl_data(args, data, target, num_labels, num_classes, index=None, incl
         index: If np.array of index is given, select the data[index], target[index] as labeled samples.
         include_lb_to_ulb: If True, labeled data is also included in unlabeld data
     """
-    data, target = np.array(data), np.array(target)
-    lb_data, lbs, lb_idx, = sample_labeled_data(args, data, target, num_labels, num_classes, index)
-    ulb_idx = np.array(sorted(list(set(range(len(data))) - set(lb_idx))))  # unlabeled_data index of data
+    data, targets = np.array(data), np.array(targets)
+    lb_idx, ulb_idx = sample_labeled_unlabeled_data(args, data, targets, num_classes, 
+                                                    lb_num_labels, ulb_num_labels,
+                                                    lb_imbalance_ratio, ulb_imbalance_ratio)
+    
+    # manually set lb_idx and ulb_idx, do not use except for debug
+    if lb_index is not None:
+        lb_idx = lb_index
+    if ulb_index is not None:
+        ulb_idx = ulb_index
+
     if include_lb_to_ulb:
-        return lb_data, lbs, data, target
-    else:
-        return lb_data, lbs, data[ulb_idx], target[ulb_idx]
+        ulb_idx = np.concatenate([lb_idx, ulb_idx], axis=0)
+    
+    return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
 
-def sample_labeled_data(args, data, target,
-                        num_labels, num_classes,
-                        index=None, name=None):
+def sample_labeled_data():
+    pass
+
+
+def sample_labeled_unlabeled_data(args, data, target, num_classes,
+                                  lb_num_labels, ulb_num_labels=None,
+                                  lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
+                                  load_exist=False):
     '''
     samples for labeled data
     (sampling with balanced ratio over classes)
     '''
-    assert num_labels % num_classes == 0
-    if not index is None:
-        index = np.array(index, dtype=np.int32)
-        return data[index], target[index], index
-
-    # dump_path = os.path.join(args.save_dir, args.save_name, 'sampled_label_idx.npy')
     dump_dir = os.path.join(base_dir, 'data', args.dataset, 'labeled_idx')
     os.makedirs(dump_dir, exist_ok=True)
-    dump_path = os.path.join(dump_dir, f'labels{args.num_labels}_seed{args.seed}_idx.npy')
+    lb_dump_path = os.path.join(dump_dir, f'lb_labels{args.num_labels}_seed{args.seed}_idx.npy')
+    ulb_dump_path = os.path.join(dump_dir, f'ulb_labels{args.num_labels}_seed{args.seed}_idx.npy')
 
-    if os.path.exists(dump_path):
-        lb_idx = np.load(dump_path)
-        lb_data = data[lb_idx]
-        lbs = target[lb_idx]
-        return lb_data, lbs, lb_idx
+    if os.path.exists(lb_dump_path) and os.path.exists(ulb_dump_path) and load_exist:
+        lb_idx = np.load(lb_dump_path)
+        ulb_idx = np.load(ulb_dump_path)
+        return lb_idx, ulb_idx 
+
     
+    # get samples per class
+    if lb_imbalance_ratio == 1.0:
+        # balanced setting, lb_num_labels is total number of labels for labeled data
+        assert lb_num_labels % num_classes == 0, "lb_num_labels must be divideable by num_classes in balanced setting"
+        lb_samples_per_class = [int(lb_num_labels / num_classes)] * num_classes
+    else:
+        # imbalanced setting, lb_num_labels is the maximum number of labels for class 1
+        lb_samples_per_class = make_imbalance_data(lb_num_labels, num_classes, lb_imbalance_ratio)
 
-    samples_per_class = int(num_labels / num_classes)
 
-    lb_data = []
-    lbs = []
+    if ulb_imbalance_ratio == 1.0:
+        # balanced setting
+        if ulb_num_labels is None:
+            ulb_samples_per_class = [int(len(data) / num_classes) - lb_samples_per_class[c] for c in range(num_classes)] # [int(len(data) / num_classes) - int(lb_num_labels / num_classes)] * num_classes
+        else:
+            assert ulb_num_labels % num_classes == 0, "ulb_num_labels must be divideable by num_classes in balanced setting"
+            ulb_samples_per_class = [int(ulb_num_labels / num_classes)] * num_classes
+    else:
+        # imbalanced setting
+        assert ulb_num_labels is not None, "ulb_num_labels must be set set in imbalanced setting"
+        ulb_samples_per_class = make_imbalance_data(ulb_num_labels, num_classes, ulb_imbalance_ratio)
+
     lb_idx = []
+    ulb_idx = []
+    
     for c in range(num_classes):
         idx = np.where(target == c)[0]
-        idx = np.random.choice(idx, samples_per_class, False)
-        lb_idx.extend(idx)
+        np.random.shuffle(idx)
+        lb_idx.extend(idx[:lb_samples_per_class[c]])
+        ulb_idx.extend(idx[lb_samples_per_class[c]:lb_samples_per_class[c]+ulb_samples_per_class[c]])
+    
+    if isinstance(lb_idx, list):
+        lb_idx = np.asarray(lb_idx)
+    if isinstance(ulb_idx, list):
+        ulb_idx = np.asarray(ulb_idx)
 
-        lb_data.extend(data[idx])
-        lbs.extend(target[idx])
-
-    np.save(dump_path, np.array(lb_idx))
-
-    return np.array(lb_data), np.array(lbs), np.array(lb_idx)
+    np.save(lb_dump_path, lb_idx)
+    np.save(ulb_dump_path, ulb_idx)
+    
+    return lb_idx, ulb_idx
 
 
-def get_sampler_by_name(name):
-    '''
-    get sampler in torch.utils.data.sampler by name
-    '''
-    sampler_name_list = sorted(name for name in torch.utils.data.sampler.__dict__
-                               if not name.startswith('_') and callable(sampler.__dict__[name]))
-    try:
-        if name == 'DistributedSampler':
-            return torch.utils.data.distributed.DistributedSampler
+def make_imbalance_data(max_num_labels, num_classes, gamma):
+    mu = np.power(1 / abs(gamma), 1 / (num_classes - 1))
+    samples_per_class = []
+    for c in range(num_classes):
+        if c == (num_classes - 1):
+            samples_per_class.append(int(max_num_labels / abs(gamma)))
         else:
-            return getattr(torch.utils.data.sampler, name)
-    except Exception as e:
-        print(repr(e))
-        print('[!] select sampler in:\t', sampler_name_list)
+            samples_per_class.append(int(max_num_labels * np.power(mu, c)))
+    if gamma < 0:
+        samples_per_class = samples_per_class[::-1]
+    return samples_per_class
+
+
+
 
 
 def get_collactor(args, net):
@@ -108,69 +142,6 @@ def get_collactor(args, net):
     else:
         collact_fn = None
     return collact_fn
-
-
-
-def get_data_loader(args,
-                    dset,
-                    batch_size=None,
-                    shuffle=False,
-                    num_workers=4,
-                    pin_memory=False,
-                    data_sampler='RandomSampler',
-                    num_epochs=None,
-                    num_iters=None,
-                    generator=None,
-                    drop_last=True,
-                    distributed=False):
-    """
-    get_data_loader returns torch.utils.data.DataLoader for a Dataset.
-    All arguments are comparable with those of pytorch DataLoader.
-    However, if distributed, DistributedProxySampler, which is a wrapper of data_sampler, is used.
-    
-    Args
-        num_epochs: total batch -> (# of batches in dset) * num_epochs 
-        num_iters: total batch -> num_iters
-    """
-
-    assert batch_size is not None
-    if num_epochs is None:
-        num_epochs = args.epoch
-    if num_iters is None:
-        num_iters = args.num_train_iter
-        
-    collact_fn = get_collactor(args, args.net)
-
-    if data_sampler is None:
-        return DataLoader(dset, batch_size=batch_size, shuffle=shuffle, collate_fn=collact_fn,
-                          num_workers=num_workers, drop_last=drop_last, pin_memory=pin_memory)
-
-    if isinstance(data_sampler, str):
-        data_sampler = name2sampler[data_sampler]
-
-        if distributed:
-            assert dist.is_available()
-            num_replicas = dist.get_world_size()
-            rank = dist.get_rank()
-        else:
-            num_replicas = 1
-            rank = 0
-
-        per_epoch_steps = num_iters // num_epochs
-
-        num_samples = per_epoch_steps * batch_size * num_replicas
-
-        return DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=num_workers, collate_fn=collact_fn,
-                          pin_memory=pin_memory, sampler=data_sampler(dset, num_replicas=num_replicas, rank=rank, num_samples=num_samples),
-                          generator=generator, drop_last=drop_last)
-
-    elif isinstance(data_sampler, torch.utils.data.Sampler):
-        return DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=num_workers,
-                          collate_fn=collact_fn, pin_memory=pin_memory, sampler=data_sampler,
-                          generator=generator, drop_last=drop_last)
-
-    else:
-        raise Exception(f"unknown data sampler {data_sampler}.")
 
 
 

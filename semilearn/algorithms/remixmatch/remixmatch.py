@@ -7,8 +7,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool, interleave
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.hooks import DistAlignEMAHook 
+from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool, interleave, mixup_one_target
 
 
 
@@ -28,7 +29,23 @@ class ReMixMatch_Net(nn.Module):
         feat = self.backbone(x, only_feat=True)
         logits = self.backbone(feat, only_fc=True)
         logits_rot = self.rot_classifier(feat)
-        return logits, logits_rot
+        return {'logits':logits, 'logits_rot':logits_rot, 'feat':feat}
+    
+    def init(self, m):
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='leaky_relu')
+        elif isinstance(m, nn.BatchNorm2d):
+            m.weight.data.fill_(1)
+            m.bias.data.zero_()
+        elif isinstance(m, nn.Linear):
+            nn.init.xavier_normal_(m.weight.data)
+            m.bias.data.zero_()
+    
+    def group_matcher(self, coarse=False):
+        matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
+        return matcher
+
+
 
 
 class ReMixMatch(AlgorithmBase):
@@ -58,15 +75,12 @@ class ReMixMatch(AlgorithmBase):
             kl loss weight
     """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
-        super().__init__(args, net_builder,  tb_log, logger)
         # remixmatch specificed arguments
-        self.init(T=args.T, unsup_warm_up=args.unsup_warm_up, mixup_alpha=args.mixup_alpha, mixup_manifold=args.mixup_manifold)
         self.lambda_rot = args.rot_loss_ratio
         self.lambda_kl = args.kl_loss_ratio
         self.use_rot = self.lambda_rot > 0
-        self.model = ReMixMatch_Net(self.model, self.use_rot)
-        self.ema_model = ReMixMatch_Net(self.ema_model, self.use_rot)
-        self.ema_model.load_state_dict(self.model.state_dict())
+        super().__init__(args, net_builder,  tb_log, logger)
+        self.init(T=args.T, unsup_warm_up=args.unsup_warm_up, mixup_alpha=args.mixup_alpha, mixup_manifold=args.mixup_manifold)
 
     def init(self, T, unsup_warm_up=0.4, mixup_alpha=0.5, mixup_manifold=False):
         self.T = T
@@ -74,18 +88,30 @@ class ReMixMatch(AlgorithmBase):
         self.mixup_alpha = mixup_alpha
         self.mixup_manifold = mixup_manifold
 
-        # p(y) based on the labeled examples seen during training
-        try:
-            dist_file_name = r"./data_statistics/" + self.args.dataset + '_' + str(self.args.num_labels) + '.json'
-            with open(dist_file_name, 'r') as f:
-                p_target = json.loads(f.read())
-                p_target = torch.tensor(p_target['distribution'])
-                self.p_target = p_target.cuda(self.gpu)
-            print('p_target:', self.p_target)
-        except:
-            self.p_target = torch.ones((self.num_classes, )).to(self.gpu) / self.num_classes
-        self.p_model = None
+    def set_hooks(self):
+        lb_class_dist = [0 for _ in range(self.num_classes)]
+        for c in  self.dataset_dict['train_lb'].targets:
+            lb_class_dist[c] += 1
+        lb_class_dist = np.array(lb_class_dist)
+        lb_class_dist = lb_class_dist / lb_class_dist.sum()
+        self.register_hook(
+            DistAlignEMAHook(num_classes=self.num_classes, p_target_type='gt', p_target=lb_class_dist), 
+            "DistAlignHook")
+        super().set_hooks()
 
+    def set_model(self):
+        model = super().set_model()
+        model = ReMixMatch_Net(model, self.use_rot)
+        return model
+    
+    def set_ema_model(self):
+        """
+        initialize ema model from model
+        """
+        ema_model = self.net_builder(num_classes=self.num_classes)
+        ema_model = ReMixMatch_Net(ema_model, self.use_rot)
+        ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
+        return ema_model
 
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s_0, x_ulb_s_1, x_ulb_s_0_rot=None, rot_v=None):
         num_lb = y_lb.shape[0]
@@ -95,44 +121,52 @@ class ReMixMatch(AlgorithmBase):
             with torch.no_grad():
                 self.bn_controller.freeze_bn(self.model)
                 # logits_x_lb = self.model(x_lb)[0]
-                logits_x_ulb_w = self.model(x_ulb_w)
+
+                outs_x_ulb_w = self.model(x_ulb_w)
+                logits_x_ulb_w = outs_x_ulb_w['logits']
+                # logits_x_ulb_w = self.model(x_ulb_w)
                 # logits_x_ulb_s1 = self.model(x_ulb_s1)[0]
                 # logits_x_ulb_s2 = self.model(x_ulb_s2)[0]
                 self.bn_controller.unfreeze_bn(self.model)
 
-                prob_x_ulb = torch.softmax(logits_x_ulb_w, dim=1)
-
-                # p^~_(y): moving average of p(y)
-                # TODO: add distribution alignment to utils
-                if self.p_model == None:
-                    self.p_model = torch.mean(prob_x_ulb.detach(), dim=0)
-                else:
-                    self.p_model = self.p_model * 0.999 + torch.mean(prob_x_ulb.detach(), dim=0) * 0.001
-
-                prob_x_ulb = prob_x_ulb * self.p_target / self.p_model
-                prob_x_ulb = (prob_x_ulb / prob_x_ulb.sum(dim=-1, keepdim=True))
-
+                prob_x_ulb = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=torch.softmax(logits_x_ulb_w, dim=1))
                 sharpen_prob_x_ulb = prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
+
+            
+            outs_x_lb = self.model(x_lb)
+            self.bn_controller.freeze_bn(self.model)
+            outs_x_ulb_s_0 = self.model(x_ulb_s_0)
+            outs_x_ulb_s_1 = self.model(x_ulb_s_1)
+            self.bn_controller.unfreeze_bn(self.model)
 
             # mix up
             # with torch.no_grad():
             input_labels = torch.cat([F.one_hot(y_lb, self.num_classes), sharpen_prob_x_ulb, sharpen_prob_x_ulb, sharpen_prob_x_ulb], dim=0)
             if self.mixup_manifold:
-                inputs = torch.cat([self.model(x_lb, only_feat=True), self.model(x_ulb_s_0, only_feat=True), self.model(x_ulb_s_1, only_feat=True), self.model(x_ulb_w, only_feat=True)])
+                inputs = torch.cat([outs_x_lb['feat'], outs_x_ulb_s_0['feat'], outs_x_ulb_s_1['feat'],  outs_x_ulb_w['feat']], dim=0)
             else:
                 inputs = torch.cat([x_lb, x_ulb_s_0, x_ulb_s_1, x_ulb_w])
-            mixed_x, mixed_y, _ = self.mixup_one_target(inputs, input_labels, self.mixup_alpha, is_bias=True)
+            mixed_x, mixed_y, _ = mixup_one_target(inputs, input_labels, self.mixup_alpha, is_bias=True)
             mixed_x = list(torch.split(mixed_x, num_lb))
             mixed_x = interleave(mixed_x, num_lb)
 
             # calculate BN only for the first batch
-            logits = [self.model(mixed_x[0], only_fc=self.mixup_manifold)]
-            self.bn_controller.freeze_bn(self.model)
-            for ipt in mixed_x[1:]:
-                logits.append(self.model(ipt, only_fc=self.mixup_manifold))
-            u1_logits = self.model(x_ulb_s_0)
-            self.bn_controller.unfreeze_bn(self.model)
+            if self.mixup_manifold:
+                logits = [self.model(mixed_x[0], only_fc=self.mixup_manifold)]
+                # calculate BN for only the first batch
+                self.bn_controller.freeze_bn(self.model)
+                for ipt in mixed_x[1:]:
+                    logits.append(self.model(ipt, only_fc=self.mixup_manifold))
+                self.bn_controller.unfreeze_bn(self.model)
+            else:
+                logits = [self.model(mixed_x[0])['logits']]
+                # calculate BN for only the first batch
+                self.bn_controller.freeze_bn(self.model)
+                for ipt in mixed_x[1:]:
+                    logits.append(self.model(ipt)['logits'])
+                self.bn_controller.unfreeze_bn(self.model)
+            u1_logits = outs_x_ulb_s_0['logits']
 
             # put interleaved samples back
             logits = interleave(logits, num_lb)
@@ -140,13 +174,13 @@ class ReMixMatch(AlgorithmBase):
             logits_u = torch.cat(logits[1:], dim=0)
 
             # sup loss
-            sup_loss = ce_loss(logits_x, mixed_y[:num_lb], use_hard_labels=False, reduction='mean')
+            sup_loss = ce_loss(logits_x, mixed_y[:num_lb], reduction='mean')
             
             # unsup_loss
-            unsup_loss = ce_loss(logits_u, mixed_y[num_lb:], use_hard_labels=False,  reduction='mean')
+            unsup_loss = ce_loss(logits_u, mixed_y[num_lb:], reduction='mean')
             
             # loss U1
-            u1_loss = ce_loss(u1_logits, sharpen_prob_x_ulb, use_hard_labels=False,  reduction='mean')
+            u1_loss = ce_loss(u1_logits, sharpen_prob_x_ulb, reduction='mean')
 
             # ramp for w_match
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
@@ -155,14 +189,14 @@ class ReMixMatch(AlgorithmBase):
             # calculate rot loss with w_rot
             if self.use_rot:
                 self.bn_controller.freeze_bn(self.model)
-                logits_rot = self.model(x_ulb_s_0_rot, use_rot=True)[1]
+                logits_rot = self.model(x_ulb_s_0_rot, use_rot=True)['logits_rot']
                 self.bn_controller.unfreeze_bn(self.model)
                 rot_loss = ce_loss(logits_rot, rot_v, reduction='mean')
                 rot_loss = rot_loss.mean()
                 total_loss += self.lambda_rot * rot_loss
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()
@@ -171,35 +205,17 @@ class ReMixMatch(AlgorithmBase):
 
         return tb_dict
 
-    
-    # TODO: move mixup to utils
-    @torch.no_grad()
-    def mixup_one_target(self, x, y, alpha=1.0, is_bias=False):
-        """Returns mixed inputs, mixed targets, and lambda
-        """
-        if alpha > 0:
-            lam = np.random.beta(alpha, alpha)
-        else:
-            lam = 1
-        if is_bias:
-            lam = max(lam, 1 - lam)
-
-        index = torch.randperm(x.size(0)).to(x.device)
-
-        mixed_x = lam * x + (1 - lam) * x[index]
-        mixed_y = lam * y + (1 - lam) * y[index]
-        return mixed_x, mixed_y, lam
 
     def get_save_dict(self):
         save_dict = super().get_save_dict()
-        save_dict['p_model'] = self.p_model.cpu()
-        save_dict['p_target'] = self.p_target.cpu()
+        save_dict['p_model'] = self.hooks_dict['DistAlignHook'].p_model.cpu()
+        save_dict['p_target'] = self.hooks_dict['DistAlignHook'].p_target.cpu()
         return save_dict
     
     def load_model(self, load_path):
         checkpoint =  super().load_model(load_path)
-        self.p_model = checkpoint['p_model'].cuda(self.gpu)
-        self.p_target = checkpoint['p_target'].cuda(self.gpu)
+        self.hooks_dict['DistAlignHook'].p_model = checkpoint['p_model'].cuda(self.args.gpu)
+        self.hooks_dict['DistAlignHook'].p_target = checkpoint['p_target'].cuda(self.args.gpu)
         return checkpoint
 
     @staticmethod

@@ -10,7 +10,7 @@ from semilearn.datasets.augmentation import RandAugment, RandomResizedCropAndInt
 from .datasetbase import BasicDataset
 
 
-def get_semi_aves(args, alg, dataset, train_split='l_train_val', data_dir='./data'):
+def get_semi_aves(args, alg, dataset, train_split='l_train_val', ulb_split='u_train_in', data_dir='./data'):
     assert train_split in ['l_train', 'l_train_val']
 
     data_dir = os.path.join(data_dir, 'semi_fgvc')
@@ -44,9 +44,9 @@ def get_semi_aves(args, alg, dataset, train_split='l_train_val', data_dir='./dat
         transforms.Normalize(imgnet_mean, imgnet_std)
     ])
 
+    # NOTE this dataset is inherently imbalanced with unknow distribution
     train_labeled_dataset = iNatDataset(alg, data_dir, train_split, dataset, transform=transform_weak)
-    train_unlabeled_dataset = iNatDataset(alg, data_dir, 'u_train_in', dataset, is_ulb=True,
-                                          transform=transform_weak, transform_strong=transform_strong)
+    train_unlabeled_dataset = iNatDataset(alg, data_dir, ulb_split, dataset, is_ulb=True, transform=transform_weak, transform_strong=transform_strong)
     test_dataset = iNatDataset(alg, data_dir, 'test', dataset, transform=transform_val)
 
     num_data_per_cls = [0] * train_labeled_dataset.num_classes
@@ -100,8 +100,7 @@ class iNatDataset(BasicDataset):
         self.dataset_root = dataset_root
         self.task = task
 
-        self.samples, self.num_classes, self.targets = make_dataset(self.dataset_root,
-                                                                    split, self.task, pl_list=pl_list)
+        self.samples, self.num_classes, self.targets = make_dataset(self.dataset_root, split, self.task, pl_list=pl_list)
 
         self.transform = transform
         self.strong_transform = transform_strong
@@ -121,20 +120,3 @@ class iNatDataset(BasicDataset):
 
     def __len__(self):
         return len(self.data)
-
-
-if __name__ == '__main__':
-    train_labeled_dataset = iNatDataset('/BS/yfan/nobackup/semi-aves', 'l_train', 'semi_aves')
-    img, tar, i = train_labeled_dataset[100]
-    print(img)
-    print(tar)
-    print(i)
-
-    print(train_labeled_dataset.targets)
-    print(len(train_labeled_dataset.targets))
-    c = [0] * train_labeled_dataset.num_classes
-    for l in train_labeled_dataset.targets:
-        c[l] += 1
-    print(sorted(c))
-    print(max(c))
-    print(min(c))

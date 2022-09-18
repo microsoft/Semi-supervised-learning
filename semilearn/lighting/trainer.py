@@ -8,9 +8,7 @@ import numpy as np
 from progress.bar import Bar
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-
-from semilearn.utils import get_optimizer, get_cosine_schedule_with_warmup, get_logger
-from semilearn.algorithms.utils import EMA
+from semilearn.core.utils import get_optimizer, get_cosine_schedule_with_warmup, get_logger, EMA
 
 
 
@@ -19,11 +17,6 @@ class Trainer:
         self.config = config
         self.verbose = verbose
         self.algorithm = algorithm
-
-        # create optimizer
-        optimizer = get_optimizer(self.algorithm.model, self.config.optim, self.config.lr, self.config.momentum, self.config.weight_decay)
-        scheduler = get_cosine_schedule_with_warmup(optimizer, self.config.num_train_iter, num_warmup_steps=self.config.num_train_iter * 0.03)
-        self.algorithm.set_optimizer(optimizer, scheduler)
 
         # TODO: support distributed training?
         torch.cuda.set_device(config.gpu)
@@ -83,7 +76,6 @@ class Trainer:
         self.logger.info("Training finished.")
 
 
-
     def evaluate(self, data_loader, use_ema_model=False):
         y_pred, y_logits, y_true = self.predict(data_loader, use_ema_model, return_gt=True)
         top1 = accuracy_score(y_true, y_pred)
@@ -119,10 +111,7 @@ class Trainer:
                     x = x.cuda(self.config.gpu)
                 y = y.cuda(self.config.gpu)
 
-                if self.config.algorithm in ['crmatch', 'comatch', 'simmatch']:
-                    logits, *_ = self.algorithm.model(x)
-                else:
-                    logits = self.algorithm.model(x)
+                logits = self.algorithm.model(x)['logits']
                     
                 y_true.extend(y.cpu().tolist())
                 y_pred.extend(torch.max(logits, dim=-1)[1].cpu().tolist())

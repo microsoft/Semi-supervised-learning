@@ -136,7 +136,8 @@ class WideResNetVar(nn.Module):
             return out
 
         output = self.fc(out)
-        return output
+        result_dict = {'logits':output, 'feat':out}
+        return result_dict
     
     
     def extract(self, x):
@@ -147,6 +148,17 @@ class WideResNetVar(nn.Module):
         out = self.block4(out)
         out = self.relu(self.bn1(out))
         return out
+
+    def group_matcher(self, coarse=False, prefix=''):
+        matcher = dict(stem=r'^{}conv1'.format(prefix), blocks=r'^{}block(\d+)'.format(prefix) if coarse else r'^{}block(\d+)\.layer.(\d+)'.format(prefix))
+        return matcher
+
+    def no_weight_decay(self):
+        nwd = []
+        for n, _ in self.named_parameters():
+            if 'bn' in n or 'bias' in n:
+                nwd.append(n)
+        return nwd
 
 
 def wrn_var_37_2(pretrained=False, pretrained_path=None, **kwargs):

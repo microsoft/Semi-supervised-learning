@@ -226,8 +226,17 @@ class VisionTransformer(nn.Module):
             return x
 
         output = self.head(x)
-        return output
+        result_dict = {'logits':output, 'feat':x}
+        return result_dict
 
+    def no_weight_decay(self):
+        return {'pos_embed', 'cls_token'}
+    
+    def group_matcher(self, coarse=False, prefix=''):
+        return dict(
+            stem=r'^{}cls_token|{}pos_embed|{}patch_embed'.format(prefix, prefix, prefix),  # stem and embed
+            blocks=[(r'^{}blocks\.(\d+)'.format(prefix), None), (r'^{}norm'.format(prefix), (99999,))]
+        )
 
 def vit_tiny_patch2_32(pretrained=False, pretrained_path=None, **kwargs):
     """ ViT-Tiny (Vit-Ti/2)
@@ -242,7 +251,6 @@ def vit_tiny_patch2_32(pretrained=False, pretrained_path=None, **kwargs):
 
 def vit_small_patch2_32(pretrained=False, pretrained_path=None, **kwargs):
     """ ViT-Small (ViT-S/2)
-    NOTE I've replaced my previous 'small' model definition and weights with the small variant from the DeiT paper
     """
     model_kwargs = dict(img_size=32, patch_size=2, embed_dim=384, depth=12, num_heads=6, drop_path_rate=0.2, **kwargs)
     model = VisionTransformer(**model_kwargs)
@@ -253,7 +261,6 @@ def vit_small_patch2_32(pretrained=False, pretrained_path=None, **kwargs):
 
 def vit_small_patch16_224(pretrained=False, pretrained_path=None, **kwargs):
     """ ViT-Small (ViT-S/16)
-    NOTE I've replaced my previous 'small' model definition and weights with the small variant from the DeiT paper
     """
     model_kwargs = dict(patch_size=16, embed_dim=384, depth=12, num_heads=6, drop_path_rate=0.2, **kwargs)
     model = VisionTransformer(**model_kwargs)

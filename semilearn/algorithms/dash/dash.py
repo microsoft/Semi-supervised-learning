@@ -5,8 +5,11 @@
 import os
 
 import torch
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, EMA
+from .utils import DashThresholdingHook
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.hooks import PseudoLabelingHook
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
+from semilearn.core.utils import EMA    
 from semilearn.datasets import DistributedSampler
 
 class Dash(AlgorithmBase):
@@ -38,25 +41,23 @@ class Dash(AlgorithmBase):
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
         # dash specificed arguments
-        self.init(T=args.T, gamma=args.gamma, C=args.C, rho_min=args.rho_min, 
-                  num_wu_iter=args.num_wu_iter, num_wu_eval_iter=args.num_wu_eval_iter)
+        self.init(T=args.T, num_wu_iter=args.num_wu_iter, num_wu_eval_iter=args.num_wu_eval_iter)
     
-    def init(self, T, gamma=1.27, C=1.0001, rho_min=0.05, num_wu_iter=2048, num_wu_eval_iter=100):
+    def init(self, T, num_wu_iter=2048, num_wu_eval_iter=100):
         self.T = T 
-        self.rho_init = None  # compute from warup training
-        self.gamma = gamma 
-        self.C = C
-        self.rho_min = rho_min
         self.num_wu_iter = num_wu_iter
         self.num_wu_eval_iter = num_wu_eval_iter
-
-        self.rho_init = None
-        self.rho_update_cnt = 0
         self.use_hard_label = False
-        self.rho = None
         self.warmup_stage = True
 
+    def set_hooks(self):
+        self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
+        self.register_hook(DashThresholdingHook(rho_min=self.args.rho_min, gamma=self.args.gamma, C=self.args.C), "MaskingHook")
+        super().set_hooks()
+
     def warmup(self):
+        # TODO: think about this, how to make this compatible with hooks?
+        
         # prevent the training iterations exceed args.num_train_iter
         if self.it > self.num_wu_iter:
             return
@@ -111,11 +112,12 @@ class Dash(AlgorithmBase):
 
                 # inference and calculate sup/unsup losses
                 with self.amp_cm():
-                    logits_x_lb = self.model(x_lb)
-                    sup_loss = ce_loss(logits_x_lb, y_lb, use_hard_labels=True, reduction='mean')
+                    logits_x_lb = self.model(x_lb)['logits']
+                    sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
                 # parameter updates
-                self.parameter_update(sup_loss)
+                # self.parameter_update(sup_loss)
+                self.call_hook("param_update", "ParamUpdateHook", loss=sup_loss)
 
                 end_run.record()
                 torch.cuda.synchronize()
@@ -140,8 +142,8 @@ class Dash(AlgorithmBase):
         # compute rho_init
         eval_dict = self.evaluate()
         self.rho_init = eval_dict['eval/loss']
-        self.rho_update_cnt = 0
-        self.use_hard_label = False
+        # self.rho_update_cnt = 0
+        # self.use_hard_label = False
         self.rho = self.rho_init
         # reset self it
         self.warmup_stage = False
@@ -152,75 +154,63 @@ class Dash(AlgorithmBase):
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
 
-        # adjust rho every 10 epochs
-        if self.it % (10 * self.num_iter_per_epoch) == 0:
-            self.rho = self.C * (self.gamma ** -self.rho_update_cnt) * self.rho_init
-            self.rho = max(self.rho, self.rho_min)
-            self.rho_update_cnt += 1
-        
-        # use hard labels if rho reduced 0.05
-        if self.rho == self.rho_min:
-            self.use_hard_label = True
-        else:
-            self.use_hard_label = False
-
         # inference and calculate sup/unsup losses
         with self.amp_cm():
             if self.use_cat:
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
-                logits = self.model(inputs)
-                logits_x_lb = logits[:num_lb]
-                logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:].chunk(2)
+                outputs = self.model(inputs)
+                logits_x_lb = outputs['logits'][:num_lb]
+                logits_x_ulb_w, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(2)
             else:
-                logits_x_lb = self.model(x_lb)
-                logits_x_ulb_s = self.model(x_ulb_s)
+                outs_x_lb = self.model(x_lb) 
+                logits_x_lb = outs_x_lb['logits']
+                outs_x_ulb_s = self.model(x_ulb_s)
+                logits_x_ulb_s = outs_x_ulb_s['logits']
                 with torch.no_grad():
-                    logits_x_ulb_w = self.model(x_ulb_w)
+                    outs_x_ulb_w = self.model(x_ulb_w)
+                    logits_x_ulb_w = outs_x_ulb_w['logits']
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-            # compute mask
-            with torch.no_grad():
-                if self.use_hard_label:
-                    pseudo_label = torch.argmax(logits_x_ulb_w, dim=-1).detach()
-                else:
-                    pseudo_label = torch.softmax(logits_x_ulb_w / self.T, dim=-1).detach()
-                loss_w = ce_loss(logits_x_ulb_w, pseudo_label, use_hard_labels=self.use_hard_label, reduction='none').detach()
-                mask = loss_w.le(self.rho).to(logits_x_ulb_s.dtype).detach()
+            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
 
-            unsup_loss, _ = consistency_loss(logits_x_ulb_s,
-                                             logits_x_ulb_w,
-                                             'ce',
-                                             use_hard_labels=self.use_hard_label,
-                                             T=self.T,
-                                             mask=mask)
+            # generate unlabeled targets using pseudo label hook
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                                          logits=logits_x_ulb_w,
+                                          use_hard_label=self.use_hard_label,
+                                          T=self.T)
+
+            unsup_loss = consistency_loss(logits_x_ulb_s,
+                                          pseudo_label,
+                                          'ce',
+                                          mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()
         tb_dict['train/unsup_loss'] = unsup_loss.item()
         tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = 1.0 - mask.float().mean().item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
         return tb_dict
     
     def get_save_dict(self):
         save_dict =  super().get_save_dict()
-        save_dict['rho_init'] = self.rho_init
-        save_dict['rho_update_cnt'] = self.rho_update_cnt
-        save_dict['rho'] = self.rho
+        save_dict['rho_init'] = self.hooks_dict['MaskingHook'].rho_init
+        save_dict['rho_update_cnt'] = self.hooks_dict['MaskingHook'].rho_update_cnt
+        save_dict['rho'] = self.hooks_dict['MaskingHook'].rho
         save_dict['warmup_stage'] = self.warmup_stage
         return save_dict
 
     def load_model(self, load_path):
         checkpoint = super().load_model(load_path)
-        self.rho = checkpoint['rho']
-        self.rho_init = checkpoint['rho_init']
+        self.hooks_dict['MaskingHook'].rho = checkpoint['rho']
+        self.hooks_dict['MaskingHook'].rho_init = checkpoint['rho_init']
         self.warmup_stage = checkpoint['warmup_stage']
-        self.rho_update_cnt = checkpoint['rho_update_cnt']
+        self.hooks_dict['MaskingHook'].rho_update_cnt = checkpoint['rho_update_cnt']
         return checkpoint
 
     @staticmethod

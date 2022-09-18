@@ -4,8 +4,8 @@
 import torch
 import numpy as np
 import torch.nn.functional as F
-from semilearn.algorithms.algorithmbase import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, interleave
+from semilearn.core import AlgorithmBase
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, interleave, mixup_one_target
 
 
 class MixMatch(AlgorithmBase):
@@ -48,8 +48,12 @@ class MixMatch(AlgorithmBase):
         with self.amp_cm():
             with torch.no_grad():
                 self.bn_controller.freeze_bn(self.model)
-                logits_x_ulb_w1 = self.model(x_ulb_w)
-                logits_x_ulb_w2 = self.model(x_ulb_s)
+                outs_x_ulb_w1 = self.model(x_ulb_w)
+                logits_x_ulb_w1 = outs_x_ulb_w1['logits']
+                # logits_x_ulb_w1 = self.model(x_ulb_w)
+                outs_x_ulb_w2 = self.model(x_ulb_s)
+                logits_x_ulb_w2 = outs_x_ulb_w2['logits']
+                # logits_x_ulb_w2 = self.model(x_ulb_s)
                 self.bn_controller.unfreeze_bn(self.model)
                 
                 # avg
@@ -58,27 +62,37 @@ class MixMatch(AlgorithmBase):
                 # sharpening
                 sharpen_prob_x_ulb = avg_prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
+            
+            outs_x_lb = self.model(x_lb)
 
             # with torch.no_grad():
             # Pseudo Label
             input_labels = torch.cat([F.one_hot(y_lb, self.num_classes), sharpen_prob_x_ulb, sharpen_prob_x_ulb], dim=0)
             # Mix up
             if self.mixup_manifold:
-                inputs = torch.cat((self.model(x_lb, only_feat=True), self.model(x_ulb_w, only_feat=True), self.model(x_ulb_s, only_feat=True)))
+                inputs = torch.cat((outs_x_lb['feat'], outs_x_ulb_w1['feat'], outs_x_ulb_w2['feat']))
             else:
                 inputs = torch.cat([x_lb, x_ulb_w, x_ulb_s])
-            mixed_x, mixed_y, _ = self.mixup_one_target(inputs, input_labels,
-                                                        self.mixup_alpha,
-                                                        is_bias=True)
+            mixed_x, mixed_y, _ = mixup_one_target(inputs, input_labels,
+                                                   self.mixup_alpha,
+                                                   is_bias=True)
             mixed_x = list(torch.split(mixed_x, num_lb))
             mixed_x = interleave(mixed_x, num_lb)
 
-            logits = [self.model(mixed_x[0], only_fc=self.mixup_manifold)]
-            # calculate BN for only the first batch
-            self.bn_controller.freeze_bn(self.model)
-            for ipt in mixed_x[1:]:
-                logits.append(self.model(ipt, only_fc=self.mixup_manifold))
-            self.bn_controller.unfreeze_bn(self.model)
+            if self.mixup_manifold:
+                logits = [self.model(mixed_x[0], only_fc=self.mixup_manifold)]
+                # calculate BN for only the first batch
+                self.bn_controller.freeze_bn(self.model)
+                for ipt in mixed_x[1:]:
+                    logits.append(self.model(ipt, only_fc=self.mixup_manifold))
+                self.bn_controller.unfreeze_bn(self.model)
+            else:
+                logits = [self.model(mixed_x[0])['logits']]
+                # calculate BN for only the first batch
+                self.bn_controller.freeze_bn(self.model)
+                for ipt in mixed_x[1:]:
+                    logits.append(self.model(ipt)['logits'])
+                self.bn_controller.unfreeze_bn(self.model)
 
             # put interleaved samples back
             logits = interleave(logits, num_lb)
@@ -86,8 +100,8 @@ class MixMatch(AlgorithmBase):
             logits_x = logits[0]
             logits_u = torch.cat(logits[1:], dim=0)
 
-            sup_loss = ce_loss(logits_x, mixed_y[:num_lb], use_hard_labels=False, reduction='mean')
-            unsup_loss, _ = consistency_loss(logits_u, mixed_y[num_lb:], name='mse', softmax=False)
+            sup_loss = ce_loss(logits_x, mixed_y[:num_lb], reduction='mean')
+            unsup_loss = consistency_loss(logits_u, mixed_y[num_lb:], name='mse')
 
             # set ramp_up for lambda_u
             unsup_warmup = float(np.clip(self.it / (self.unsup_warm_up * self.num_train_iter), 0.0, 1.0))
@@ -96,7 +110,7 @@ class MixMatch(AlgorithmBase):
             total_loss = sup_loss + lambda_u * unsup_loss
 
         # parameter updates
-        self.parameter_update(total_loss)
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
         tb_dict = {}
         tb_dict['train/sup_loss'] = sup_loss.item()
@@ -104,22 +118,6 @@ class MixMatch(AlgorithmBase):
         tb_dict['train/total_loss'] = total_loss.item()
         return tb_dict
 
-    # TODO: move mixup to utils
-    def mixup_one_target(self, x, y, alpha=1.0, is_bias=False):
-        """Returns mixed inputs, mixed targets, and lambda
-        """
-        if alpha > 0:
-            lam = np.random.beta(alpha, alpha)
-        else:
-            lam = 1
-        if is_bias:
-            lam = max(lam, 1 - lam)
-
-        index = torch.randperm(x.size(0)).to(x.device)
-
-        mixed_x = lam * x + (1 - lam) * x[index]
-        mixed_y = lam * y + (1 - lam) * y[index]
-        return mixed_x, mixed_y, lam
 
     @staticmethod
     def get_argument():

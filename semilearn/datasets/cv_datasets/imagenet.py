@@ -45,7 +45,7 @@ def default_loader(path):
         return pil_loader(path)
 
 
-def get_imagenet(args, alg, name, num_labels, num_classes, data_dir='./data'):
+def get_imagenet(args, alg, name, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
     num_labels = num_labels // num_classes
 
     img_size = args.img_size

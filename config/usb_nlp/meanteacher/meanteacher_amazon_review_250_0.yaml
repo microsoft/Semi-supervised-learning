@@ -8,9 +8,10 @@ use_tensorboard: True
 epoch: 100
 num_train_iter: 102400
 num_warmup_iter: 5120
+num_log_iter: 256
 num_eval_iter: 2048
 num_labels: 250
-batch_size: 4
+batch_size: 8
 eval_batch_size: 8
 ulb_loss_ratio: 50
 unsup_warm_up: 0.4
@@ -18,9 +19,10 @@ uratio: 1
 use_cat: False
 ema_m: 0.0
 optim: AdamW
-lr: 5e-06
+lr: 1e-05
 momentum: 0.9
 weight_decay: 0.0005
+layer_decay: 0.75
 amp: False
 clip: 0.0
 net: bert_base_uncased
@@ -35,6 +37,6 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: False
-dist_url: tcp://127.0.0.1:10045
+dist_url: tcp://127.0.0.1:10051
 dist_backend: nccl
 gpu: None
