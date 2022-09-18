@@ -80,6 +80,8 @@
 
 ## News and Updates
 
+- [09/17/2022] The USB paper has been accepted by NeurIPS 2022 Dataset and Benchmark Track!
+
 - [09/02/2022] We are working on optimizing codes. We will share the logs and model checkpoints as we did in TorchSSL.
 
 - [08/21/2022] USB has been released!
