@@ -36,7 +36,7 @@
 <!-- <h3 align="center">USB</h3> -->
 
 <p align="center">
-    <strong>USB</strong>: A Unified Semi-supervised learning benchmark for CV, NLP, and Audio
+    <strong>USB</strong>: A Unified Semi-supervised learning Benchmark for CV, NLP, and Audio
     <!-- <br />
     <a href="https://github.com/microsoft/Semi-supervised-learning"><strong>Explore the docs »</strong></a>
     <br /> -->
@@ -80,7 +80,7 @@
 
 ## News and Updates
 
-- [09/17/2022] The USB paper has been accepted by NeurIPS 2022 Dataset and Benchmark Track!
+- [09/17/2022] The USB paper has been accepted by NeurIPS 2022 Dataset and Benchmark Track! [[Openreview](https://openreview.net/forum?id=QeuwINa96C)]
 
 - [09/02/2022] We are working on optimizing codes. We will share the logs and model checkpoints as we did in TorchSSL.
 
@@ -90,7 +90,7 @@
 
 ## Introduction
 
-USB is a Pytorch-based Python package for Semi-Supervised Learning (SSL). It is easy-to-use/extend, affordable, and comprehensive for developing and evaluating SSL algorithms. USB provides the implementation of 14 SSL algorithms based on Consistency Regularization, and 15 tasks for evaluation from CV, NLP, and Audio domain.
+**USB** is a Pytorch-based Python package for Semi-Supervised Learning (SSL). It is easy-to-use/extend, *affordable* to small groups, and comprehensive for developing and evaluating SSL algorithms. USB provides the implementation of 14 SSL algorithms based on Consistency Regularization, and 15 tasks for evaluation from CV, NLP, and Audio domain.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
