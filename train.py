@@ -18,7 +18,7 @@ import torch.multiprocessing as mp
 from semilearn.algorithms import get_algorithm, name2alg
 from semilearn.imb_algorithms import get_imb_algorithm
 from semilearn.algorithms.utils import str2bool
-from semilearn.core.utils import get_net_builder, get_logger, get_port, count_parameters, over_write_args_from_file, TBLog
+from semilearn.core.utils import get_net_builder, get_logger, get_port, send_model_cuda, count_parameters, over_write_args_from_file, TBLog
 
 
 def get_config():
@@ -250,33 +250,8 @@ def main_worker(gpu, ngpus_per_node, args):
     logger.info(f'Number of Trainable Params: {count_parameters(model.model)}')
 
     # SET Devices for (Distributed) DataParallel
-    if not torch.cuda.is_available():
-        raise Exception('ONLY GPU TRAINING IS SUPPORTED')
-    elif args.distributed:
-        if args.gpu is not None:
-            torch.cuda.set_device(args.gpu)
-
-            '''
-            batch_size: batch_size per node -> batch_size per gpu
-            workers: workers per node -> workers per gpu
-            '''
-            args.batch_size = int(args.batch_size / ngpus_per_node)
-            model.model.cuda(args.gpu)
-            model.model = nn.SyncBatchNorm.convert_sync_batchnorm(model.model)
-            model.model = torch.nn.parallel.DistributedDataParallel(model.model, broadcast_buffers=False,
-                                                                    find_unused_parameters=True if args.algorithm == 'simmatch' or args.algorithm == 'crmatch' else False,
-                                                                    device_ids=[args.gpu])
-        else:
-            # if arg.gpu is None, DDP will divide and allocate batch_size
-            # to all available GPUs if device_ids are not set.
-            model.model.cuda()
-            model.model = torch.nn.parallel.DistributedDataParallel(model.model,  broadcast_buffers=False, 
-                                                                    find_unused_parameters=True if args.algorithm == 'simmatch' or args.algorithm == 'crmatch' else False)
-    elif args.gpu is not None:
-        torch.cuda.set_device(args.gpu)
-        model.model = model.model.cuda(args.gpu)
-    else:
-        model.model = torch.nn.DataParallel(model.model).cuda()
+    model.model = send_model_cuda(args, model.model)
+    model.ema_model = send_model_cuda(args, model.ema_model)
     logger.info(f"Arguments: {model.args}")
 
     # If args.resume, load checkpoints from args.load_path
