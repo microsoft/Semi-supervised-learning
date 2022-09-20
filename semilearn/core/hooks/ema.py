@@ -19,5 +19,6 @@ class EMAHook(Hook):
     def after_train_step(self, algorithm):
         if algorithm.ema is not None:
             algorithm.ema.update()
-            # algorithm.ema_model.load_state_dict(algorithm.ema.shadow)
+            algorithm.ema_model.load_state_dict(algorithm.model.state_dict())
+            algorithm.ema_model.load_state_dict(algorithm.ema.shadow, strict=False)
 
