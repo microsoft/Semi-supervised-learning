@@ -156,6 +156,36 @@ Please see [Installation](#installation) to install USB first. We provide colab 
 - [Beginning example](https://colab.research.google.com/drive/1lFygK31jWyTH88ktao6Ow-5nny5-B7v5)
 - [Customize datasets](https://colab.research.google.com/drive/1zbswPm1sM8j0fndUQOeqX2HADdYq-wOw)
 
+### Start with Docker
+
+**Step1: Check your environment**
+
+You need to properly install Docker and nvidia driver first. To use GPU in a docker container
+You also need to install nvidia-docker2 ([Installation Guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)).
+Then, Please check your CUDA version via `nvidia-smi`
+
+**Step2: Clone the project**
+
+```shell
+git clone https://github.com/microsoft/Semi-supervised-learning.git
+```
+
+**Step3: Build the Docker image**
+
+Before building the image, you may modify the [Dockerfile](Dockerfile) according to your CUDA version.
+The CUDA version we use is 11.6. You can change the base image tag according to [this site](https://hub.docker.com/r/nvidia/cuda/tags).
+You also need to change the `--extra-index-url` according to your CUDA version in order to install the correct version of Pytorch.
+You can check the url through [Pytorch website](https://pytorch.org).
+
+Use this command to build the image
+
+```shell
+cd Semi-supervised-learning && docker build -t semilearn .
+```
+
+Job done. You can use the image you just built for your own project. Don't forget to use the argument `--gpu` when you want
+to use GPU in a container.
+
 ### Training
 
 Here is an example to train FixMatch on CIFAR-100 with 200 labels. Trianing other supported algorithms (on other datasets with different label settings) can be specified by a config file:
@@ -200,7 +230,7 @@ TODO: add pre-trained models.
 
 ## TODO
 
-- [ ] Add docker
+- [x] Add docker
 - [ ] Finish Readme
 - [ ] Compile docs and add usage example in docs
 - [ ] Updating SUPPORT.MD with content about this project's support experience
