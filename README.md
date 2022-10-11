@@ -310,7 +310,7 @@ Please cite us if you fine USB helpful for your project/paper:
   doi = {10.48550/ARXIV.2208.07204},
   url = {https://arxiv.org/abs/2208.07204},
   author = {Wang, Yidong and Chen, Hao and Fan, Yue and Sun, Wang and Tao, Ran and Hou, Wenxin and Wang, Renjie and Yang, Linyi and Zhou, Zhi and Guo, Lan-Zhe and Qi, Heli and Wu, Zhen and Li, Yu-Feng and Nakamura, Satoshi and Ye, Wei and Savvides, Marios and Raj, Bhiksha and Shinozaki, Takahiro and Schiele, Bernt and Wang, Jindong and Xie, Xing and Zhang, Yue},
-  title = {USB: A Unified Semi-supervised Learning Benchmark},
+  title = {USB: A Unified Semi-supervised Learning Benchmark for Classification},
   booktitle = {Neural Information Processing Systems (NeurIPS)}
   year = {2022}
 }
