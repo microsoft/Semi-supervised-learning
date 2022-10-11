@@ -36,7 +36,7 @@
 <!-- <h3 align="center">USB</h3> -->
 
 <p align="center">
-    <strong>USB</strong>: A Unified Semi-supervised learning Benchmark for CV, NLP, and Audio
+    <strong>USB</strong>: A Unified Semi-supervised learning Benchmark for CV, NLP, and Audio Classification
     <!-- <br />
     <a href="https://github.com/microsoft/Semi-supervised-learning"><strong>Explore the docs »</strong></a>
     <br /> -->
