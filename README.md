@@ -84,6 +84,8 @@
 
 ## News and Updates
 
+- [10/13/2022] We have finished the camera ready version with updated [[results](https://github.com/Hhhhhhao/Semi-supervised-learning/tree/main/results)]. [[Openreview](https://openreview.net/forum?id=QeuwINa96C)]
+
 - [10/06/2022] Training logs and results of USB has been updated! Available dataset will be uploaded soon. [[Logs](https://drive.google.com/drive/folders/1fg3Fxem_UNWhfN5-4x2lRI3mluGxqD4N?usp=sharing)] [[Results](https://github.com/Hhhhhhao/Semi-supervised-learning/tree/main/results)]
 
 - [09/17/2022] The USB paper has been accepted by NeurIPS 2022 Dataset and Benchmark Track! [[Openreview](https://openreview.net/forum?id=QeuwINa96C)]
