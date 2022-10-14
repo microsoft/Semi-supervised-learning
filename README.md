@@ -51,7 +51,7 @@
     ·
     <a href="https://github.com/microsoft/Semi-supervised-learning/issues">Issue</a>
     ·
-    <a href="https://github.com/microsoft/Semi-supervised-learning/issues">Blog</a>
+    <a href="https://www.microsoft.com/en-us/research/lab/microsoft-research-asia/articles/pushing-the-limit-of-semi-supervised-learning-with-the-unified-semi-supervised-learning-benchmark/">Blog</a>
     ·
     <a href="https://zhuanlan.zhihu.com/p/566055279">Blog (Chinese)</a>
   </p>
