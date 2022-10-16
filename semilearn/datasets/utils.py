@@ -80,9 +80,11 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
 
     if ulb_imbalance_ratio == 1.0:
         # balanced setting
-        if ulb_num_labels is not None or ulb_num_labels == 'None':
+        if ulb_num_labels is not None and ulb_num_labels != 'None':
             assert ulb_num_labels % num_classes == 0, "ulb_num_labels must be divideable by num_classes in balanced setting"
             ulb_samples_per_class = [int(ulb_num_labels / num_classes)] * num_classes
+        else:
+            ulb_samples_per_class = None
     else:
         # imbalanced setting
         assert ulb_num_labels is not None, "ulb_num_labels must be set set in imbalanced setting"
@@ -95,7 +97,7 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
         idx = np.where(target == c)[0]
         np.random.shuffle(idx)
         lb_idx.extend(idx[:lb_samples_per_class[c]])
-        if ulb_num_labels is not None or ulb_num_labels == 'None':
+        if ulb_samples_per_class is None:
             ulb_idx.extend(idx[lb_samples_per_class[c]:])
         else:
             ulb_idx.extend(idx[lb_samples_per_class[c]:lb_samples_per_class[c]+ulb_samples_per_class[c]])

@@ -84,9 +84,11 @@
 
 ## News and Updates
 
-- [10/13/2022] We have finished the camera ready version with updated [[results](https://github.com/Hhhhhhao/Semi-supervised-learning/tree/main/results)]. [[Openreview](https://openreview.net/forum?id=QeuwINa96C)]
+- [10/16/2022] Dataset download link and process instructions released! [[Datasets](https://github.com/microsoft/Semi-supervised-learning/tree/main/preprocess)]
 
-- [10/06/2022] Training logs and results of USB has been updated! Available dataset will be uploaded soon. [[Logs](https://drive.google.com/drive/folders/1fg3Fxem_UNWhfN5-4x2lRI3mluGxqD4N?usp=sharing)] [[Results](https://github.com/Hhhhhhao/Semi-supervised-learning/tree/main/results)]
+- [10/13/2022] We have finished the camera ready version with updated [[Results](https://github.com/microsoft/Semi-supervised-learning/tree/main/results)]. [[Openreview](https://openreview.net/forum?id=QeuwINa96C)]
+
+- [10/06/2022] Training logs and results of USB has been updated! Available dataset will be uploaded soon. [[Logs](https://drive.google.com/drive/folders/1fg3Fxem_UNWhfN5-4x2lRI3mluGxqD4N?usp=sharing)] [[Results](https://github.com/microsoft/Semi-supervised-learning/tree/main/results)]
 
 - [09/17/2022] The USB paper has been accepted by NeurIPS 2022 Dataset and Benchmark Track! [[Openreview](https://openreview.net/forum?id=QeuwINa96C)]
 
@@ -97,6 +99,9 @@
 ## Introduction
 
 **USB** is a Pytorch-based Python package for Semi-Supervised Learning (SSL). It is easy-to-use/extend, *affordable* to small groups, and comprehensive for developing and evaluating SSL algorithms. USB provides the implementation of 14 SSL algorithms based on Consistency Regularization, and 15 tasks for evaluation from CV, NLP, and Audio domain.
+
+![Code Structure](./figures/code.png)
+
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -142,6 +147,14 @@ git clone https://github.com/microsoft/Semi-supervised-learning.git
 ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+
+
+### Prepare Datasets
+
+The detailed instructions for downloading and processing are shown in [Beginning example](./preprocess/). Please follow it to download datasets before running or developing algorithms.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
 
 <!-- USAGE EXAMPLES -->
 
