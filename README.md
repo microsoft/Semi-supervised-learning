@@ -151,7 +151,7 @@ git clone https://github.com/microsoft/Semi-supervised-learning.git
 
 ### Prepare Datasets
 
-The detailed instructions for downloading and processing are shown in [Beginning example](./preprocess/). Please follow it to download datasets before running or developing algorithms.
+The detailed instructions for downloading and processing are shown in [Dataset Download](./preprocess/). Please follow it to download datasets before running or developing algorithms.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
