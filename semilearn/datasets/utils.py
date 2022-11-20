@@ -7,14 +7,10 @@ import numpy as np
 import torch
 from torch.utils.data import sampler, DataLoader
 import torch.distributed as dist
-from semilearn.datasets.samplers import DistributedSampler
 from io import BytesIO
 
 # TODO: better way
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
-
-name2sampler = {'RandomSampler': DistributedSampler}
 
 
 def split_ssl_data(args, data, targets, num_classes,
@@ -80,11 +76,11 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
 
     if ulb_imbalance_ratio == 1.0:
         # balanced setting
-        if ulb_num_labels is not None and ulb_num_labels != 'None':
+        if ulb_num_labels is None or ulb_num_labels == 'None':
+            pass # ulb_samples_per_class = [int(len(data) / num_classes) - lb_samples_per_class[c] for c in range(num_classes)] # [int(len(data) / num_classes) - int(lb_num_labels / num_classes)] * num_classes
+        else:
             assert ulb_num_labels % num_classes == 0, "ulb_num_labels must be divideable by num_classes in balanced setting"
             ulb_samples_per_class = [int(ulb_num_labels / num_classes)] * num_classes
-        else:
-            ulb_samples_per_class = None
     else:
         # imbalanced setting
         assert ulb_num_labels is not None, "ulb_num_labels must be set set in imbalanced setting"
@@ -97,7 +93,7 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
         idx = np.where(target == c)[0]
         np.random.shuffle(idx)
         lb_idx.extend(idx[:lb_samples_per_class[c]])
-        if ulb_samples_per_class is None:
+        if ulb_num_labels is None or ulb_num_labels == 'None':
             ulb_idx.extend(idx[lb_samples_per_class[c]:])
         else:
             ulb_idx.extend(idx[lb_samples_per_class[c]:lb_samples_per_class[c]+ulb_samples_per_class[c]])

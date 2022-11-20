@@ -27,9 +27,7 @@ class DistributedSampler(Sampler):
         rank (optional): Rank of the current process within num_replicas.
     """
 
-    def __init__(self, dataset, num_replicas=None, rank=None, num_samples=None):
-
-
+    def __init__(self, dataset, num_replicas=None, rank=None, num_samples=None, **kwargs):
         if not isinstance(num_samples, int) or num_samples <= 0:
             raise ValueError("num_samples should be a positive integeral "
                              "value, but got num_samples={}".format(num_samples))
@@ -81,6 +79,38 @@ class DistributedSampler(Sampler):
         self.epoch = epoch
 
 
+class WeightedDistributedSampler(DistributedSampler):
+    def __init__(self, weights, dataset, num_replicas=None, rank=None, num_samples=None, replacement=False):
+        super().__init__(dataset, num_replicas, rank, num_samples)
+        self.replacement = replacement
+        self.sample_weights = self.get_sample_weights(weights)
+    
+    def get_sample_weights(self, weights):
+        targets = self.dataset.targets
+        sample_weight = torch.tensor([weights[t] for t in targets])
+        return sample_weight
+
+    def __iter__(self):
+        # deterministically shuffle based on epoch
+        g = torch.Generator()
+        g.manual_seed(self.epoch)
+
+        n = len(self.dataset)
+        n_repeats = self.total_size // n
+        n_remain = self.total_size % n
+
+        indices = [torch.multinomial(self.sample_weights, n, generator=g, replacement=self.replacement) for _ in range(n_repeats)]
+        indices.append(torch.multinomial(self.sample_weights, n, generator=g, replacement=self.replacement)[:n_remain])
+        indices = torch.cat(indices, dim=0).tolist()
+        assert len(indices) == self.total_size
+
+        # subsample
+        indices = indices[self.rank:self.total_size:self.num_replicas]
+        assert len(indices) == self.num_samples
+
+        return iter(indices)
+
+
 class ImageNetDistributedSampler(DistributedSampler):
     def __init__(self, dataset_idx, num_replicas=None, rank=None, num_samples=None):
         """
@@ -109,3 +139,8 @@ class ImageNetDistributedSampler(DistributedSampler):
 
         # indices is a proxy index for sampling labeled / unlabeled index from dataset_idx
         return iter(self.dataset[indices])
+
+
+name2sampler = {
+    'RandomSampler': DistributedSampler, 
+    'WeightedRandomSampler': WeightedDistributedSampler}
