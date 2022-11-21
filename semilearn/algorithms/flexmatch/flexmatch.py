@@ -77,7 +77,8 @@ class FlexMatch(AlgorithmBase):
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-            probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
+            # probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
+            probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
 
             # if distribution alignment hook is registered, call it 
             # this is implemented for imbalanced algorithm - CReST

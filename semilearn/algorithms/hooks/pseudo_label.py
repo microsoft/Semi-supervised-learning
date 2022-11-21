@@ -29,7 +29,8 @@ class PseudoLabelingHook(Hook):
         
         # return soft label
         if softmax:
-            pseudo_label = torch.softmax(logits / T, dim=-1)
+            # pseudo_label = torch.softmax(logits / T, dim=-1)
+            pseudo_label = algorithm.compute_prob(logits / T)
         else:
             # inputs logits converted to probabilities already
             pseudo_label = logits

@@ -11,7 +11,6 @@ from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool, concat_all_gather
 
 
-@ALGORITHMS.register('comatch')
 class CoMatch_Net(nn.Module):
     def __init__(self, base, proj_size=128):
         super(CoMatch_Net, self).__init__()
@@ -51,6 +50,7 @@ def comatch_contrastive_loss(feats_x_ulb_s_0, feats_x_ulb_s_1, Q, T=0.2):
     return loss
 
 
+@ALGORITHMS.register('comatch')
 class CoMatch(AlgorithmBase):
     """
         CoMatch algorithm (https://arxiv.org/abs/2011.11183).
@@ -169,7 +169,8 @@ class CoMatch(AlgorithmBase):
                 feats_x_lb = feats_x_lb.detach()
                 feats_x_ulb_w = feats_x_ulb_w.detach()
 
-                probs = torch.softmax(logits_x_ulb_w, dim=1)            
+                # probs = torch.softmax(logits_x_ulb_w, dim=1)            
+                probs = self.compute_prob(logits_x_ulb_w)
                 # distribution alignment
                 probs = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs.detach())
 

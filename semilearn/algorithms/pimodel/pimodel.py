@@ -49,7 +49,8 @@ class PiModel(AlgorithmBase):
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
-                                               torch.softmax(logits_x_ulb_w.detach(), dim=-1),
+                                               # torch.softmax(logits_x_ulb_w.detach(), dim=-1),
+                                               self.compute_prob(logits_x_ulb_w.detach()),
                                                'mse')
             # TODO: move this into masking
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)

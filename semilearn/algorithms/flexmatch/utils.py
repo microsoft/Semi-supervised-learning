@@ -42,7 +42,8 @@ class FlexMatchThresholdingHook(MaskingHook):
             self.classwise_acc = self.classwise_acc.to(logits_x_ulb.device)
 
         if softmax_x_ulb:
-            probs_x_ulb = torch.softmax(logits_x_ulb.detach(), dim=-1)
+            # probs_x_ulb = torch.softmax(logits_x_ulb.detach(), dim=-1)
+            probs_x_ulb = self.compute_prob(logits_x_ulb.detach())
         else:
             # logits is already probs
             probs_x_ulb = logits_x_ulb.detach()

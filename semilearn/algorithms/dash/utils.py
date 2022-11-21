@@ -44,7 +44,8 @@ class DashThresholdingHook(MaskingHook):
         if algorithm.use_hard_label:
             pseudo_label = torch.argmax(logits_x_ulb, dim=-1).detach()
         else:
-            pseudo_label = torch.softmax(logits_x_ulb / algorithm.T, dim=-1).detach()
+            # pseudo_label = torch.softmax(logits_x_ulb / algorithm.T, dim=-1).detach()
+            pseudo_label = algorithm.compute_prob(logits_x_ulb.detach() / algorithm.T)
         loss_w = algorithm.ce_loss(logits_x_ulb, pseudo_label, reduction='none')
         mask = loss_w.le(self.rho).to(logits_x_ulb.dtype)
         return mask

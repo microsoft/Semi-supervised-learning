@@ -56,8 +56,10 @@ class AdaMatch(AlgorithmBase):
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-            probs_x_lb = torch.softmax(logits_x_lb.detach(), dim=-1)
-            probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
+            # probs_x_lb = torch.softmax(logits_x_lb.detach(), dim=-1)
+            # probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
+            probs_x_lb = self.compute_prob(logits_x_lb.detach())
+            probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
 
             # distribution alignment 
             probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w, probs_x_lb=probs_x_lb)

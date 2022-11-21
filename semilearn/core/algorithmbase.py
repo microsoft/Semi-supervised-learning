@@ -244,6 +244,8 @@ class AlgorithmBase:
             log_dict[f'{prefix}/' + arg] = var
         return log_dict
 
+    def compute_prob(self, logits):
+        return torch.softmax(logits, dim=-1)
 
     def train_step(self, idx_lb, x_lb, y_lb, idx_ulb, x_ulb_w, x_ulb_s):
         """

@@ -128,7 +128,7 @@ class ReMixMatch(AlgorithmBase):
                 # logits_x_ulb_s2 = self.model(x_ulb_s2)[0]
                 self.bn_controller.unfreeze_bn(self.model)
 
-                prob_x_ulb = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=torch.softmax(logits_x_ulb_w, dim=1))
+                prob_x_ulb = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=self.compute_prob(logits_x_ulb_w))
                 sharpen_prob_x_ulb = prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
 
@@ -176,10 +176,10 @@ class ReMixMatch(AlgorithmBase):
             sup_loss = self.ce_loss(logits_x, mixed_y[:num_lb], reduction='mean')
             
             # unsup_loss
-            unsup_loss = self.ce_loss(logits_u, mixed_y[num_lb:], reduction='mean')
+            unsup_loss = self.consistency_loss(logits_u, mixed_y[num_lb:])
             
             # loss U1
-            u1_loss = self.ce_loss(u1_logits, sharpen_prob_x_ulb, reduction='mean')
+            u1_loss = self.consistency_loss(u1_logits, sharpen_prob_x_ulb)
 
             # ramp for w_match
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)

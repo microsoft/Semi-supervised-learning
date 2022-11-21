@@ -59,7 +59,8 @@ class MixMatch(AlgorithmBase):
                 self.bn_controller.unfreeze_bn(self.model)
                 
                 # avg
-                avg_prob_x_ulb = (torch.softmax(logits_x_ulb_w1, dim=1) + torch.softmax(logits_x_ulb_w2, dim=1)) / 2
+                # avg_prob_x_ulb = (torch.softmax(logits_x_ulb_w1, dim=1) + torch.softmax(logits_x_ulb_w2, dim=1)) / 2
+                avg_prob_x_ulb = (self.compute_prob(logits_x_ulb_w1) + self.compute_prob(logits_x_ulb_w2)) / 2
                 # avg_prob_x_ulb = (avg_prob_x_ulb / avg_prob_x_ulb.sum(dim=-1, keepdim=True))
                 # sharpening
                 sharpen_prob_x_ulb = avg_prob_x_ulb ** (1 / self.T)
