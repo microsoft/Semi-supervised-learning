@@ -3,7 +3,6 @@
 
 
 import torch
-from semilearn.algorithms.utils import ce_loss
 from semilearn.algorithms.hooks import MaskingHook
 
 class DashThresholdingHook(MaskingHook):
@@ -45,6 +44,6 @@ class DashThresholdingHook(MaskingHook):
             pseudo_label = torch.argmax(logits_x_ulb, dim=-1).detach()
         else:
             pseudo_label = torch.softmax(logits_x_ulb / algorithm.T, dim=-1).detach()
-        loss_w = ce_loss(logits_x_ulb, pseudo_label, reduction='none')
+        loss_w = algorithm.ce_loss(logits_x_ulb, pseudo_label, reduction='none')
         mask = loss_w.le(self.rho).to(logits_x_ulb.dtype)
         return mask

@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, concat_all_gather
+from semilearn.algorithms.utils import SSL_Argument, str2bool, concat_all_gather
 
 
 class CoMatch_Net(nn.Module):
@@ -38,6 +38,7 @@ class CoMatch_Net(nn.Module):
         return matcher
 
 
+# TODO: move this to criterions
 def comatch_contrastive_loss(feats_x_ulb_s_0, feats_x_ulb_s_1, Q, T=0.2):
     # embedding similarity
     sim = torch.exp(torch.mm(feats_x_ulb_s_0, feats_x_ulb_s_1.t())/ T) 
@@ -158,7 +159,7 @@ class CoMatch(AlgorithmBase):
                     logits_x_ulb_w, feats_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['feat']
 
             # supervised loss
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             
             with torch.no_grad():
@@ -184,7 +185,7 @@ class CoMatch(AlgorithmBase):
 
                 self.update_bank(feats_w, probs_w)
 
-            unsup_loss = consistency_loss(logits_x_ulb_s_0,
+            unsup_loss = self.consistency_loss(logits_x_ulb_s_0,
                                           probs,
                                           'ce',
                                           mask=mask)

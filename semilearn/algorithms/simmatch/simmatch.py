@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, concat_all_gather
+from semilearn.algorithms.utils import SSL_Argument, concat_all_gather
 
 
 class SimMatch_Net(nn.Module):
@@ -157,7 +157,7 @@ class SimMatch(AlgorithmBase):
                 logits_x_ulb_s, feats_x_ulb_s = outs_x_ulb_s['logits'], outs_x_ulb_s['feat']
                 # logits_x_ulb_s, feats_x_ulb_s = self.model(x_ulb_s)
 
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             self.ema.apply_shadow()
             with torch.no_grad():
@@ -193,10 +193,10 @@ class SimMatch(AlgorithmBase):
             # compute mask
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
-            unsup_loss = consistency_loss(logits_x_ulb_s,
-                                          probs_x_ulb_w,
-                                          'ce',
-                                          mask=mask)
+            unsup_loss = self.consistency_loss(logits_x_ulb_s,
+                                               probs_x_ulb_w,
+                                               'ce',
+                                               mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_in * in_loss
 

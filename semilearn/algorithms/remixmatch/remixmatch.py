@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import DistAlignEMAHook 
-from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool, interleave, mixup_one_target
+from semilearn.algorithms.utils import str2bool, interleave, mixup_one_target, SSL_Argument
 
 
 
@@ -174,13 +174,13 @@ class ReMixMatch(AlgorithmBase):
             logits_u = torch.cat(logits[1:], dim=0)
 
             # sup loss
-            sup_loss = ce_loss(logits_x, mixed_y[:num_lb], reduction='mean')
+            sup_loss = self.ce_loss(logits_x, mixed_y[:num_lb], reduction='mean')
             
             # unsup_loss
-            unsup_loss = ce_loss(logits_u, mixed_y[num_lb:], reduction='mean')
+            unsup_loss = self.ce_loss(logits_u, mixed_y[num_lb:], reduction='mean')
             
             # loss U1
-            u1_loss = ce_loss(u1_logits, sharpen_prob_x_ulb, reduction='mean')
+            u1_loss = self.ce_loss(u1_logits, sharpen_prob_x_ulb, reduction='mean')
 
             # ramp for w_match
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
@@ -191,7 +191,7 @@ class ReMixMatch(AlgorithmBase):
                 self.bn_controller.freeze_bn(self.model)
                 logits_rot = self.model(x_ulb_s_0_rot, use_rot=True)['logits_rot']
                 self.bn_controller.unfreeze_bn(self.model)
-                rot_loss = ce_loss(logits_rot, rot_v, reduction='mean')
+                rot_loss = self.ce_loss(logits_rot, rot_v, reduction='mean')
                 rot_loss = rot_loss.mean()
                 total_loss += self.lambda_rot * rot_loss
 

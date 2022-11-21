@@ -55,3 +55,14 @@ def mixup_one_target(x, y, alpha=1.0, is_bias=False):
     mixed_x = lam * x + (1 - lam) * x[index]
     mixed_y = lam * y + (1 - lam) * y[index]
     return mixed_x, mixed_y, lam
+
+
+def smooth_targets(logits, targets, smoothing=0.1):
+    """
+    label smoothing
+    """
+    with torch.no_grad():
+        true_dist = torch.zeros_like(logits)
+        true_dist.fill_(smoothing / (logits.shape[-1] - 1))
+        true_dist.scatter_(1, targets.data.unsqueeze(1), (1 - smoothing))
+    return true_dist

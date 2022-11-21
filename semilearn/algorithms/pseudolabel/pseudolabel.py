@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
+from semilearn.algorithms.utils import SSL_Argument
 
 
 class PseudoLabel(AlgorithmBase):
@@ -52,7 +52,7 @@ class PseudoLabel(AlgorithmBase):
             logits_x_ulb = outs_x_ulb['logits']
             self.bn_controller.unfreeze_bn(self.model)
 
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             # compute mask
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb)
@@ -62,10 +62,10 @@ class PseudoLabel(AlgorithmBase):
                                           logits=logits_x_ulb,
                                           use_hard_label=True)
 
-            unsup_loss = consistency_loss(logits_x_ulb,
-                                          pseudo_label,
-                                          'ce',
-                                          mask=mask)
+            unsup_loss = self.consistency_loss(logits_x_ulb,
+                                               pseudo_label,
+                                               'ce',
+                                               mask=mask)
 
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup

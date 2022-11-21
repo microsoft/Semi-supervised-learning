@@ -5,7 +5,7 @@ import torch
 import math
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
+from semilearn.algorithms.utils import SSL_Argument
 
 
 class UDA(AlgorithmBase):
@@ -66,7 +66,7 @@ class UDA(AlgorithmBase):
 
             tsa = self.TSA(self.tsa_schedule, self.it, self.num_train_iter, self.num_classes)  # Training Signal Annealing
             sup_mask = torch.max(torch.softmax(logits_x_lb, dim=-1), dim=-1)[0].le(tsa).float().detach()
-            sup_loss = (ce_loss(logits_x_lb, y_lb, reduction='none') * sup_mask).mean()
+            sup_loss = (self.ce_loss(logits_x_lb, y_lb, reduction='none') * sup_mask).mean()
 
 
             probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
@@ -85,10 +85,10 @@ class UDA(AlgorithmBase):
                                           T=self.T,
                                           softmax=False)
 
-            unsup_loss = consistency_loss(logits_x_ulb_s,
-                                          pseudo_label,
-                                          'ce',
-                                          mask=mask)
+            unsup_loss = self.consistency_loss(logits_x_ulb_s,
+                                               pseudo_label, 
+                                               'ce',
+                                               mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 

@@ -11,7 +11,7 @@ from PIL import Image
 from semilearn.core import AlgorithmBase
 from semilearn.core.utils import get_data_loader
 from semilearn.algorithms.hooks import FixedThresholdingHook
-from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool
+from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
 def rotate_img(img, rot):
@@ -253,8 +253,9 @@ class CRMatch(AlgorithmBase):
                 y_ulb = torch.argmax(logits_x_ulb_w, dim=-1)
                 mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)    
 
-            Lx = ce_loss(logits_x_lb, y_lb, reduction='mean')
-            Lu = (ce_loss(logits_x_ulb_s, y_ulb, reduction='none') * mask).mean()
+            Lx = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            Lu = (self.ce_loss(logits_x_ulb_s, y_ulb, reduction='none') * mask).mean()
+            # TODO: move this to criterions
             Ld = F.cosine_embedding_loss(logits_ds_s, logits_ds_w, -torch.ones(logits_ds_s.size(0)).float().cuda(self.gpu), reduction='none')
             Ld = (Ld * mask).mean()
 
@@ -265,7 +266,7 @@ class CRMatch(AlgorithmBase):
                     logits_rot = logits_rot[num_lb + 2 * num_ulb:]
                 else:
                     logits_rot = self.model(x_ulb_rot)['logits_rot']
-                Lrot = ce_loss(logits_rot, rot_v, reduction='mean')
+                Lrot = self.ce_loss(logits_rot, rot_v, reduction='mean')
                 total_loss += Lrot
 
         out_dict = self.process_out_dict(loss=total_loss)

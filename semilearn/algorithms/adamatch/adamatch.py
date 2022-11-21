@@ -7,7 +7,7 @@ import torch
 from .utils import AdaMatchThresholdingHook
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import PseudoLabelingHook, DistAlignEMAHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss,  SSL_Argument, str2bool
+from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
 class AdaMatch(AlgorithmBase):
@@ -52,7 +52,7 @@ class AdaMatch(AlgorithmBase):
                     logits_x_ulb_w = outs_x_ulb_w['logits']
                     
 
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             probs_x_lb = torch.softmax(logits_x_lb.detach(), dim=-1)
             probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
@@ -71,10 +71,10 @@ class AdaMatch(AlgorithmBase):
                                           softmax=False)
 
             # calculate loss
-            unsup_loss = consistency_loss(logits_x_ulb_s,
-                                          pseudo_label,
-                                          'ce',
-                                          mask=mask)
+            unsup_loss = self.consistency_loss(logits_x_ulb_s,
+                                               pseudo_label,
+                                               'ce',
+                                               mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 

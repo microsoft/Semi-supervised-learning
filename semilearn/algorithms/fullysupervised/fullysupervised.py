@@ -3,7 +3,6 @@
 
 
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss
 
 
 class FullySupervised(AlgorithmBase):
@@ -29,7 +28,7 @@ class FullySupervised(AlgorithmBase):
 
             logits_x_lb = self.model(x_lb)['logits']
 
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
         out_dict = self.process_out_dict(loss=sup_loss)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item())

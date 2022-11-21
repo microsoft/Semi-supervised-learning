@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool
+from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
 class VAT(AlgorithmBase):
@@ -45,7 +45,7 @@ class VAT(AlgorithmBase):
 
         with self.amp_cm():
             logits_x_lb = self.model(x_lb)['logits']
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             if self.vat_embed:
                 self.bn_controller.freeze_bn(self.model)

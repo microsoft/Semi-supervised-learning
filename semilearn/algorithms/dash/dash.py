@@ -8,7 +8,7 @@ import torch
 from .utils import DashThresholdingHook
 from semilearn.core import AlgorithmBase
 from semilearn.algorithms.hooks import PseudoLabelingHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
+from semilearn.algorithms.utils import SSL_Argument
 from semilearn.core.utils import EMA    
 from semilearn.datasets import DistributedSampler
 
@@ -113,7 +113,7 @@ class Dash(AlgorithmBase):
                 # inference and calculate sup/unsup losses
                 with self.amp_cm():
                     logits_x_lb = self.model(x_lb)['logits']
-                    sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+                    sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
                 self.out_dict = {'loss': sup_loss}
                 # parameter updates     
@@ -171,7 +171,7 @@ class Dash(AlgorithmBase):
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w = outs_x_ulb_w['logits']
 
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
 
@@ -181,10 +181,10 @@ class Dash(AlgorithmBase):
                                           use_hard_label=self.use_hard_label,
                                           T=self.T)
 
-            unsup_loss = consistency_loss(logits_x_ulb_s,
-                                          pseudo_label,
-                                          'ce',
-                                          mask=mask)
+            unsup_loss = self.consistency_loss(logits_x_ulb_s,
+                                               pseudo_label,
+                                               'ce',
+                                               mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
