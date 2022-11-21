@@ -53,14 +53,14 @@ def create_usb_cv_config(alg, seed,
     if dataset == 'imagenet':
         cfg['epoch'] = 500
         cfg['num_train_iter'] = 1024 * 500
-        cfg['num_log_iter'] = 512
+        cfg['num_log_iter'] = 256
         cfg['num_eval_iter'] = 5120
         cfg['batch_size'] = 256
         cfg['eval_batch_size'] = 512
     else:
         cfg['epoch'] = 200
         cfg['num_train_iter'] = 1024 * 200
-        cfg['num_log_iter'] = 512
+        cfg['num_log_iter'] = 256
         cfg['num_eval_iter'] = 2048
         cfg['batch_size'] = 8
         cfg['eval_batch_size'] = 16
@@ -101,24 +101,6 @@ def create_usb_cv_config(alg, seed,
         cfg['ulb_loss_ratio'] = 1.0
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 10.0
-    elif alg == 'freematch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['ema_p'] = 0.999
-        cfg['ent_loss_ratio'] = 0.001
-        if dataset == 'imagenet':
-            cfg['ulb_loss_ratio'] = 1.0
-    elif alg == 'softmatch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['dist_align'] = True
-        cfg['dist_uniform'] = True
-        cfg['per_class'] = False
-        cfg['ema_p'] = 0.999
-        cfg['ulb_loss_ratio'] = 1.0
-        cfg['n_sigma'] = 2
-        if dataset == 'imagenet':
-            cfg['ulb_loss_ratio'] = 1.0
     elif alg == 'pseudolabel':
         cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
@@ -273,7 +255,7 @@ def exp_usb_cv(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'softmatch', 'freematch']
+             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch']
     datasets = ['cifar100', 'eurosat', 'semi_aves', 'tissuemnist', 'stl10']
     # algs = ['fixmatch', 'flexmatch', 'comatch', 'simmatch']
     # datasets = ['imagenet']

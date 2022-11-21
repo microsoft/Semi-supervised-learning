@@ -16,12 +16,13 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from semilearn.algorithms import get_algorithm, name2alg
-from semilearn.imb_algorithms import get_imb_algorithm
-from semilearn.algorithms.utils import str2bool
+from semilearn.imb_algorithms import get_imb_algorithm, name2imbalg
 from semilearn.core.utils import get_net_builder, get_logger, get_port, send_model_cuda, count_parameters, over_write_args_from_file, TBLog
 
 
 def get_config():
+    from semilearn.algorithms.utils import str2bool
+
     parser = argparse.ArgumentParser(description='Semi-Supervised Learning (USB)')
 
     '''
@@ -37,7 +38,6 @@ def get_config():
     '''
     Training Configuration of FixMatch
     '''
-
     parser.add_argument('--epoch', type=int, default=1)
     parser.add_argument('--num_train_iter', type=int, default=20,
                         help='total number of training iterations')
@@ -96,6 +96,7 @@ def get_config():
     parser.add_argument('-nc', '--num_classes', type=int, default=10)
     parser.add_argument('--train_sampler', type=str, default='RandomSampler')
     parser.add_argument('--num_workers', type=int, default=1)
+    parser.add_argument('--include_lb_to_ulb', type=str2bool, default='True', help='flag of including labeled data into unlabeled data, default to True')
 
     ## imbalanced setting arguments
     parser.add_argument('--lb_imb_ratio', type=int, default=1, help="imbalance ratio of labeled data, default to 1")
@@ -144,6 +145,12 @@ def get_config():
     for argument in name2alg[args.algorithm].get_argument():
         parser.add_argument(argument.name, type=argument.type, default=argument.default, help=argument.help)
 
+    # add imbalanced algorithm specific parameters
+    args = parser.parse_args()
+    over_write_args_from_file(args, args.c)
+    if args.imb_algorithm is not None:
+        for argument in name2imbalg[args.imb_algorithm].get_argument():
+            parser.add_argument(argument.name, type=argument.type, default=argument.default, help=argument.help)
     args = parser.parse_args()
     over_write_args_from_file(args, args.c)
     return args

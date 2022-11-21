@@ -54,6 +54,7 @@ def create_classific_config(alg, seed,
     cfg['epoch'] = 1024
     cfg['num_train_iter'] = 2 ** 20
     cfg['num_eval_iter'] = 5120
+    cfg['num_log_iter'] = 256
     cfg['num_labels'] = num_labels
     cfg['batch_size'] = 64
     cfg['eval_batch_size'] = 256
@@ -229,9 +230,9 @@ def exp_classific_cv(label_amount):
     save_path = r'./saved_models/classic_cv'
 
     if not os.path.exists(config_file):
-        os.mkdir(config_file)
+        os.makedirs(config_file)
     if not os.path.exists(save_path):
-        os.mkdir(save_path)
+        os.makedirs(save_path)
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'remixmatch', 'mixmatch', 'meanteacher',
