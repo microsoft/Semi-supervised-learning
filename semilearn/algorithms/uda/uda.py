@@ -4,10 +4,12 @@
 import torch
 import math
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
 from semilearn.algorithms.utils import SSL_Argument
 
 
+@ALGORITHMS.register('uda')
 class UDA(AlgorithmBase):
     """
     UDA algorithm (https://arxiv.org/abs/1904.12848).

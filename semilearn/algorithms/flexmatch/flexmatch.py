@@ -7,11 +7,12 @@ import torch
 from .utils import FlexMatchThresholdingHook
 
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
-
+@ALGORITHMS.register('flexmatch')
 class FlexMatch(AlgorithmBase):
     """
         FlexMatch algorithm (https://arxiv.org/abs/2110.08263).

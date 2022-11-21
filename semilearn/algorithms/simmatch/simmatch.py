@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
 from semilearn.algorithms.utils import SSL_Argument, concat_all_gather
 
@@ -36,6 +37,7 @@ class SimMatch_Net(nn.Module):
         matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
         return matcher
 
+@ALGORITHMS.register('simmatch')
 class SimMatch(AlgorithmBase):
     """
     SimMatch algorithm (https://arxiv.org/abs/2203.06915).

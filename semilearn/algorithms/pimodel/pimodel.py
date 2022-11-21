@@ -4,9 +4,11 @@
 import torch 
 import numpy as np
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
+@ALGORITHMS.register('pimodel')
 class PiModel(AlgorithmBase):
     """
         Pi-Model algorithm (https://arxiv.org/abs/1610.02242).

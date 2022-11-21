@@ -7,9 +7,11 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
+@ALGORITHMS.register('vat')
 class VAT(AlgorithmBase):
     """
         Virtual Adversarial Training algorithm (https://arxiv.org/abs/1704.03976).

@@ -5,11 +5,14 @@
 
 import torch
 from semilearn.core.algorithmbase import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
+@ALGORITHMS.register('fixmatch')
 class FixMatch(AlgorithmBase):
+
     """
         FixMatch algorithm (https://arxiv.org/abs/2001.07685).
 

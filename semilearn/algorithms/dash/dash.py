@@ -7,11 +7,13 @@ import os
 import torch
 from .utils import DashThresholdingHook
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import EMA, ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook
 from semilearn.algorithms.utils import SSL_Argument
-from semilearn.core.utils import EMA    
 from semilearn.datasets import DistributedSampler
 
+
+@ALGORITHMS.register('dash')
 class Dash(AlgorithmBase):
     """
         Dash algorithm (https://arxiv.org/abs/2109.00650).

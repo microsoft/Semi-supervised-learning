@@ -4,9 +4,11 @@
 import torch
 import numpy as np
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.utils import SSL_Argument
 
 
+@ALGORITHMS.register('meanteacher')
 class MeanTeacher(AlgorithmBase):
     """
         MeanTeacher algorithm (https://arxiv.org/abs/1703.01780).

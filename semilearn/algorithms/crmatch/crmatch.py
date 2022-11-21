@@ -9,7 +9,7 @@ from copy import deepcopy
 from PIL import Image
 
 from semilearn.core import AlgorithmBase
-from semilearn.core.utils import get_data_loader
+from semilearn.core.utils import get_data_loader, ALGORITHMS
 from semilearn.algorithms.hooks import FixedThresholdingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
@@ -116,6 +116,7 @@ class CRMatch_Net(nn.Module):
         return matcher
 
 
+@ALGORITHMS.register('crmatch')
 class CRMatch(AlgorithmBase):
     """
         CRMatch algorithm (https://arxiv.org/abs/2112.05825).

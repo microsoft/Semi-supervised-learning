@@ -8,9 +8,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import DistAlignEMAHook 
 from semilearn.algorithms.utils import str2bool, interleave, mixup_one_target, SSL_Argument
-
 
 
 class ReMixMatch_Net(nn.Module):
@@ -46,8 +46,7 @@ class ReMixMatch_Net(nn.Module):
         return matcher
 
 
-
-
+@ALGORITHMS.register('remixmatch')
 class ReMixMatch(AlgorithmBase):
     """
     ReMixMatch algorithm (https://arxiv.org/abs/1911.09785).

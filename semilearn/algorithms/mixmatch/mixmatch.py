@@ -5,9 +5,11 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.utils import SSL_Argument, str2bool, interleave, mixup_one_target
 
 
+@ALGORITHMS.register('mixmatch')
 class MixMatch(AlgorithmBase):
     """
         MixMatch algorithm (https://arxiv.org/abs/1905.02249).

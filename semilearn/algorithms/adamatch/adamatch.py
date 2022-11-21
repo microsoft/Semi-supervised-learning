@@ -6,10 +6,12 @@ import torch
 
 from .utils import AdaMatchThresholdingHook
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, DistAlignEMAHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
+@ALGORITHMS.register('adamatch')
 class AdaMatch(AlgorithmBase):
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 

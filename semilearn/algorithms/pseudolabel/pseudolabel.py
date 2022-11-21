@@ -2,12 +2,13 @@
 # Licensed under the MIT License.
 
 import numpy as np
-import torch
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
 from semilearn.algorithms.utils import SSL_Argument
 
 
+@ALGORITHMS.register('pseudolabel')
 class PseudoLabel(AlgorithmBase):
     """
         Pseudo Label algorithm (https://arxiv.org/abs/1908.02983).

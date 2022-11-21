@@ -3,8 +3,10 @@
 
 
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 
 
+@ALGORITHMS.register('fullysupervised')
 class FullySupervised(AlgorithmBase):
     """
         Train a fully supervised model using labeled data only. This serves as a baseline for comparison.
@@ -62,3 +64,6 @@ class FullySupervised(AlgorithmBase):
 
             self.call_hook("after_train_epoch")
         self.call_hook("after_run")
+
+
+ALGORITHMS['supervised'] = FullySupervised

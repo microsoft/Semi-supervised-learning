@@ -6,10 +6,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool, concat_all_gather
 
 
+@ALGORITHMS.register('comatch')
 class CoMatch_Net(nn.Module):
     def __init__(self, base, proj_size=128):
         super(CoMatch_Net, self).__init__()
