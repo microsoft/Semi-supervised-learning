@@ -115,27 +115,28 @@ class Dash(AlgorithmBase):
                     logits_x_lb = self.model(x_lb)['logits']
                     sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-                # parameter updates
+                self.out_dict = {'loss': sup_loss}
+                # parameter updates     
                 # self.parameter_update(sup_loss)
-                self.call_hook("param_update", "ParamUpdateHook", loss=sup_loss)
+                self.call_hook("after_train_step", "ParamUpdateHook")
 
                 end_run.record()
                 torch.cuda.synchronize()
 
                 # tensorboard_dict update
-                tb_dict = {}
-                tb_dict['train/sup_loss'] = sup_loss.item()
-                tb_dict['lr'] = self.optimizer.param_groups[0]['lr']
-                tb_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
-                tb_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
+                log_dict = {}
+                log_dict['train/sup_loss'] = sup_loss.item()
+                log_dict['lr'] = self.optimizer.param_groups[0]['lr']
+                log_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
+                log_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
 
                 if self.it % self.num_wu_eval_iter == 0:
                     save_path = os.path.join(self.save_dir, self.save_name)
                     if not self.distributed or (self.distributed and self.rank % ngpus_per_node == 0):
                         self.save_model('latest_model.pth', save_path)
-                    self.print_fn(f"warmup {self.it} iteration, {tb_dict}")
+                    self.print_fn(f"warmup {self.it} iteration, {log_dict}")
 
-                del tb_dict
+                del log_dict
                 start_batch.record()
                 self.it += 1
 
@@ -187,15 +188,12 @@ class Dash(AlgorithmBase):
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
-
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        tb_dict['train/unsup_loss'] = unsup_loss.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = mask.float().mean().item()
-        return tb_dict
+        out_dict = self.process_out_dict(loss=total_loss)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+                                         unsup_loss=unsup_loss.item(), 
+                                         total_loss=total_loss.item(), 
+                                         util_ratio=mask.float().mean().item())
+        return out_dict, log_dict
     
     def get_save_dict(self):
         save_dict =  super().get_save_dict()

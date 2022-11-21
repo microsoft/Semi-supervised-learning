@@ -68,14 +68,22 @@ class UDA(AlgorithmBase):
             sup_mask = torch.max(torch.softmax(logits_x_lb, dim=-1), dim=-1)[0].le(tsa).float().detach()
             sup_loss = (ce_loss(logits_x_lb, y_lb, reduction='none') * sup_mask).mean()
 
+
+            probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
+            # if distribution alignment hook is registered, call it 
+            # this is implemented for imbalanced algorithm - CReST
+            if self.registered_hook("DistAlignHook"):
+                probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
+
             # compute mask
-            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
+            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
             # generate unlabeled targets using pseudo label hook
             pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
-                                          logits=logits_x_ulb_w,
+                                          logits=probs_x_ulb_w,
                                           use_hard_label=False,
-                                          T=self.T)
+                                          T=self.T,
+                                          softmax=False)
 
             unsup_loss = consistency_loss(logits_x_ulb_s,
                                           pseudo_label,
@@ -84,16 +92,12 @@ class UDA(AlgorithmBase):
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
-
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        tb_dict['train/unsup_loss'] = unsup_loss.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = mask.float().mean().item()
-
-        return tb_dict
+        out_dict = self.process_out_dict(loss=total_loss)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+                                         unsup_loss=unsup_loss.item(), 
+                                         total_loss=total_loss.item(), 
+                                         util_ratio=mask.float().mean().item())
+        return out_dict, log_dict
 
     def TSA(self, schedule, cur_iter, total_iter, num_classes):
         training_progress = cur_iter / total_iter

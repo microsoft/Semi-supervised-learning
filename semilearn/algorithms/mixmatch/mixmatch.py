@@ -109,14 +109,11 @@ class MixMatch(AlgorithmBase):
 
             total_loss = sup_loss + lambda_u * unsup_loss
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
-
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        tb_dict['train/unsup_loss'] = unsup_loss.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-        return tb_dict
+        out_dict = self.process_out_dict(loss=total_loss)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+                                         unsup_loss=unsup_loss.item(), 
+                                         total_loss=total_loss.item())
+        return out_dict, log_dict
 
 
     @staticmethod

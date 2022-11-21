@@ -211,7 +211,7 @@ class CRMatch(AlgorithmBase):
                     x_ulb_rot = None
                     rot_v = None
 
-                self.tb_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb, x_ulb_rot=x_ulb_rot, rot_v=rot_v))
+                self.out_dict, self.log_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb, x_ulb_rot=x_ulb_rot, rot_v=rot_v))
 
                 self.call_hook("after_train_step")
                 self.it += 1
@@ -268,15 +268,13 @@ class CRMatch(AlgorithmBase):
                 Lrot = ce_loss(logits_rot, rot_v, reduction='mean')
                 total_loss += Lrot
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss)
 
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = Lx.item()
-        tb_dict['train/unsup_loss'] = Lu.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = mask.float().mean().item()
-        return tb_dict
+        log_dict = self.process_log_dict(sup_loss=Lx.item(), 
+                                         unsup_loss=Lu.item(), 
+                                         total_loss=total_loss.item(), 
+                                         util_ratio=mask.float().mean().item())
+        return out_dict, log_dict
 
 
     @staticmethod

@@ -10,8 +10,9 @@ class ParamUpdateHook(Hook):
     def __init__(self) -> None:
         super().__init__()
     
-    # specific param_update function, called inside train_step of each algorithm
-    def param_update(self, algorithm, loss):
+    # call after each train_step to update parameters
+    def after_train_step(self, algorithm):
+        loss = algorithm.out_dict['loss']
         # algorithm.optimizer.zero_grad()
         # update parameters
         if algorithm.use_amp:
@@ -27,5 +28,6 @@ class ParamUpdateHook(Hook):
                 torch.nn.utils.clip_grad_norm_(algorithm.model.parameters(), algorithm.clip_grad)
             algorithm.optimizer.step()
 
-        algorithm.scheduler.step()
+        if algorithm.scheduler is not None:
+            algorithm.scheduler.step()
         algorithm.model.zero_grad()

@@ -31,13 +31,9 @@ class FullySupervised(AlgorithmBase):
 
             sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=sup_loss)
-
-        # tensorboard_dict update
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        return tb_dict
+        out_dict = self.process_out_dict(loss=sup_loss)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item())
+        return out_dict, log_dict
 
     
     def train(self):
@@ -61,7 +57,7 @@ class FullySupervised(AlgorithmBase):
                     break
 
                 self.call_hook("before_train_step")
-                self.tb_dict = self.train_step(**self.process_batch(**data_lb))
+                self.out_dict, self.log_dict = self.train_step(**self.process_batch(**data_lb))
                 self.call_hook("after_train_step")
                 self.it += 1
 

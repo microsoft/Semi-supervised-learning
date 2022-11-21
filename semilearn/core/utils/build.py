@@ -8,7 +8,7 @@ import random
 import torch
 import torch.distributed as dist
 from torch.utils.data import DataLoader
-from semilearn.datasets.utils import get_collactor, name2sampler
+from semilearn.datasets import get_collactor, name2sampler
 from semilearn.nets.utils import param_groups_layer_decay, param_groups_weight_decay
 
 def get_net_builder(net_name, from_name: bool):
