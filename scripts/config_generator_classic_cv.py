@@ -235,7 +235,7 @@ def exp_classific_cv(label_amount):
         os.makedirs(save_path)
 
 
-    algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'remixmatch', 'mixmatch', 'meanteacher',
+    algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch']
     datasets = ['cifar100', 'svhn', 'stl10', 'cifar10']
 
