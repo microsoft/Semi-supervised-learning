@@ -111,7 +111,7 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
     if imb_alg is not None:
         cfg['imb_algorithm'] = imb_alg
 
-    cfg['save_dir'] = './saved_models/'
+    cfg['save_dir'] = './saved_models/classic_cv_imb'
     if dataset in ['imagenet', 'imagenet127', 'food101']:
         cfg['data_dir'] = './data'
     else:
@@ -197,6 +197,7 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
     else:
         pass
 
+    # cfg['use_wandb'] = True
     return cfg
 
 

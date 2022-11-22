@@ -1,8 +1,8 @@
 algorithm: remixmatch
-save_dir: ./saved_models/
+save_dir: ./saved_models/classic_cv_imb
 save_name: remixmatch_cossl_stl10_lb150_10_ulbNone_1.0_0
 resume: True
-load_path: ./saved_models//remixmatch_cossl_stl10_lb150_10_ulbNone_1.0_0/latest_model.pth
+load_path: ./saved_models/classic_cv_imb/remixmatch_cossl_stl10_lb150_10_ulbNone_1.0_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 epoch: 256
@@ -41,7 +41,7 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10358
+dist_url: tcp://127.0.0.1:10334
 dist_backend: nccl
 gpu: None
 include_lb_to_ulb: False

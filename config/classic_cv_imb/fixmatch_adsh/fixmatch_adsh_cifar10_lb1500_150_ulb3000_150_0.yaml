@@ -1,8 +1,8 @@
 algorithm: fixmatch
-save_dir: ./saved_models/
+save_dir: ./saved_models/classic_cv_imb
 save_name: fixmatch_adsh_cifar10_lb1500_150_ulb3000_150_0
 resume: True
-load_path: ./saved_models//fixmatch_adsh_cifar10_lb1500_150_ulb3000_150_0/latest_model.pth
+load_path: ./saved_models/classic_cv_imb/fixmatch_adsh_cifar10_lb1500_150_ulb3000_150_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 epoch: 256
@@ -39,7 +39,7 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10219
+dist_url: tcp://127.0.0.1:10207
 dist_backend: nccl
 gpu: None
 include_lb_to_ulb: False

@@ -1,8 +1,8 @@
 algorithm: fixmatch
-save_dir: ./saved_models/
+save_dir: ./saved_models/classic_cv_imb
 save_name: fixmatch_crest+_cifar100_lb150_15_ulb300_15_0
 resume: True
-load_path: ./saved_models//fixmatch_crest+_cifar100_lb150_15_ulb300_15_0/latest_model.pth
+load_path: ./saved_models/classic_cv_imb/fixmatch_crest+_cifar100_lb150_15_ulb300_15_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 epoch: 128
@@ -39,7 +39,7 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10164
+dist_url: tcp://127.0.0.1:10152
 dist_backend: nccl
 gpu: None
 include_lb_to_ulb: False
