@@ -6,7 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core.criterions import CELoss
 
-class TARSLogitsAdjCELoss(CELoss):
+
+class TRASLogitsAdjCELoss(CELoss):
     def __init__(self, la):
         super().__init__()
         self.la = la
@@ -14,7 +15,7 @@ class TARSLogitsAdjCELoss(CELoss):
     def forward(self, logits, targets, reduction='mean'):
         return super().forward(logits + self.la, targets, reduction=reduction)
 
-class TARSKLLoss(nn.Module):
+class TRASKLLoss(nn.Module):
     def forward(self, outputs, targets, T, mask):
         _p = F.log_softmax(outputs / T, dim=1)
         _q = F.softmax(targets / (T * 2), dim=1)

@@ -6,13 +6,13 @@ import torch.nn as nn
 import numpy as np
 from inspect import signature
 
-from .utils import TARSLogitsAdjCELoss, TARSKLLoss
+from .utils import TRASLogitsAdjCELoss, TRASKLLoss
 from semilearn.core import ImbAlgorithmBase
 from semilearn.algorithms.utils import SSL_Argument
 from semilearn.core.utils import IMB_ALGORITHMS
 
 
-class TARSNet(nn.Module):
+class TRASNet(nn.Module):
     def __init__(self, backbone, num_classes):
         super().__init__()
         self.backbone = backbone
@@ -35,10 +35,10 @@ class TARSNet(nn.Module):
         return matcher
 
 
-@IMB_ALGORITHMS.register('tars')
-class TARS(ImbAlgorithmBase):
+@IMB_ALGORITHMS.register('tras')
+class TRAS(ImbAlgorithmBase):
     def __init__(self, args, **kwargs):
-        self.imb_init(A=args.tars_A, B=args.tars_B, tro=args.tars_tro, warmup_epochs=args.tars_warmup_epochs)
+        self.imb_init(A=args.tras_A, B=args.tras_B, tro=args.tras_tro, warmup_epochs=args.tras_warmup_epochs)
         super().__init__(args, **kwargs)
         assert args.algorithm == 'fixmatch', "Adsh only supports FixMatch as the base algorithm."
 
@@ -50,19 +50,19 @@ class TARS(ImbAlgorithmBase):
         self.lb_class_dist = torch.from_numpy(np.min(lb_class_dist) / lb_class_dist)
         
         # TODO: better ways
-        self.model = TARSNet(self.model, num_classes=self.num_classes)
-        self.ema_model = TARSNet(self.ema_model, num_classes=self.num_classes)
+        self.model = TRASNet(self.model, num_classes=self.num_classes)
+        self.ema_model = TRASNet(self.ema_model, num_classes=self.num_classes)
         self.ema_model.load_state_dict(self.model.state_dict())
         self.optimizer, self.scheduler = self.set_optimizer()
 
         # compute T logits
-        self.la = torch.log(self.lb_class_dist ** self.tro).to(self.gpu)
+        self.la = torch.log(self.lb_class_dist ** self.tro + 1e-12).to(self.gpu)
         T_logit = torch.softmax(-self.la / 1, dim=0)
         self.T_logit = self.A * T_logit + self.B
 
-        # crete tars ce loss
-        self.tars_ce_loss = TARSLogitsAdjCELoss(la=self.la)
-        self.tars_kl_loss = TARSKLLoss()
+        # crete tras ce loss
+        self.tras_ce_loss = TRASLogitsAdjCELoss(la=self.la)
+        self.tras_kl_loss = TRASKLLoss()
 
     def imb_init(self, A, B, tro, warmup_epochs):
         self.A = A
@@ -96,7 +96,7 @@ class TARS(ImbAlgorithmBase):
             logits_x_ulb_w = self.model.module.aux_classifier(feats_x_ulb_w)
         
         # compute supervised loss 
-        tars_sup_loss = self.tars_ce_loss(logits_x_lb, kwargs['y_lb'], reduction='mean')
+        tras_sup_loss = self.tras_ce_loss(logits_x_lb, kwargs['y_lb'], reduction='mean')
 
         # compute mask
         probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
@@ -113,12 +113,12 @@ class TARS(ImbAlgorithmBase):
         la_u = (la_u.t() * self.T_logit[pseudo_label].cuda()).t()
 
         # TRAS loss of unlabeled
-        tars_unsup_loss = self.tars_kl_loss(logits_x_ulb_s, logits_x_ulb_w.detach()-la_u, 1, mask)
+        tras_unsup_loss = self.tras_kl_loss(logits_x_ulb_s, logits_x_ulb_w.detach()-la_u, 1, mask)
 
-        tars_loss = tars_sup_loss + tars_unsup_loss
+        tras_loss = tras_sup_loss + tras_unsup_loss
 
-        out_dict['loss'] += tars_loss
-        log_dict['train/tars_loss'] = tars_loss.item()
+        out_dict['loss'] += tras_loss
+        log_dict['train/tras_loss'] = tras_loss.item()
         return out_dict, log_dict
 
     def compute_prob(self, logits):
@@ -134,10 +134,10 @@ class TARS(ImbAlgorithmBase):
     @staticmethod
     def get_argument():
         return [
-            SSL_Argument('--tars_warmup_epochs', int, 10),
-            SSL_Argument('--tars_A', int, 2),
-            SSL_Argument('--tars_B', int, 2),
-            SSL_Argument('--tars_tro', float, 1.0),
+            SSL_Argument('--tras_warmup_epochs', int, 10),
+            SSL_Argument('--tras_A', int, 2),
+            SSL_Argument('--tras_B', int, 2),
+            SSL_Argument('--tras_tro', float, 1.0),
         ]
 
         

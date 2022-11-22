@@ -189,11 +189,11 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
         pass
     elif imb_alg == 'simis':
         cfg['simis_la'] = True
-    elif imb_alg == 'tars':
-        cfg['tars_A'] = 2
-        cfg['tars_B'] = 2
-        cfg['tars_tro'] = 1.0
-        cfg['tars_warmup_epochs'] = 1
+    elif imb_alg == 'tras':
+        cfg['tras_A'] = 2
+        cfg['tras_B'] = 2
+        cfg['tras_tro'] = 1.0
+        cfg['tras_warmup_epochs'] = 1
     else:
         pass
 
@@ -211,7 +211,7 @@ def exp_classic_cv_imb(settings):
         os.mkdir(save_path)
 
     algs = ['supervised', 'fixmatch', 'remixmatch']
-    imb_algs = [None, 'crest', 'crest+', 'darp', 'abc', 'daso', 'saw', 'adsh', 'cossl', 'simis', 'tars']
+    imb_algs = [None, 'crest', 'crest+', 'darp', 'abc', 'daso', 'saw', 'adsh', 'cossl', 'simis']
     datasets = list(settings.keys())
 
     seeds = [0]
