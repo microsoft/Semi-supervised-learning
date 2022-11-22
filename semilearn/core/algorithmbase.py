@@ -71,6 +71,7 @@ class AlgorithmBase:
 
         # common model related parameters
         self.it = 0
+        self.start_epoch = 0
         self.best_eval_acc, self.best_it = 0.0, 0
         self.bn_controller = Bn_Controller()
         self.net_builder = net_builder
@@ -266,7 +267,7 @@ class AlgorithmBase:
         self.model.train()
         self.call_hook("before_run")
 
-        for epoch in range(self.epochs):
+        for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
             
             # prevent the training iterations exceed args.num_train_iter
@@ -358,6 +359,7 @@ class AlgorithmBase:
             'optimizer': self.optimizer.state_dict(),
             'loss_scaler': self.loss_scaler.state_dict(),
             'it': self.it + 1,
+            'epoch': self.epoch + 1,
             'best_it': self.best_it,
             'best_eval_acc': self.best_eval_acc,
         }
@@ -387,6 +389,7 @@ class AlgorithmBase:
         self.ema_model.load_state_dict(checkpoint['ema_model'])
         self.loss_scaler.load_state_dict(checkpoint['loss_scaler'])
         self.it = checkpoint['it']
+        self.start_epoch = checkpoint['epoch']
         self.best_it = checkpoint['best_it']
         self.best_eval_acc = checkpoint['best_eval_acc']
         self.optimizer.load_state_dict(checkpoint['optimizer'])

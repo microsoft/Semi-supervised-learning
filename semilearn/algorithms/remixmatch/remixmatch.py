@@ -17,10 +17,10 @@ class ReMixMatch_Net(nn.Module):
     def __init__(self, base, use_rot=True):
         super(ReMixMatch_Net, self).__init__()
         self.backbone = base
-        self.feat_planes = base.num_features
+        self.num_features = base.num_features
 
         if use_rot:
-            self.rot_classifier = nn.Linear(self.feat_planes, 4)
+            self.rot_classifier = nn.Linear(self.num_features, 4)
 
     def forward(self, x, use_rot=False, **kwargs):
         if not use_rot:

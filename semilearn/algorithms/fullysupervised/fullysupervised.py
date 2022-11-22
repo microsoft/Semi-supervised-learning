@@ -41,7 +41,7 @@ class FullySupervised(AlgorithmBase):
         self.model.train()
         self.call_hook("before_run")
             
-        for epoch in range(self.epochs):
+        for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
             
             # prevent the training iterations exceed args.num_train_iter

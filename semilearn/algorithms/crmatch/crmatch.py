@@ -63,27 +63,27 @@ class CRMatch_Net(nn.Module):
         super(CRMatch_Net, self).__init__()
         self.backbone = base
         self.use_rot = use_rot
-        self.feat_planes = base.num_features
+        self.num_features = base.num_features
         self.args = args
 
         if self.use_rot:
             self.rot_classifier = nn.Sequential(
-                nn.Linear(self.feat_planes, self.feat_planes),
+                nn.Linear(self.num_features, self.num_features),
                 nn.ReLU(inplace=False),
-                nn.Linear(self.feat_planes, 4)
+                nn.Linear(self.num_features, 4)
             )
         if 'wrn' in args.net or 'resnet' in args.net:
             if args.dataset == 'stl10':
-                feat_map_size = 6 * 6 * self.feat_planes
+                feat_map_size = 6 * 6 * self.num_features
             elif args.dataset == 'imagenet':
-                feat_map_size = 7 * 7 * self.feat_planes
+                feat_map_size = 7 * 7 * self.num_features
             else:
-                feat_map_size = 8 * 8 * self.feat_planes
+                feat_map_size = 8 * 8 * self.num_features
         elif 'vit' in args.net or 'bert' in args.net or 'wave2vec' in args.net:
             feat_map_size = self.backbone.num_features
         else:
             raise NotImplementedError
-        self.ds_classifier = nn.Linear(feat_map_size, self.feat_planes, bias=True)
+        self.ds_classifier = nn.Linear(feat_map_size, self.num_features, bias=True)
 
     def forward(self, x):
         feat_maps = self.backbone.extract(x)
@@ -184,7 +184,7 @@ class CRMatch(AlgorithmBase):
         self.model.train()
         self.call_hook("before_run")
 
-        for epoch in range(self.epochs):
+        for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
             
             # prevent the training iterations exceed args.num_train_iter

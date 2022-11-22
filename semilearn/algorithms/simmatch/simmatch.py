@@ -14,12 +14,13 @@ class SimMatch_Net(nn.Module):
     def __init__(self, base, proj_size=128):
         super(SimMatch_Net, self).__init__()
         self.backbone = base
-        self.feat_planes = base.num_features
+        self.num_features = base.num_features
         
         self.mlp_proj = nn.Sequential(*[
-            nn.Linear(self.feat_planes, self.feat_planes),
+            nn.Linear(self.num_features, self.num_features),
             nn.ReLU(inplace=False),
-            nn.Linear(self.feat_planes, proj_size)
+            nn.Linear(self.num_features
+            , proj_size)
         ])
         
     def l2norm(self, x, power=2):
