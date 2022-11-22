@@ -21,7 +21,18 @@ def split_ssl_data(args, data, targets, num_classes,
     data & target is splitted into labeled and unlabeld data.
     
     Args
-        index: If np.array of index is given, select the data[index], target[index] as labeled samples.
+        data: data to be split to labeled and unlabeled 
+        targets: targets to be split to labeled and unlabeled 
+        num_classes: number of total classes
+        lb_num_labels: number of labeled samples. 
+                       If lb_imbalance_ratio is 1.0, lb_num_labels denotes total number of samples.
+                       Otherwise it denots the number of samples in head class.
+        ulb_num_labels: similar to lb_num_labels but for unlabeled data.
+                        default to None, denoting use all remaininig data except for labeled data as unlabeled set
+        lb_imbalance_ratio: imbalance ratio for labeled data
+        ulb_imbalance_ratio: imbalance ratio for unlabeled data
+        lb_index: If np.array of index is given, select the data[index], target[index] as labeled samples.
+        ulb_index: If np.array of index is given, select the data[index], target[index] as labeled samples.
         include_lb_to_ulb: If True, labeled data is also included in unlabeld data
     """
     data, targets = np.array(data), np.array(targets)
@@ -110,6 +121,9 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
 
 
 def make_imbalance_data(max_num_labels, num_classes, gamma):
+    """
+    calculate samplers per class for imbalanced data
+    """
     mu = np.power(1 / abs(gamma), 1 / (num_classes - 1))
     samples_per_class = []
     for c in range(num_classes):
@@ -120,9 +134,6 @@ def make_imbalance_data(max_num_labels, num_classes, gamma):
     if gamma < 0:
         samples_per_class = samples_per_class[::-1]
     return samples_per_class
-
-
-
 
 
 def get_collactor(args, net):

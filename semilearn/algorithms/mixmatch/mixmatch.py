@@ -6,7 +6,7 @@ import numpy as np
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
 from semilearn.core.utils import ALGORITHMS
-from semilearn.algorithms.utils import SSL_Argument, str2bool, interleave, mixup_one_target
+from semilearn.algorithms.utils import SSL_Argument, str2bool, mixup_one_target
 
 
 @ALGORITHMS.register('mixmatch')
@@ -86,7 +86,7 @@ class MixMatch(AlgorithmBase):
                                                    self.mixup_alpha,
                                                    is_bias=True)
             mixed_x = list(torch.split(mixed_x, num_lb))
-            mixed_x = interleave(mixed_x, num_lb)
+            # mixed_x = interleave(mixed_x, num_lb)
 
             if self.mixup_manifold:
                 logits = [self.model(mixed_x[0], only_fc=self.mixup_manifold)]
@@ -104,7 +104,7 @@ class MixMatch(AlgorithmBase):
                 self.bn_controller.unfreeze_bn(self.model)
 
             # put interleaved samples back
-            logits = interleave(logits, num_lb)
+            # logits = interleave(logits, num_lb)
 
             logits_x = logits[0]
             logits_u = torch.cat(logits[1:], dim=0)

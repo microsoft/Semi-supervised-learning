@@ -6,6 +6,9 @@ import numpy as np
 
 
 def interleave_offsets(batch, nu):
+    """
+    not used
+    """
     groups = [batch // (nu + 1)] * (nu + 1)
     for x in range(batch - sum(groups)):
         groups[-x - 1] += 1
@@ -17,6 +20,9 @@ def interleave_offsets(batch, nu):
 
 
 def interleave(xy, batch):
+    """
+    not used
+    """
     nu = len(xy) - 1
     offsets = interleave_offsets(batch, nu)
     xy = [[v[offsets[p]:offsets[p + 1]] for p in range(nu + 1)] for v in xy]

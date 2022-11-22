@@ -15,6 +15,27 @@ from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 @IMB_ALGORITHMS.register('crest')
 class CReST(ImbAlgorithmBase):
+    """
+        CReST algorithm (https://arxiv.org/abs/2102.09559).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - crest_num_gens (int):
+                number of generations for crest
+            - crest_dist_align_t (float):
+                t parameter in dist align
+            - crest_pro_dist_align (bool):
+                flag of using progressive dist align
+            - crest_alpha (float):
+                alpha parameter for crest
+    """
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         self.imb_init(num_gens=args.crest_num_gens, dist_align_t=args.crest_dist_align_t, pro_dist_align=args.crest_pro_dist_align, sampling_alpha=args.crest_alpha)
         super(CReST, self).__init__(args, net_builder, tb_log, logger, **kwargs)

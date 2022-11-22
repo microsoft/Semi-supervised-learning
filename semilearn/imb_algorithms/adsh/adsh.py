@@ -11,6 +11,21 @@ from .utils import AdaptiveThresholdingHook
 
 @IMB_ALGORITHMS.register('adsh')
 class Adsh(ImbAlgorithmBase):
+    """
+        Adsh algorithm (https://proceedings.mlr.press/v162/guo22e/guo22e.pdf).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - adsh_tau_1 (`float`):
+                threshold for adsh
+    """
     def __init__(self, args, **kwargs):
         self.imb_init(tau_1=args.adsh_tau_1)
         super().__init__(args, **kwargs)

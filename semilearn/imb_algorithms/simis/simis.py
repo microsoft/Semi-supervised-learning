@@ -15,7 +15,22 @@ from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
 @IMB_ALGORITHMS.register('simis')
-class SimIS(ImbAlgorithmBase):
+class SimiS(ImbAlgorithmBase):
+    """
+        SimiS algorithm (https://arxiv.org/abs/2211.11086).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - simis_la (bool):
+                flag of using logits adjustment
+    """
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         args.include_lb_to_ulb = True
         super(SimIS, self).__init__(args, net_builder, tb_log, logger, **kwargs)

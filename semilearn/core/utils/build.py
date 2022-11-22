@@ -67,8 +67,8 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
         dataset: dataset name 
         num_labels: number of labeled data in dataset
         num_classes: number of classes
-        seed: random seed
         data_dir: data folder
+        include_lb_to_ulb: flag of including labeled data into unlabeled data
     """
     from semilearn.datasets import get_eurosat, get_medmnist, get_semi_aves, get_cifar, get_svhn, get_stl10, get_imagenet, get_json_dset, get_pkl_dset
 
@@ -126,8 +126,18 @@ def get_data_loader(args,
     However, if distributed, DistributedProxySampler, which is a wrapper of data_sampler, is used.
     
     Args
+        args: args
+        dset: dataset
+        batch_size: batch size in DataLoader
+        shuffle: shuffle in DataLoader
+        num_workers: num_workers in DataLoader
+        pin_memory: pin_memory in DataLoader
+        data_sampler: data sampler to be used, None|RandomSampler|WeightedRamdomSampler, make sure None is used for test loader
         num_epochs: total batch -> (# of batches in dset) * num_epochs 
         num_iters: total batch -> num_iters
+        generator: random generator
+        drop_last: drop_last in DataLoader
+        distributed: distributed flag
     """
 
     assert batch_size is not None
@@ -173,8 +183,16 @@ def get_data_loader(args,
 def get_optimizer(net, optim_name='SGD', lr=0.1, momentum=0.9, weight_decay=0, layer_decay=1.0, nesterov=True, bn_wd_skip=True):
     '''
     return optimizer (name) in torch.optim.
-    If bn_wd_skip, the optimizer does not apply
-    weight decay regularization on parameters in batch normalization.
+
+    Args:
+        net: model witth parameters to be optimized
+        optim_name: optimizer name, SGD|AdamW
+        lr: learning rate
+        momentum: momentum parameter for SGD
+        weight_decay: weight decay in optimizer
+        layer_decay: layer-wise decay learning rate for model, requires the model have group_matcher function
+        nesterov: SGD parameter
+        bn_wd_skip: if bn_wd_skip, the optimizer does not apply weight decay regularization on parameters in batch normalization.
     '''
     assert layer_decay <= 1.0
 

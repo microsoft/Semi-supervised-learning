@@ -52,7 +52,9 @@ IMB_ALGORITHMS = Register('imb_algorithms')
 
 
 def _handle_errors(errors):
-    """Log out and possibly reraise errors during import."""
+    """
+    Log out and possibly reraise errors during import.
+    """
     if not errors:
         return
     
@@ -69,7 +71,9 @@ ALL_MODULES = [
 
 
 def import_all_modules_for_register():
-    """Import all modules for register."""
+    """
+    Import all modules for register.
+    """
     all_modules = ALL_MODULES
     errors = []
     for base_dir, modules in all_modules:

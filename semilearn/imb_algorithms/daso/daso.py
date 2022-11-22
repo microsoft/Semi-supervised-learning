@@ -18,6 +18,19 @@ from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 @IMB_ALGORITHMS.register('daso')
 class DASO(ImbAlgorithmBase):
+    """
+        DASO algorithm (https://arxiv.org/abs/2106.05682).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+    """
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         self.imb_init(T_proto=args.daso_T_proto, T_dist=args.daso_T_dist, daso_queue_len=args.daso_queue_len,
                       interp_alpha=args.daso_interp_alpha, with_dist_aware=args.daso_with_dist_aware, assign_loss_ratio=args.daso_assign_loss_ratio,

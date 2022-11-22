@@ -13,7 +13,7 @@ from .cross_entropy import ce_loss
 
 def consistency_loss(logits, targets, name='ce', mask=None):
     """
-    wrapper for consistency regularization loss in semi-supervised learning.
+    consistency regularization loss in semi-supervised learning.
 
     Args:
         logits: logit to calculate the loss on and back-propagion, usually being the strong-augmented unlabeled samples
@@ -39,5 +39,8 @@ def consistency_loss(logits, targets, name='ce', mask=None):
 
 
 class ConsistencyLoss(nn.Module):
+    """
+    Wrapper for consistency loss
+    """
     def forward(self, logits, targets, name='ce', mask=None):
         return consistency_loss(logits, targets, name, mask)

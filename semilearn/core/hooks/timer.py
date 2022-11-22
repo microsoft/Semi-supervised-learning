@@ -6,8 +6,9 @@ from .hook import Hook
 
 
 class TimerHook(Hook):
-    def __init__(self) -> None:
-        super().__init__()
+    """
+    Timer Hook
+    """
     
     def before_run(self, algorithm):
         algorithm.start_batch = torch.cuda.Event(enable_timing=True)

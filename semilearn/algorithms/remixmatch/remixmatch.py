@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
 from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import DistAlignEMAHook 
-from semilearn.algorithms.utils import str2bool, interleave, mixup_one_target, SSL_Argument
+from semilearn.algorithms.utils import str2bool, mixup_one_target, SSL_Argument
 
 
 class ReMixMatch_Net(nn.Module):
@@ -151,7 +151,7 @@ class ReMixMatch(AlgorithmBase):
                 inputs = torch.cat([x_lb, x_ulb_s_0, x_ulb_s_1, x_ulb_w])
             mixed_x, mixed_y, _ = mixup_one_target(inputs, input_labels, self.mixup_alpha, is_bias=True)
             mixed_x = list(torch.split(mixed_x, num_lb))
-            mixed_x = interleave(mixed_x, num_lb)
+            # mixed_x = interleave(mixed_x, num_lb)
 
             # calculate BN only for the first batch
             if self.mixup_manifold:
@@ -171,7 +171,7 @@ class ReMixMatch(AlgorithmBase):
             u1_logits = outs_x_ulb_s_0['logits']
 
             # put interleaved samples back
-            logits = interleave(logits, num_lb)
+            # logits = interleave(logits, num_lb)
             logits_x = logits[0]
             logits_u = torch.cat(logits[1:], dim=0)
 

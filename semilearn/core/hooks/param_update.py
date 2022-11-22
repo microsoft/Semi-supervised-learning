@@ -6,8 +6,11 @@ from .hook import Hook
 
 
 class ParamUpdateHook(Hook):
-    def __init__(self) -> None:
-        super().__init__()
+    """
+    Parameter Update Hook
+
+    necessary for update the model parameters
+    """
     
     def before_train_step(self, algorithm):
         torch.cuda.synchronize()

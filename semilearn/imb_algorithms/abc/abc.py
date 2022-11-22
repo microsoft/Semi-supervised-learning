@@ -37,6 +37,23 @@ class ABCNet(nn.Module):
 
 @IMB_ALGORITHMS.register('abc')
 class ABC(ImbAlgorithmBase):
+    """
+        ABC algorithm (https://arxiv.org/abs/2110.10368).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - abc_p_cutoff (`float`):
+                threshold for the auxilariy classifier
+            - abc_loss_ratio (`float`):
+                loss ration for auxiliary classifier
+    """
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         self.imb_init(abc_p_cutoff=args.abc_p_cutoff, abc_loss_ratio=args.abc_loss_ratio)
 

@@ -15,6 +15,19 @@ from semilearn.core.utils import get_data_loader, IMB_ALGORITHMS
 
 @IMB_ALGORITHMS.register('saw')
 class SAW(ImbAlgorithmBase):
+    """
+        SAW algorithm (https://proceedings.mlr.press/v162/lai22b.html).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+    """
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         super().__init__(args, net_builder, tb_log, logger, **kwargs)
         self.ce_loss = SAWCELoss()

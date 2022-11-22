@@ -13,6 +13,27 @@ from semilearn.core.utils import IMB_ALGORITHMS
 
 
 class TRASNet(nn.Module):
+    """
+        Transfer & Share algorithm (https://arxiv.org/abs/2205.13358).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - tras_A
+                A parameter in TRAS
+            - tras_B
+                B parameter  in TRAS
+            - tras_tro:
+                tro parameter in TRAS
+            - tras_warmup_epochs:
+                TRAS warmup epochs
+    """
     def __init__(self, backbone, num_classes):
         super().__init__()
         self.backbone = backbone

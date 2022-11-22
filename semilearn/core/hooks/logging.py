@@ -5,10 +5,9 @@
 from .hook import Hook
 
 class LoggingHook(Hook):
-    def __init__(self) -> None:
-        super().__init__()
-    
-
+    """
+    Logging Hook for print information and log into tensorboard
+    """
     def after_train_step(self, algorithm):
         """must be called after evaluation"""
         if self.every_n_iters(algorithm, algorithm.num_eval_iter):

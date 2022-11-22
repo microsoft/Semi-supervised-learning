@@ -11,6 +11,23 @@ from semilearn.algorithms.utils import SSL_Argument
 
 @IMB_ALGORITHMS.register('debiaspl')
 class DebiasPL(ImbAlgorithmBase):
+   """
+        DebiasPL algorithm (https://openaccess.thecvf.com/content/CVPR2022/papers/Wang_Debiased_Learning_From_Naturally_Imbalanced_Pseudo-Labels_CVPR_2022_paper.pdf).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - debiaspl_tau (float):
+                tau in DebiasPl
+            - debiaspl_ema_p (float):
+                momentum 
+    """
     def __init__(self, args, **kwargs):
         self.imb_init(args.debiaspl_tau, args.debiaspl_ema_p)
         super().__init__(args, **kwargs)

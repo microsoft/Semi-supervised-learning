@@ -99,6 +99,19 @@ class CoSSLParamUpdateHook(ParamUpdateHook):
 
 @IMB_ALGORITHMS.register('cossl')
 class CoSSL(ImbAlgorithmBase):
+    """
+        CoSSL algorithm (https://arxiv.org/abs/2112.04564).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+    """
     def __init__(self, args, **kwargs):
         self.imb_init(max_lam=args.cossl_max_lam, tfe_augment=args.cossl_tfe_augment,
                       tfe_u_ratio=args.cossl_tfe_u_ratio, warm_epoch=args.cossl_warm_epoch)

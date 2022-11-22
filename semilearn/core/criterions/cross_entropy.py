@@ -10,7 +10,7 @@ from torch.nn import functional as F
 
 def ce_loss(logits, targets, reduction='none'):
     """
-    wrapper for cross entropy loss in pytorch.
+    cross entropy loss in pytorch.
 
     Args:
         logits: logit values, shape=[Batch size, # of classes]
@@ -32,6 +32,9 @@ def ce_loss(logits, targets, reduction='none'):
 
 
 class CELoss(nn.Module):
+    """
+    Wrapper for ce loss
+    """
     def forward(self, logits, targets, reduction='none'):
         return ce_loss(logits, targets, reduction)
 

@@ -26,6 +26,15 @@ class MaskingHook(Hook):
                       *args, **kwargs):
         """
         generate mask for unlabeled loss
+
+        Args:
+            algorithm: base algorithm
+            logits_x_lb: labeled batch logits (or probs, need to set softmax_x_lb to False)
+            logits_x_ulb: unlabeled batch logits (or probs, need to set softmax_x_ulb to False)
+            idx_lb: labeled batch index
+            idx_ulb: unlabeled batch index
+            softmax_x_lb: flag of using softmax on labeled logits 
+            softmax_x_ulb: flag of using softmax on unlabeled logits 
         """
         raise NotImplementedError
 

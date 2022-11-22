@@ -110,6 +110,9 @@ class AlgorithmBase:
     
 
     def set_dataset(self):
+        """
+        set dataset_dict
+        """
         if self.rank != 0 and self.distributed:
             torch.distributed.barrier()
         dataset_dict = get_dataset(self.args, self.algorithm, self.args.dataset, self.args.num_labels, self.args.num_classes, self.args.data_dir, self.args.include_lb_to_ulb)
@@ -121,6 +124,9 @@ class AlgorithmBase:
         return dataset_dict
 
     def set_data_loader(self):
+        """
+        set loader_dict
+        """
         self.print_fn("Create train and test data loaders")
         loader_dict = {}
         loader_dict['train_lb'] = get_data_loader(self.args,
@@ -161,6 +167,9 @@ class AlgorithmBase:
         return loader_dict
 
     def set_optimizer(self):
+        """
+        set optimizer for algorithm
+        """
         self.print_fn("Create optimizer and scheduler")
         optimizer = get_optimizer(self.model, self.args.optim, self.args.lr, self.args.momentum, self.args.weight_decay, self.args.layer_decay)
         scheduler = get_cosine_schedule_with_warmup(optimizer,
@@ -169,6 +178,9 @@ class AlgorithmBase:
         return optimizer, scheduler
 
     def set_model(self):
+        """
+        initialize model
+        """
         model = self.net_builder(num_classes=self.num_classes, pretrained=self.args.use_pretrain, pretrained_path=self.args.pretrain_path)
         return model
 

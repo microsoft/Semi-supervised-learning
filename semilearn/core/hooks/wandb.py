@@ -6,6 +6,10 @@ from .hook import Hook
 
 
 class WANDBHook(Hook):
+    """
+    Wandb Hook
+    """
+
     def __init__(self):
         super().__init__()
         self.log_key_list = ['train/sup_loss', 'train/unsup_loss', 'train/total_loss', 'train/util_ratio', 

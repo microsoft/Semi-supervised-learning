@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 # Ref: https://github.com/bbuing9/DARP/blob/64a94b46b5fcf3307178c2cb2f97fe051c43e500/common.py#L107
 
 import math

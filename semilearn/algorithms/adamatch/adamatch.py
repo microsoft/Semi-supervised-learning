@@ -13,15 +13,35 @@ from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 @ALGORITHMS.register('adamatch')
 class AdaMatch(AlgorithmBase):
+    """
+        AdaMatch algorithm (https://arxiv.org/abs/2106.04732).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - T (`float`):
+                Temperature for pseudo-label sharpening
+            - p_cutoff(`float`):
+                Confidence threshold for generating pseudo-labels
+            - hard_label (`bool`, *optional*, default to `False`):
+                If True, targets have [Batch size] shape with int values. If False, the target is vector
+            - ema_p (`float`):
+                momentum for average probability
+    """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
-        self.init(p_cutoff=args.p_cutoff, T=args.T, hard_label=args.hard_label, dist_align=args.dist_align, ema_p=args.ema_p)
+        self.init(p_cutoff=args.p_cutoff, T=args.T, hard_label=args.hard_label, ema_p=args.ema_p)
     
-    def init(self, p_cutoff, T, hard_label=True, dist_align=True, ema_p=0.999):
+    def init(self, p_cutoff, T, hard_label=True, ema_p=0.999):
         self.p_cutoff = p_cutoff
         self.T = T
         self.use_hard_label = hard_label
-        self.dist_align = dist_align
         self.ema_p = ema_p
 
 
@@ -116,7 +136,6 @@ class AdaMatch(AlgorithmBase):
         return [
             SSL_Argument('--hard_label', str2bool, True),
             SSL_Argument('--T', float, 0.5),
-            SSL_Argument('--dist_align', str2bool, True),
             SSL_Argument('--ema_p', float, 0.999),
             SSL_Argument('--p_cutoff', float, 0.95),
         ]

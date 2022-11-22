@@ -13,6 +13,27 @@ from semilearn.algorithms.utils import SSL_Argument
 
 @IMB_ALGORITHMS.register('darp')
 class DARP(ImbAlgorithmBase):
+    """
+        DARP algorithm (https://arxiv.org/abs/2007.08844).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - darp_warmup_epochs (int):
+                warmup epochs for darp
+            - darp_alpha (float):
+                alpha parameter for darp
+            - darp_iter_T (int):
+                darp optimization T
+            - darp_num_refine_iter
+                darp refine iterations 
+    """
     def __init__(self, args, **kwargs):
         self.imb_init(warmup_epochs=args.darp_warmup_epochs, alpha=args.darp_alpha, iter_T=args.darp_iter_T, num_refine_iter=args.darp_num_refine_iter)
         super().__init__(args, **kwargs)

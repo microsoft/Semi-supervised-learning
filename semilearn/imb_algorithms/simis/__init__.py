@@ -1,2 +1,2 @@
 
-from .simis import SimIS
+from .simis import SimiS
