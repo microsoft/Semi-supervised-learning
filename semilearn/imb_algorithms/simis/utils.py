@@ -39,7 +39,7 @@ class EffectiveDistribution(Hook):
 
         # compute append numbers
         lb_class_dist = algorithm.lb_class_dist
-        algorithm.print_fn("lb class dist.: {}".format(lb_imb_ratio))
+        algorithm.print_fn("lb class dist.: {}".format(lb_class_dist))
         
         # which to append
         ext_ratio =  -lb_class_dist + lb_class_dist.max()
@@ -83,7 +83,7 @@ class EffectiveDistribution(Hook):
             algorithm.print_fn("lb count {}".format(y_lb_cnt))
             algorithm.print_fn("lb number {}".format(y_lb_cnt.sum()))
             algorithm.lb_class_dist = y_lb_cnt / y_lb_cnt.sum()
-            if algorithm.simis_la:
+            if algorithm.args.simis_la:
                 algorithm.ce_loss.update_lb_dist(algorithm.lb_class_dist)
             algorithm.loader_dict['train_lb'] =  get_data_loader(algorithm.args,
                                                     train_lb_dataset,
@@ -104,5 +104,5 @@ class LogitsAdjCELoss(CELoss):
     def update_lb_dist(self, lb_class_dist):
         self.lb_class_dist = lb_class_dist
 
-    def forward(self, logits, targets, reduction='none'):
-        return super().forward(logits + torch.log(self.lb_class_dist + 1e-12), targets, reduction='none')
+    def forward(self, logits, targets, reduction='mean'):
+        return super().forward(logits + torch.log(self.lb_class_dist + 1e-12), targets, reduction)

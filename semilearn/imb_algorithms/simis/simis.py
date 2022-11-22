@@ -7,7 +7,7 @@ import numpy as np
 import copy
 import torch.nn.functional as F
 
-from .utils import EffectiveDistribution
+from .utils import EffectiveDistribution, LogitsAdjCELoss
 
 from semilearn.core import ImbAlgorithmBase
 from semilearn.core.utils import get_data_loader, get_dataset, IMB_ALGORITHMS
