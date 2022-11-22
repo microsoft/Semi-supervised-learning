@@ -169,6 +169,7 @@ class SimMatch(AlgorithmBase):
                 ema_probs_x_ulb_w = F.softmax(ema_logits_x_ulb_w, dim=-1)
                 ema_probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=ema_probs_x_ulb_w.detach())
             self.ema.restore()
+            feat_dict = {'x_lb': ema_feats_x_lb, 'x_ulb_w':ema_feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
             with torch.no_grad():
                 teacher_logits = ema_feats_x_ulb_w @ bank
@@ -204,7 +205,7 @@ class SimMatch(AlgorithmBase):
 
             self.update_bank(ema_feats_x_lb, y_lb, idx_lb)
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 

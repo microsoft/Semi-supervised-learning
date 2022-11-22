@@ -159,6 +159,7 @@ class CoMatch(AlgorithmBase):
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w, feats_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['feat']
+            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb_w, 'x_ulb_s':[feats_x_ulb_s_0, feats_x_ulb_s_1]}
 
             # supervised loss
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
@@ -204,7 +205,7 @@ class CoMatch(AlgorithmBase):
 
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_c * contrast_loss
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          contrast_loss=contrast_loss.item(),

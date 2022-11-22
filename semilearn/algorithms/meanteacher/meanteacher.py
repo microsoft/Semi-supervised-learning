@@ -39,20 +39,24 @@ class MeanTeacher(AlgorithmBase):
 
             outs_x_lb = self.model(x_lb)
             logits_x_lb = outs_x_lb['logits']
+            feats_x_lb = outs_x_lb['feat']
 
             self.ema.apply_shadow()
             with torch.no_grad():
                 self.bn_controller.freeze_bn(self.model)
                 outs_x_ulb_w = self.model(x_ulb_w)
                 logits_x_ulb_w = outs_x_ulb_w['logits'] # self.model(x_ulb_w)
+                feats_x_ulb_w = outs_x_ulb_w['feat']
                 self.bn_controller.unfreeze_bn(self.model)
             self.ema.restore()
 
             self.bn_controller.freeze_bn(self.model)
             outs_x_ulb_s = self.model(x_ulb_s)
             logits_x_ulb_s = outs_x_ulb_w['logits']
+            feats_x_ulb_s = outs_x_ulb_w['feat']
             self.bn_controller.unfreeze_bn(self.model)
 
+            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
@@ -65,7 +69,7 @@ class MeanTeacher(AlgorithmBase):
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup
 
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item())

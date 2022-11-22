@@ -123,6 +123,7 @@ class ReMixMatch(AlgorithmBase):
 
                 outs_x_ulb_w = self.model(x_ulb_w)
                 logits_x_ulb_w = outs_x_ulb_w['logits']
+                feats_x_ulb_w = outs_x_ulb_w['feat']
                 # logits_x_ulb_w = self.model(x_ulb_w)
                 # logits_x_ulb_s1 = self.model(x_ulb_s1)[0]
                 # logits_x_ulb_s2 = self.model(x_ulb_s2)[0]
@@ -138,6 +139,8 @@ class ReMixMatch(AlgorithmBase):
             outs_x_ulb_s_0 = self.model(x_ulb_s_0)
             outs_x_ulb_s_1 = self.model(x_ulb_s_1)
             self.bn_controller.unfreeze_bn(self.model)
+
+            feat_dict = {'x_lb':outs_x_lb['feat'], 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':[outs_x_ulb_s_0['feat'], outs_x_ulb_s_1['feat']]}
 
             # mix up
             # with torch.no_grad():
@@ -194,7 +197,7 @@ class ReMixMatch(AlgorithmBase):
                 rot_loss = rot_loss.mean()
                 total_loss += self.lambda_rot * rot_loss
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item())

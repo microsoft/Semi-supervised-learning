@@ -52,9 +52,13 @@ class MixMatch(AlgorithmBase):
                 self.bn_controller.freeze_bn(self.model)
                 outs_x_ulb_w1 = self.model(x_ulb_w)
                 logits_x_ulb_w1 = outs_x_ulb_w1['logits']
+                feat_x_ulb_w1 = outs_x_ulb_w1['feat']
+
                 # logits_x_ulb_w1 = self.model(x_ulb_w)
                 outs_x_ulb_w2 = self.model(x_ulb_s)
                 logits_x_ulb_w2 = outs_x_ulb_w2['logits']
+                feat_x_ulb_w2 = outs_x_ulb_w2['feat']
+
                 # logits_x_ulb_w2 = self.model(x_ulb_s)
                 self.bn_controller.unfreeze_bn(self.model)
                 
@@ -67,6 +71,8 @@ class MixMatch(AlgorithmBase):
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
             
             outs_x_lb = self.model(x_lb)
+            feats_x_lb = outs_x_lb['feat']
+            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feat_x_ulb_w1, 'x_ulb_s':feat_x_ulb_w2}
 
             # with torch.no_grad():
             # Pseudo Label
@@ -112,7 +118,7 @@ class MixMatch(AlgorithmBase):
 
             total_loss = sup_loss + lambda_u * unsup_loss
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item())

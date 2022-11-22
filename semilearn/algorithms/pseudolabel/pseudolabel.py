@@ -47,11 +47,16 @@ class PseudoLabel(AlgorithmBase):
 
             outs_x_lb = self.model(x_lb)
             logits_x_lb = outs_x_lb['logits']
+            feats_x_lb = outs_x_lb['feat']
+
             # calculate BN only for the first batch
             self.bn_controller.freeze_bn(self.model)
             outs_x_ulb = self.model(x_ulb_w)
             logits_x_ulb = outs_x_ulb['logits']
+            feats_x_ulb = outs_x_ulb['feat']
             self.bn_controller.unfreeze_bn(self.model)
+
+            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb}
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
@@ -71,7 +76,7 @@ class PseudoLabel(AlgorithmBase):
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 

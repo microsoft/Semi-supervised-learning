@@ -185,12 +185,12 @@ class AlgorithmBase:
         """
         # parameter update hook is called inside each train_step
         self.register_hook(ParamUpdateHook(), None, "HIGHEST")
-        self.register_hook(TimerHook(), None, "VERY_HIGH")
         self.register_hook(EMAHook(), None, "HIGH")
         self.register_hook(EvaluationHook(), None, "HIGH")
         self.register_hook(CheckpointHook(), None, "HIGH")
         self.register_hook(DistSamplerSeedHook(), None, "NORMAL")
-        self.register_hook(LoggingHook(), None, "LOW")
+        self.register_hook(TimerHook(), None, "LOW")
+        self.register_hook(LoggingHook(), None, "LOWEST")
 
     def process_batch(self, input_args=None, **kwargs):
         """
@@ -408,7 +408,7 @@ class AlgorithmBase:
             new_state_dict[new_key] = item
         return new_state_dict
 
-    def register_hook(self, hook, name=None, priority='LOWEST'):
+    def register_hook(self, hook, name=None, priority='NORMAL'):
         """
         Ref: https://github.com/open-mmlab/mmcv/blob/a08517790d26f8761910cac47ce8098faac7b627/mmcv/runner/base_runner.py#L263
         Register a hook into the hook list.

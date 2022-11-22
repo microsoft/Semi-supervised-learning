@@ -57,14 +57,20 @@ class UDA(AlgorithmBase):
                 outputs = self.model(inputs)
                 logits_x_lb = outputs['logits'][:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(2)
+                feats_x_lb = outputs['feat'][:num_lb]
+                feats_x_ulb_w, feats_x_ulb_s = outputs['feat'][num_lb:].chunk(2)
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
+                feat_x_lb = outs_x_lb['feat']
                 outs_x_ulb_s = self.model(x_ulb_s)
                 logits_x_ulb_s = outs_x_ulb_s['logits']
+                feats_x_ulb_s = outs_x_ulb_s['feat']
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w = outs_x_ulb_w['logits']
+                    feats_x_ulb_w = outs_x_ulb_w['feat']
+            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
             tsa = self.TSA(self.tsa_schedule, self.it, self.num_train_iter, self.num_classes)  # Training Signal Annealing
             # sup_mask = torch.max(torch.softmax(logits_x_lb, dim=-1), dim=-1)[0].le(tsa).float().detach()

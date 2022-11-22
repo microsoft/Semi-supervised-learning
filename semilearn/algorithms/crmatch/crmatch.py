@@ -234,22 +234,26 @@ class CRMatch(AlgorithmBase):
                 else:
                     inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s), dim=0).contiguous()
                 outputs = self.model(inputs)
-                logits, logits_rot, logits_ds = outputs['logits'], outputs['logits_rot'], outputs['logits_ds']
+                logits, logits_rot, logits_ds, feats = outputs['logits'], outputs['logits_rot'], outputs['logits_ds'], outputs['feat']
                 logits_x_lb = logits[:num_lb]
+                feats_x_lb = feats[:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:num_lb + 2 * num_ulb].chunk(2)
+                feats_x_ulb_w, feats_x_ulb_s = feats[num_lb:num_lb + 2 * num_ulb].chunk(2)
                 logits_ds_w, logits_ds_s = logits_ds[num_lb:num_lb + 2 * num_ulb].chunk(2)
             else:
                 outs_x_lb = self.model(x_lb)
                 logits_x_lb = outs_x_lb['logits']
+                feats_x_lb = outs_x_lb['feat']
                 # logits_x_lb, _, _ = self.model(x_lb)
                 
                 outs_x_ulb_s = self.model(x_ulb_s)
-                logits_x_ulb_s,logits_ds_s = outs_x_ulb_s['logits'], outs_x_ulb_s['logits_ds']
+                logits_x_ulb_s,logits_ds_s,feats_x_ulb_s = outs_x_ulb_s['logits'], outs_x_ulb_s['logits_ds'], outs_x_ulb_s['feat']
                 # logits_x_ulb_s, _, logits_ds_s = self.model(x_ulb_s)
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
-                    logits_x_ulb_w, logits_ds_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds']
-            
+                    logits_x_ulb_w, logits_ds_w, feat_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds'], outs_x_ulb_w['feat']
+            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
+
             with torch.no_grad():
                 y_ulb = torch.argmax(logits_x_ulb_w, dim=-1)
                 mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)    
@@ -270,7 +274,7 @@ class CRMatch(AlgorithmBase):
                 Lrot = self.ce_loss(logits_rot, rot_v, reduction='mean')
                 total_loss += Lrot
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
 
         log_dict = self.process_log_dict(sup_loss=Lx.item(), 
                                          unsup_loss=Lu.item(), 

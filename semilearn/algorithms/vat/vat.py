@@ -52,7 +52,7 @@ class VAT(AlgorithmBase):
             if self.vat_embed:
                 self.bn_controller.freeze_bn(self.model)
                 outs_x_ulb_w = self.model(x_ulb_w, return_embed=True)
-                ul_x_embed, ul_y = outs_x_ulb_w['embed'], outs_x_ulb_w['logits']
+                ul_x_embed, ul_y  = outs_x_ulb_w['embed'], outs_x_ulb_w['logits']
                 # ul_x_embed, ul_y = self.model(x_ulb_w, return_embed=True)
                 unsup_loss = self.vat_loss(self.model, x_ulb_w, ul_y, eps=self.vat_eps, ul_x_embed=ul_x_embed, vat_embed=True)
                 self.bn_controller.unfreeze_bn(self.model)

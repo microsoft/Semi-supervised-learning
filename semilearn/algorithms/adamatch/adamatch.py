@@ -44,14 +44,20 @@ class AdaMatch(AlgorithmBase):
                 outputs = self.model(inputs)
                 logits_x_lb = outputs['logits'][:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(2)
+                feats_x_lb = outputs['feat'][:num_lb]
+                feats_x_ulb_w, feats_x_ulb_s = outputs['feat'][num_lb:].chunk(2)
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
+                feat_x_lb = outs_x_lb['feat']
                 outs_x_ulb_s = self.model(x_ulb_s)
                 logits_x_ulb_s = outs_x_ulb_s['logits']
+                feats_x_ulb_s = outs_x_ulb_s['feat']
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w = outs_x_ulb_w['logits']
+                    feats_x_ulb_w = outs_x_ulb_w['feat']
+            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
                     
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
@@ -82,7 +88,7 @@ class AdaMatch(AlgorithmBase):
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 
