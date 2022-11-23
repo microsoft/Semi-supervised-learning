@@ -33,7 +33,7 @@ class SimiS(ImbAlgorithmBase):
     """
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         args.include_lb_to_ulb = True
-        super(SimIS, self).__init__(args, net_builder, tb_log, logger, **kwargs)
+        super(SimiS, self).__init__(args, net_builder, tb_log, logger, **kwargs)
         
         lb_class_dist = [0 for _ in range(self.num_classes)]
         for c in  self.dataset_dict['train_lb'].targets:
