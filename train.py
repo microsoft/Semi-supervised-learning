@@ -35,6 +35,7 @@ def get_config():
     parser.add_argument('-o', '--overwrite', action='store_true', default=True)
     parser.add_argument('--use_tensorboard', action='store_true', help='Use tensorboard to plot and save curves')
     parser.add_argument('--use_wandb', action='store_true', help='Use wandb to plot and save curves')
+    parser.add_argument('--use_aim', action='store_true', help='Use aim to plot and save curves')
 
     '''
     Training Configuration of FixMatch
