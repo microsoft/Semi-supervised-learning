@@ -11,7 +11,7 @@ from semilearn.algorithms.utils import SSL_Argument
 
 @IMB_ALGORITHMS.register('debiaspl')
 class DebiasPL(ImbAlgorithmBase):
-   """
+    """
         DebiasPL algorithm (https://openaccess.thecvf.com/content/CVPR2022/papers/Wang_Debiased_Learning_From_Naturally_Imbalanced_Pseudo-Labels_CVPR_2022_paper.pdf).
 
         Args:
