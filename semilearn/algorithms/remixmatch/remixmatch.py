@@ -193,7 +193,7 @@ class ReMixMatch(AlgorithmBase):
                 self.bn_controller.freeze_bn(self.model)
                 logits_rot = self.model(x_ulb_s_0_rot, use_rot=True)['logits_rot']
                 self.bn_controller.unfreeze_bn(self.model)
-                rot_loss = self.ce_loss(logits_rot, rot_v, reduction='mean')
+                rot_loss = F.cross_entropy(logits_rot, rot_v, reduction='mean')
                 rot_loss = rot_loss.mean()
                 total_loss += self.lambda_rot * rot_loss
 
