@@ -20,7 +20,17 @@ class WANDBHook(Hook):
         # job_id = '_'.join(algorithm.args.save_name.split('_')[:-1])
         name = algorithm.save_name
         project = algorithm.save_dir.split('/')[-1]
-        self.run = wandb.init(name=name, config=algorithm.args.__dict__, project=project, entity="usb")
+
+        # tages
+        benchmark = f'benchmark: {project}'
+        dataset = f'dataset: {algorithm.args.dataset}'
+        data_setting = f'setting: {algorithm.args.dataset}_lb{algorithm.args.num_labels}_{algorithm.args.lb_imb_ratio}_ulb{algorithm.args.ulb_num_labels}_{algorithm.args.ulb_imb_ratio}'
+        alg = f'alg: {algorithm.args.algorithm}'
+        imb_alg = f'imb_alg: {algorithm.args.imb_algorithm}'
+        tags = [benchmark, dataset, data_setting, alg, imb_alg] 
+        
+        self.run = wandb.init(name=name, tags=tags, config=algorithm.args.__dict__, project=project, entity="usb")
+
 
     def after_train_step(self, algorithm):
         if self.every_n_iters(algorithm, algorithm.num_log_iter):
@@ -29,6 +39,9 @@ class WANDBHook(Hook):
                 if key in self.log_key_list:
                     log_dict[key] = item
             self.run.log(log_dict, step=algorithm.it)
+    
+        if self.every_n_iters(algorithm, algorithm.num_eval_iter):
+            self.run.log({'eval/best-acc': algorithm.best_eval_acc}, step=algorithm.it)
     
     def after_run(self, algorithm):
         self.run.finish()

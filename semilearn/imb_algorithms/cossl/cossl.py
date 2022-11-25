@@ -190,24 +190,24 @@ class CoSSL(ImbAlgorithmBase):
 
         # CoSSL code starts:
         try:
-            labeled_dict = self.tfe_labeled_iter.next()
+            labeled_dict = next(self.tfe_labeled_iter)
             tfe_input_x = labeled_dict['x_lb']
             tfe_targets_x = labeled_dict['y_lb']
         except:
             self.tfe_labeled_iter = iter(self.loader_dict['tfe_train_lb'])
-            labeled_dict = self.tfe_labeled_iter.next()
+            labeled_dict = next(self.tfe_labeled_iter)
             tfe_input_x = labeled_dict['x_lb']
             tfe_targets_x = labeled_dict['y_lb']
 
         try:
-            unlabeled_dict = self.tfe_unlabeled_iter.next()
+            unlabeled_dict = next(self.tfe_unlabeled_iter)
             if self.args.algorithm in ['remixmatch', 'comatch']:
                 tfe_input_u = unlabeled_dict['x_ulb_s_0']
             else:
                 tfe_input_u = unlabeled_dict['x_ulb_s']
         except:
             self.tfe_unlabeled_iter = iter(self.loader_dict['tfe_train_ulb'])
-            unlabeled_dict = self.tfe_unlabeled_iter.next()
+            unlabeled_dict = next(self.tfe_unlabeled_iter)
             if self.args.algorithm in ['remixmatch', 'comatch']:
                 tfe_input_u = unlabeled_dict['x_ulb_s_0']
             else:

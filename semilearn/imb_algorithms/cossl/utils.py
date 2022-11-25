@@ -291,10 +291,10 @@ def classifier_train(args, labeled_trainloader, model, optimizer, scheduler, ema
     model.eval()
     for batch_idx in range(val_iteration):
         try:
-            inputs_x, targets_x = labeled_train_iter.next()
+            inputs_x, targets_x = next(labeled_train_iter)
         except:
             labeled_train_iter = iter(labeled_trainloader)
-            inputs_x, targets_x = labeled_train_iter.next()
+            inputs_x, targets_x = next(labeled_train_iter)
 
         data_time.update(time.time() - end)
 
