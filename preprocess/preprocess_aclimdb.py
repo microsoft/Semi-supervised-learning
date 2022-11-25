@@ -145,6 +145,12 @@ def cut_sentence(s):
     s = s[::-1].rsplit(' ',100)[0][::-1]
     return s
 
+
+def truncate_sentence(s, max_length=1024):
+    # Only keep the last max_length words
+    return s[-max_length: ]
+
+
 def make_json_file(ori_sen,label,dst_path='../ssl_nlp_datasets/aclImdb/',data_type='train'):
     if MODE == 'test':
         ori_sen = ori_sen[:30]
@@ -164,6 +170,7 @@ def make_json_file(ori_sen,label,dst_path='../ssl_nlp_datasets/aclImdb/',data_ty
             flag = True
             while flag:
                 try:
+                    cur_ori_sen = list(map(truncate_sentence, cur_ori_sen))
                     cur_aug_sen_0 = de2en.translate(en2de.translate(cur_ori_sen,  sampling = True, temperature = 0.9),  sampling = True, temperature = 0.9)
                     cur_aug_sen_1 = ru2en.translate(en2ru.translate(cur_ori_sen,  sampling = True, temperature = 0.9),  sampling = True, temperature = 0.9)
                     flag = False
@@ -196,6 +203,7 @@ def make_json_file(ori_sen,label,dst_path='../ssl_nlp_datasets/aclImdb/',data_ty
             flag = True
             while flag:
                 try:
+                    cur_ori_sen = list(map(truncate_sentence, cur_ori_sen))
                     cur_aug_sen_0 = de2en.translate(en2de.translate(cur_ori_sen,  sampling = True, temperature = 0.9),  sampling = True, temperature = 0.9)
                     cur_aug_sen_1 = ru2en.translate(en2ru.translate(cur_ori_sen,  sampling = True, temperature = 0.9),  sampling = True, temperature = 0.9)
                     flag = False

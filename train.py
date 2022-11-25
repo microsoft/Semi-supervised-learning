@@ -260,7 +260,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     # SET Devices for (Distributed) DataParallel
     model.model = send_model_cuda(args, model.model)
-    model.ema_model = send_model_cuda(args, model.ema_model)
+    model.ema_model = send_model_cuda(args, model.ema_model, clip_batch=False)
     logger.info(f"Arguments: {model.args}")
 
     # If args.resume, load checkpoints from args.load_path

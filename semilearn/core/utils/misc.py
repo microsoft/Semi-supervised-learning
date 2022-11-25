@@ -36,7 +36,7 @@ def setattr_cls_from_kwargs(cls, kwargs):
         setattr(cls, key, kwargs[key])
 
 
-def send_model_cuda(args, model):
+def send_model_cuda(args, model, clip_batch=True):
     if not torch.cuda.is_available():
         raise Exception('ONLY GPU TRAINING IS SUPPORTED')
     elif args.distributed:
@@ -49,7 +49,8 @@ def send_model_cuda(args, model):
             batch_size: batch_size per node -> batch_size per gpu
             workers: workers per node -> workers per gpu
             '''
-            args.batch_size = int(args.batch_size / ngpus_per_node)
+            if clip_batch:
+                args.batch_size = int(args.batch_size / ngpus_per_node)
             model.cuda(args.gpu)
             model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
             model = torch.nn.parallel.DistributedDataParallel(model, broadcast_buffers=False,
