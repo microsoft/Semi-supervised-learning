@@ -13,8 +13,9 @@ class ParamUpdateHook(Hook):
     """
     
     def before_train_step(self, algorithm):
-        torch.cuda.synchronize()
-        algorithm.start_run.record()
+        if hasattr(algorithm, 'start_run'):
+            torch.cuda.synchronize()
+            algorithm.start_run.record()
 
     # call after each train_step to update parameters
     def after_train_step(self, algorithm):
@@ -38,8 +39,8 @@ class ParamUpdateHook(Hook):
             algorithm.scheduler.step()
         algorithm.model.zero_grad()
 
-        algorithm.end_run.record()
-        torch.cuda.synchronize()
-        algorithm.log_dict['lr'] = algorithm.optimizer.param_groups[-1]['lr']
-        algorithm.log_dict['train/run_time'] = algorithm.start_run.elapsed_time(algorithm.end_run) / 1000.
+        if hasattr(algorithm, 'end_run'):
+            algorithm.end_run.record()
+            torch.cuda.synchronize()
+            algorithm.log_dict['train/run_time'] = algorithm.start_run.elapsed_time(algorithm.end_run) / 1000.
 
