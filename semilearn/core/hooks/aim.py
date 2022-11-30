@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+import os
 import aim
 from .hook import Hook
 
@@ -20,11 +21,11 @@ class AimHook(Hook):
         # initialize aim run
         name = algorithm.save_name
         project = algorithm.save_dir.split('/')[-1]
-        self.run = aim.Run(experiment=name
-        )
+        self.run = aim.Run(experiment=name, repo='/mnt/default/projects/USB_formal_run/221124/aim_data')
 
         # set configuration
         self.run['hparams'] = algorithm.args.__dict__
+
 
         # set tag
         benchmark = f'benchmark: {project}'

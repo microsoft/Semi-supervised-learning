@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+import os
 import wandb
 from .hook import Hook
 
@@ -29,7 +30,13 @@ class WANDBHook(Hook):
         imb_alg = f'imb_alg: {algorithm.args.imb_algorithm}'
         tags = [benchmark, dataset, data_setting, alg, imb_alg] 
         
-        self.run = wandb.init(name=name, tags=tags, config=algorithm.args.__dict__, project=project, entity="usb")
+        self.run = wandb.init(name=name, 
+                              tags=tags, 
+                              config=algorithm.args.__dict__, 
+                              project=project, 
+                              entity="usb",
+                              resume='auto',
+                              dir=os.path.join(algorithm.args.save_dir, 'wandb'))
 
 
     def after_train_step(self, algorithm):
