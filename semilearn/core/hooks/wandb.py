@@ -30,13 +30,17 @@ class WANDBHook(Hook):
         imb_alg = f'imb_alg: {algorithm.args.imb_algorithm}'
         tags = [benchmark, dataset, data_setting, alg, imb_alg] 
         
+        save_dir = os.path.join(algorithm.args.save_dir, 'wandb', algorithm.args.save_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
         self.run = wandb.init(name=name, 
                               tags=tags, 
                               config=algorithm.args.__dict__, 
                               project=project, 
                               entity="usb",
                               resume='auto',
-                              dir=os.path.join(algorithm.args.save_dir, 'wandb'))
+                              dir=save_dir)
 
 
     def after_train_step(self, algorithm):
