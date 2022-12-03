@@ -133,9 +133,9 @@ class Dash(AlgorithmBase):
                 log_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
 
                 if self.it % self.num_wu_eval_iter == 0:
-                    save_path = os.path.join(self.save_dir, self.save_name)
-                    if not self.distributed or (self.distributed and self.rank % ngpus_per_node == 0):
-                        self.save_model('latest_model.pth', save_path)
+                    # save_path = os.path.join(self.save_dir, self.save_name)
+                    # if not self.distributed or (self.distributed and self.rank % ngpus_per_node == 0):
+                    #     self.save_model('latest_model.pth', save_path)
                     self.print_fn(f"warmup {self.it} iteration, {log_dict}")
 
                 del log_dict
