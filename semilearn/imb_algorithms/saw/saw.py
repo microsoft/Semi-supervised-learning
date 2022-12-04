@@ -66,7 +66,6 @@ class SAW(ImbAlgorithmBase):
                                                   shuffle=False,
                                                   num_workers=self.args.num_workers,
                                                   drop_last=False)
-
         return loader_dict
 
 

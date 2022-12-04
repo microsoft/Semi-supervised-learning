@@ -84,5 +84,5 @@ class SAWConsistencyLoss(ConsistencyLoss):
         if mask is None:
             mask = self.x_ulb_weights[targets]
         else:
-            mask*self.x_ulb_weights[targets]
+            mask = mask * self.x_ulb_weights[targets]
         return super().forward(logits, targets, name, mask)
