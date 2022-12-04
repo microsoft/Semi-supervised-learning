@@ -62,7 +62,7 @@ class UDA(AlgorithmBase):
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
-                feat_x_lb = outs_x_lb['feat']
+                feats_x_lb = outs_x_lb['feat']
                 outs_x_ulb_s = self.model(x_ulb_s)
                 logits_x_ulb_s = outs_x_ulb_s['logits']
                 feats_x_ulb_s = outs_x_ulb_s['feat']
@@ -102,7 +102,7 @@ class UDA(AlgorithmBase):
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
-        out_dict = self.process_out_dict(loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 

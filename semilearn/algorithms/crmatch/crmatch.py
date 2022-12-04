@@ -251,7 +251,7 @@ class CRMatch(AlgorithmBase):
                 # logits_x_ulb_s, _, logits_ds_s = self.model(x_ulb_s)
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
-                    logits_x_ulb_w, logits_ds_w, feat_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds'], outs_x_ulb_w['feat']
+                    logits_x_ulb_w, logits_ds_w, feats_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds'], outs_x_ulb_w['feat']
             feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
             with torch.no_grad():

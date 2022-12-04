@@ -69,7 +69,7 @@ class AdaMatch(AlgorithmBase):
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
-                feat_x_lb = outs_x_lb['feat']
+                feats_x_lb = outs_x_lb['feat']
                 outs_x_ulb_s = self.model(x_ulb_s)
                 logits_x_ulb_s = outs_x_ulb_s['logits']
                 feats_x_ulb_s = outs_x_ulb_s['feat']
