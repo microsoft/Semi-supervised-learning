@@ -39,7 +39,7 @@ class WANDBHook(Hook):
                               config=algorithm.args.__dict__, 
                               project=project, 
                               entity="usb",
-                              resume='auto',
+                              resume=algorithm.args.resume,
                               dir=save_dir)
 
 

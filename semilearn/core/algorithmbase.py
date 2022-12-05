@@ -406,6 +406,7 @@ class AlgorithmBase:
         self.loss_scaler.load_state_dict(checkpoint['loss_scaler'])
         self.it = checkpoint['it']
         self.start_epoch = checkpoint['epoch']
+        self.epoch = self.start_epoch
         self.best_it = checkpoint['best_it']
         self.best_eval_acc = checkpoint['best_eval_acc']
         self.optimizer.load_state_dict(checkpoint['optimizer'])
