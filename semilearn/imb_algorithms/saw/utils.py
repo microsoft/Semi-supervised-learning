@@ -67,7 +67,7 @@ class SAWCELoss(CELoss):
         loss = super().forward(logits, targets, reduction='none')
         if targets.ndim == 2:
             targets = targets.argmax(dim=-1)
-        loss = loss.sum(dim=-1) * self.x_lb_weights[targets]
+        loss = loss * self.x_lb_weights[targets]
         return loss.mean()
 
 

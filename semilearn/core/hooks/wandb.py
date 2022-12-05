@@ -29,6 +29,10 @@ class WANDBHook(Hook):
         alg = f'alg: {algorithm.args.algorithm}'
         imb_alg = f'imb_alg: {algorithm.args.imb_algorithm}'
         tags = [benchmark, dataset, data_setting, alg, imb_alg] 
+        if algorithm.args.resume:
+            resume = 'auto'
+        else:
+            resume = 'never'
         
         save_dir = os.path.join(algorithm.args.save_dir, 'wandb', algorithm.args.save_name)
         if not os.path.exists(save_dir):
@@ -39,7 +43,7 @@ class WANDBHook(Hook):
                               config=algorithm.args.__dict__, 
                               project=project, 
                               entity="usb",
-                              resume=algorithm.args.resume,
+                              resume=resume,
                               dir=save_dir)
 
 
