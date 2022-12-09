@@ -4,11 +4,11 @@
 import torch
 
 from semilearn.core.hooks import Hook
-from semilearn.core.criterions import ConsistencyLoss
+from semilearn.core.criterions import ConsistencyLoss, consistency_loss
 
 class DebiasPLHook(Hook):
     def before_train_step(self, algorithm):
-        algorithm.consistency_loss.set_param(algorithms.p_hat)
+        algorithm.consistency_loss.set_param(algorithm.p_hat)
 
 
 class DebiasPLConsistencyLoss(ConsistencyLoss):
@@ -16,7 +16,7 @@ class DebiasPLConsistencyLoss(ConsistencyLoss):
         super().__init__()
         self.tau = 0.4
 
-    def set_param(p):
+    def set_param(self, p):
         self.p_hat = p
 
     def forward(self, logits, targets, name='ce', mask=None):
