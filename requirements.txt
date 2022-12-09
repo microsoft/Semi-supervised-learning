@@ -1,6 +1,6 @@
 absl-py==1.1.0
 cachetools==5.2.0
-certifi==2021.5.30
+certifi==2022.12.7
 charset-normalizer==2.1.0
 cycler==0.11.0
 filelock==3.7.1
