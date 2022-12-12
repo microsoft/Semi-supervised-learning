@@ -38,7 +38,7 @@ def split_ssl_data(args, data, targets, num_classes,
     data, targets = np.array(data), np.array(targets)
     lb_idx, ulb_idx = sample_labeled_unlabeled_data(args, data, targets, num_classes, 
                                                     lb_num_labels, ulb_num_labels,
-                                                    lb_imbalance_ratio, ulb_imbalance_ratio)
+                                                    lb_imbalance_ratio, ulb_imbalance_ratio, load_exist=True)
     
     # manually set lb_idx and ulb_idx, do not use except for debug
     if lb_index is not None:
@@ -59,15 +59,15 @@ def sample_labeled_data():
 def sample_labeled_unlabeled_data(args, data, target, num_classes,
                                   lb_num_labels, ulb_num_labels=None,
                                   lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
-                                  load_exist=False):
+                                  load_exist=True):
     '''
     samples for labeled data
     (sampling with balanced ratio over classes)
     '''
     dump_dir = os.path.join(base_dir, 'data', args.dataset, 'labeled_idx')
     os.makedirs(dump_dir, exist_ok=True)
-    lb_dump_path = os.path.join(dump_dir, f'lb_labels{args.num_labels}_seed{args.seed}_idx.npy')
-    ulb_dump_path = os.path.join(dump_dir, f'ulb_labels{args.num_labels}_seed{args.seed}_idx.npy')
+    lb_dump_path = os.path.join(dump_dir, f'lb_labels{args.num_labels}_{args.lb_imb_ratio}_seed{args.seed}_idx.npy')
+    ulb_dump_path = os.path.join(dump_dir, f'ulb_labels{args.num_labels}_{args.ulb_imb_ratio}_seed{args.seed}_idx.npy')
 
     if os.path.exists(lb_dump_path) and os.path.exists(ulb_dump_path) and load_exist:
         lb_idx = np.load(lb_dump_path)
