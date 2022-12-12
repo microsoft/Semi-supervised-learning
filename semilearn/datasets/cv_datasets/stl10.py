@@ -75,7 +75,8 @@ def get_stl10(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
                                               lb_num_labels=num_labels,
                                               ulb_num_labels=args.ulb_num_labels,
                                               lb_imbalance_ratio=args.lb_imb_ratio,
-                                              ulb_imbalance_ratio=args.ulb_imb_ratio)
+                                              ulb_imbalance_ratio=args.ulb_imb_ratio,
+                                              load_exist=True)
     ulb_targets = np.ones((ulb_data.shape[0], )) * -1
     lb_data, lb_targets = lb_data[lb_idx], lb_targets[lb_idx]
     if include_lb_to_ulb:
