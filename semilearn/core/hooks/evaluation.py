@@ -23,6 +23,11 @@ class EvaluationHook(Hook):
                 algorithm.best_it = algorithm.it
     
     def after_run(self, algorithm):
+        
+        if not algorithm.args.multiprocessing_distributed or (algorithm.args.multiprocessing_distributed and algorithm.args.rank % algorithm.ngpus_per_node == 0):
+            save_path = os.path.join(algorithm.save_dir, algorithm.save_name)
+            algorithm.save_model('latest_model.pth', save_path)
+
         results_dict = {'eval/best_acc': algorithm.best_eval_acc, 'eval/best_it': algorithm.best_it}
         if 'test' in algorithm.loader_dict:
             # load the best model and evaluate on test dataset
@@ -31,3 +36,4 @@ class EvaluationHook(Hook):
             test_dict = algorithm.evaluate('test')
             results_dict['test/best_acc'] = test_dict['test/top-1-acc']
         algorithm.results_dict = results_dict
+        
