@@ -111,11 +111,11 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
     if imb_alg is not None:
         cfg['imb_algorithm'] = imb_alg
 
-    cfg['save_dir'] = './saved_models/classic_cv_imb'
+    cfg['save_dir'] = '/mnt/default/projects/USB_formal_run/221205/classic_cv_imb'
     if dataset in ['imagenet', 'imagenet127', 'food101']:
         cfg['data_dir'] = './data'
     else:
-        cfg['data_dir'] = './data' # '/mnt/default/dataset/usb_datasets/data/data'
+        cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data'
 
     if alg == 'fixmatch':
         cfg['uratio'] = 2
@@ -153,6 +153,8 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
         # cfg['epoch'] = 512
         # cfg['num_train_iter'] = 2 ** 18
         cfg['darp_warmup_epochs'] = 200
+        if dataset in ['imagenet', 'imagenet127']:
+            cfg['darp_warmup_epochs'] = 150
         cfg['darp_alpha'] = 2.0
         cfg['darp_num_refine_iter'] = 10
         cfg['darp_iter_T'] = 10
@@ -197,7 +199,8 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
     else:
         pass
 
-    # cfg['use_wandb'] = True
+    cfg['use_wandb'] = True
+    # cfg['use_aim'] = True
     return cfg
 
 
@@ -212,10 +215,13 @@ def exp_classic_cv_imb(settings):
         os.mkdir(save_path)
 
     algs = ['supervised', 'fixmatch', 'remixmatch']
-    imb_algs = [None, 'crest', 'crest+', 'darp', 'abc', 'daso', 'saw', 'adsh', 'cossl', 'simis']
+    # imb_algs = [None, 'crest', 'crest+', 'darp', 'abc', 'daso', 'saw', 'adsh', 'cossl', 'debiaspl', 'simis']
+    imb_algs = ['crest', 'crest+']
+    # imb_algs = ['cossl', 'daso', 'saw']
+    # imb_algs = ['debiaspl']
     datasets = list(settings.keys())
 
-    seeds = [0]
+    seeds = [0, 1, 2]
 
     dist_port = range(10001, 31120, 1)
     count = 0
@@ -340,10 +346,12 @@ def exp_classic_cv_imb(settings):
 
                     elif dataset in ['imagenet127']:
                         
-                        lb_num_labels = 12810 # 128101
+                        lb_num_labels = 128101
                         lb_imb_ratio = 286
                         ulb_num_labels = None
                         ulb_imb_ratio = 286
+                        img_size = 112
+                        seed = 0
 
                         if alg == 'supervised':
                             port = dist_port[count]

@@ -42,12 +42,14 @@ def create_usb_nlp_config(alg, seed,
     cfg['algorithm'] = alg
 
     # save config
-    cfg['save_dir'] = './saved_models/usb_nlp'
+    # cfg['save_dir'] = './saved_models/usb_nlp'
+    cfg['save_dir'] = '/mnt/default/projects/USB_formal_run/221205/usb_nlp'
     cfg['save_name'] = None
     cfg['resume'] = True
     cfg['load_path'] = None
     cfg['overwrite'] = True
     cfg['use_tensorboard'] = True
+    cfg['use_wandb'] = True
 
     # algorithm config
     cfg['epoch'] = 100
@@ -58,6 +60,7 @@ def create_usb_nlp_config(alg, seed,
     cfg['num_labels'] = num_labels
     cfg['batch_size'] = 8
     cfg['eval_batch_size'] = 8
+    cfg['ema_m'] = 0.0
 
     if alg == 'fixmatch':
         cfg['hard_label'] = True
@@ -124,12 +127,14 @@ def create_usb_nlp_config(alg, seed,
         cfg['da_len'] = 32
         cfg['smoothing_alpha'] = 0.9
         cfg['T'] = 0.1
+        cfg['ema_m'] = 0.0
     elif alg == 'meanteacher':
         cfg['ulb_loss_ratio'] = 50
         cfg['unsup_warm_up'] = 0.4
     elif alg == 'pimodel':
         cfg['ulb_loss_ratio'] = 10
         cfg['unsup_warm_up'] = 0.4
+        cfg['ema_m'] = 0.999
     elif alg == 'dash':
         cfg['gamma'] = 1.27
         cfg['C'] = 1.0001
@@ -149,10 +154,27 @@ def create_usb_nlp_config(alg, seed,
         cfg['num_stu_wait_iter'] = 3000
     elif alg == 'vat':
         cfg['vat_embed'] = True
+    elif alg == 'freematch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['ema_p'] = 0.999
+        cfg['ent_loss_ratio'] = 0.001
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+    elif alg == 'softmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['dist_align'] = True
+        cfg['dist_uniform'] = True
+        cfg['per_class'] = False
+        cfg['ema_p'] = 0.999
+        cfg['ulb_loss_ratio'] = 1.0
+        cfg['n_sigma'] = 2
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
 
     cfg['uratio'] = 1
     cfg['use_cat'] = False
-    cfg['ema_m'] = 0.0
 
     # optim config
     cfg['optim'] = 'AdamW'
@@ -168,11 +190,12 @@ def create_usb_nlp_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    cfg['data_dir'] = './data'
+    # cfg['data_dir'] = './data'
+    cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
-    cfg['num_workers'] = 4
+    cfg['num_workers'] = 0
     cfg['max_length'] = max_length
 
     # basic config
@@ -204,11 +227,11 @@ def exp_usb_nlp(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'comatch', 'crmatch', 'simmatch', 'adamatch']
+            'pimodel', 'vat', 'dash', 'comatch', 'crmatch', 'simmatch', 'adamatch', 'softmatch', 'freematch']
     datasets = ['aclImdb', 'ag_news', 'amazon_review', 'dbpedia', 'yahoo_answers', 'yelp_review']
 
     # seeds = [0, 1, 2]  # 1, 22, 333
-    seeds = [0]
+    seeds = [0, 1, 2]
 
     dist_port = range(10001, 31120, 1)
     count = 0   
