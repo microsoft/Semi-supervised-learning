@@ -8,9 +8,8 @@
 * Added wandb and aimstack support.
 * Reformated 'train_step' structure.
 * Updated results with online wandb log.
-* Released semilearn==0.3.1a
+* Stable release semilearn==0.3.0
 * Updated Colab tutorial
-
 
 ## [16/10/2022 Update]([fb36c1c1c2153e9f60826529e39826ee0d256c14](https://github.com/microsoft/Semi-supervised-learning/commit/fb36c1c1c2153e9f60826529e39826ee0d256c14))
 
