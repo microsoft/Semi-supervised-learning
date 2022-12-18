@@ -16,7 +16,7 @@ base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 def split_ssl_data(args, data, targets, num_classes,
                    lb_num_labels, ulb_num_labels=None,
                    lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
-                   lb_index=None, ulb_index=None, include_lb_to_ulb=True):
+                   lb_index=None, ulb_index=None, include_lb_to_ulb=True, load_exist=True):
     """
     data & target is splitted into labeled and unlabeld data.
     
@@ -38,7 +38,7 @@ def split_ssl_data(args, data, targets, num_classes,
     data, targets = np.array(data), np.array(targets)
     lb_idx, ulb_idx = sample_labeled_unlabeled_data(args, data, targets, num_classes, 
                                                     lb_num_labels, ulb_num_labels,
-                                                    lb_imbalance_ratio, ulb_imbalance_ratio, load_exist=True)
+                                                    lb_imbalance_ratio, ulb_imbalance_ratio, load_exist=False)
     
     # manually set lb_idx and ulb_idx, do not use except for debug
     if lb_index is not None:

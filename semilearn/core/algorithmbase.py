@@ -116,6 +116,9 @@ class AlgorithmBase:
         if self.rank != 0 and self.distributed:
             torch.distributed.barrier()
         dataset_dict = get_dataset(self.args, self.algorithm, self.args.dataset, self.args.num_labels, self.args.num_classes, self.args.data_dir, self.args.include_lb_to_ulb)
+        if dataset_dict is None:
+            return dataset_dict
+
         self.args.ulb_dest_len = len(dataset_dict['train_ulb']) if dataset_dict['train_ulb'] is not None else 0
         self.args.lb_dest_len = len(dataset_dict['train_lb'])
         self.print_fn("unlabeled data number: {}, labeled data number {}".format(self.args.ulb_dest_len, self.args.lb_dest_len))
@@ -127,6 +130,9 @@ class AlgorithmBase:
         """
         set loader_dict
         """
+        if self.dataset_dict is None:
+            return
+            
         self.print_fn("Create train and test data loaders")
         loader_dict = {}
         loader_dict['train_lb'] = get_data_loader(self.args,
