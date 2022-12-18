@@ -3,16 +3,14 @@
 
 import argparse
 from semilearn.algorithms import name2alg
-from semilearn.algorithms.utils import str2bool
 from semilearn.imb_algorithms import name2imbalg
+from semilearn.algorithms.utils import str2bool
 from semilearn.core.utils import over_write_args_from_dict, get_port
 
 
 def get_config(config):
 
     parser = argparse.ArgumentParser(description='Semi-Supervised Learning (USB semilearn package)')
-
-    print("here 1")
 
     '''
     Saving & loading of the model.
