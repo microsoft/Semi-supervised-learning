@@ -1,3 +1,7 @@
+scripts/
+config/
+
+
 data_statistics/
 data/
 saved_models/
