@@ -111,11 +111,8 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
     if imb_alg is not None:
         cfg['imb_algorithm'] = imb_alg
 
-    cfg['save_dir'] = '/mnt/default/projects/USB_formal_run/221205/classic_cv_imb'
-    if dataset in ['imagenet', 'imagenet127', 'food101']:
-        cfg['data_dir'] = './data'
-    else:
-        cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data'
+    cfg['save_dir'] = './saved_models/classic_cv_imb'
+    cfg['data_dir'] = './data'
 
     if alg == 'fixmatch':
         cfg['uratio'] = 2
@@ -187,10 +184,6 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
         cfg['cossl_tfe_warm_ema_decay'] = 0.999
         cfg['cossl_tfe_warm_wd'] = 5e-4
         cfg['cossl_tfe_warm_bs'] = 64
-    elif imb_alg == 'saw':
-        pass
-    elif imb_alg == 'simis':
-        cfg['simis_la'] = True
     elif imb_alg == 'tras':
         cfg['tras_A'] = 2
         cfg['tras_B'] = 2
@@ -215,13 +208,10 @@ def exp_classic_cv_imb(settings):
         os.mkdir(save_path)
 
     algs = ['supervised', 'fixmatch', 'remixmatch']
-    # imb_algs = [None, 'crest', 'crest+', 'darp', 'abc', 'daso', 'saw', 'adsh', 'cossl', 'debiaspl', 'simis']
-    imb_algs = ['crest', 'crest+']
-    # imb_algs = ['cossl', 'daso', 'saw']
-    # imb_algs = ['debiaspl']
+    imb_algs = [None, 'crest', 'crest+', 'darp', 'abc', 'daso', 'saw', 'adsh', 'cossl', 'debiaspl', 'simis']
     datasets = list(settings.keys())
 
-    seeds = [0, 1, 2]
+    seeds = [0]
 
     dist_port = range(10001, 31120, 1)
     count = 0

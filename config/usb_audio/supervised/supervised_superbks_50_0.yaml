@@ -13,9 +13,9 @@ num_warmup_iter: 5120
 num_labels: 50
 batch_size: 8
 eval_batch_size: 16
+ema_m: 0.0
 uratio: 1
 use_cat: False
-ema_m: 0.0
 optim: AdamW
 lr: 5e-05
 momentum: 0.9
@@ -29,7 +29,7 @@ data_dir: ./data
 dataset: superbks
 train_sampler: RandomSampler
 num_classes: 10
-num_workers: 1
+num_workers: 4
 max_length_seconds: 1.0
 sample_rate: 16000
 seed: 0
@@ -39,3 +39,4 @@ multiprocessing_distributed: False
 dist_url: tcp://127.0.0.1:10030
 dist_backend: nccl
 gpu: None
+use_wandb: True

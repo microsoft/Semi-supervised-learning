@@ -5,6 +5,7 @@ resume: True
 load_path: ./saved_models/classic_cv/fullysupervised_stl10_40_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
+use_wandb: True
 epoch: 1024
 num_train_iter: 1048576
 num_eval_iter: 5120

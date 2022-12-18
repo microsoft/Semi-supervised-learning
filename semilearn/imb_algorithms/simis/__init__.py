@@ -1,2 +1,0 @@
-
-from .simis import SimiS

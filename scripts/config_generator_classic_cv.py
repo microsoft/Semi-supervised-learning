@@ -43,8 +43,7 @@ def create_classific_config(alg, seed,
     cfg['algorithm'] = alg
 
     # save config
-    # cfg['save_dir'] = './saved_models/classic_cv'
-    cfg['save_dir'] = '/mnt/default/projects/USB_formal_run/221205/classic_cv'
+    cfg['save_dir'] = './saved_models/classic_cv'
     cfg['save_name'] = None
     cfg['resume'] = False
     cfg['load_path'] = None
@@ -239,8 +238,7 @@ def create_classific_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    # cfg['data_dir'] = './data'
-    cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data'
+    cfg['data_dir'] = './data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
@@ -281,8 +279,7 @@ def exp_classific_cv(label_amount):
             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch']
     datasets = ['cifar100', 'svhn', 'stl10', 'cifar10']
 
-    # seeds = [0, 1, 2] 
-    seeds = [0, 1, 2]
+    seeds = [0]
 
     dist_port = range(10001, 11120, 1)
     count = 0

@@ -5,6 +5,7 @@ resume: True
 load_path: ./saved_models/classic_cv/remixmatch_cifar100_2500_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
+use_wandb: True
 epoch: 1024
 num_train_iter: 1048576
 num_eval_iter: 5120
@@ -30,7 +31,7 @@ layer_decay: 1.0
 amp: False
 clip: 0.0
 use_cat: True
-net: wrn_28_8
+net: wrn_28_2
 net_from_name: False
 data_dir: ./data
 dataset: cifar100

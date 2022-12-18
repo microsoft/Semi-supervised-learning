@@ -13,6 +13,7 @@ num_warmup_iter: 5120
 num_labels: 500
 batch_size: 8
 eval_batch_size: 16
+ema_m: 0.0
 hard_label: False
 p_cutoff: 0.95
 contrast_p_cutoff: 0.8
@@ -25,7 +26,6 @@ T: 0.2
 da_len: 32
 uratio: 1
 use_cat: False
-ema_m: 0.0
 optim: AdamW
 lr: 0.0001
 momentum: 0.9
@@ -39,7 +39,7 @@ data_dir: ./data
 dataset: esc50
 train_sampler: RandomSampler
 num_classes: 50
-num_workers: 1
+num_workers: 4
 max_length_seconds: 5.0
 sample_rate: 16000
 seed: 0
@@ -49,3 +49,4 @@ multiprocessing_distributed: False
 dist_url: tcp://127.0.0.1:10066
 dist_backend: nccl
 gpu: None
+use_wandb: True

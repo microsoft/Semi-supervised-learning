@@ -5,6 +5,7 @@ resume: True
 load_path: ./saved_models/classic_cv_imb/remixmatch_crest+_cifar100_lb150_15_ulb300_15_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
+use_wandb: True
 epoch: 128
 num_train_iter: 65536
 num_eval_iter: 1024
@@ -41,7 +42,7 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10272
+dist_url: tcp://127.0.0.1:10296
 dist_backend: nccl
 gpu: None
 include_lb_to_ulb: False

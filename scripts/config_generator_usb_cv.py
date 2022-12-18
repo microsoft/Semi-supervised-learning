@@ -42,7 +42,7 @@ def create_usb_cv_config(alg, seed,
     cfg['algorithm'] = alg
 
     # save config
-    cfg['save_dir'] = '/mnt/default/projects/USB_formal_run/221205/usb_cv' # './saved_models/usb_cv/'
+    cfg['save_dir'] = './saved_models/usb_cv/'
     cfg['save_name'] = None
     cfg['resume'] = False
     cfg['load_path'] = None
@@ -240,7 +240,7 @@ def create_usb_cv_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data' # './data'
+    cfg['data_dir'] = './data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
@@ -287,7 +287,7 @@ def exp_usb_cv(label_amount):
     # algs = ['fixmatch', 'flexmatch', 'comatch', 'simmatch']
     # datasets = ['imagenet']
     # seeds = [0, 1, 2]  # 1, 22, 333
-    seeds = [0, 1, 2]
+    seeds = [0]
 
     dist_port = range(10001, 11120, 1)
     count = 0

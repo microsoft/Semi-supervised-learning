@@ -5,6 +5,7 @@ resume: True
 load_path: ./saved_models/usb_cv//comatch_eurosat_20_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
+use_wandb: True
 epoch: 200
 num_train_iter: 204800
 num_log_iter: 256
@@ -14,7 +15,7 @@ eval_batch_size: 16
 num_warmup_iter: 5120
 num_labels: 20
 uratio: 1
-ema_m: 0.0
+ema_m: 0.999
 hard_label: False
 p_cutoff: 0.95
 contrast_p_cutoff: 0.8

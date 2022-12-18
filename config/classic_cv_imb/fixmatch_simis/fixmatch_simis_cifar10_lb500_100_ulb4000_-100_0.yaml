@@ -5,6 +5,7 @@ resume: True
 load_path: ./saved_models/classic_cv_imb/fixmatch_simis_cifar10_lb500_100_ulb4000_-100_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
+use_wandb: True
 epoch: 256
 num_train_iter: 262144
 num_eval_iter: 1024
@@ -39,7 +40,7 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10234
+dist_url: tcp://127.0.0.1:10258
 dist_backend: nccl
 gpu: None
 include_lb_to_ulb: False
@@ -47,4 +48,3 @@ lb_imb_ratio: 100
 ulb_imb_ratio: -100
 ulb_num_labels: 4000
 imb_algorithm: simis
-simis_la: True

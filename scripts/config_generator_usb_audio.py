@@ -42,8 +42,7 @@ def create_usb_audio_config(alg, seed,
     cfg['algorithm'] = alg
 
     # save config
-    # cfg['save_dir'] = './saved_models/usb_audio'
-    cfg['save_dir'] = '/mnt/default/projects/USB_formal_run/221205/usb_audio'
+    cfg['save_dir'] = './saved_models/usb_audio'
     cfg['save_name'] = None
     cfg['resume'] = True
     cfg['load_path'] = None
@@ -189,12 +188,11 @@ def create_usb_audio_config(alg, seed,
     cfg['net_from_name'] = False
 
     # data config
-    # cfg['data_dir'] = './data'
-    cfg['data_dir'] = '/mnt/default/dataset/usb_datasets/data/data'
+    cfg['data_dir'] = './data'
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
-    cfg['num_workers'] = 0
+    cfg['num_workers'] = 4
     cfg['max_length_seconds'] = max_length_seconds
     cfg['sample_rate'] = sample_rate
 
@@ -232,7 +230,7 @@ def exp_usb_speech(label_amount):
     datasets = ['esc50', 'fsdnoisy', 'urbansound8k', 'gtzan', 'superbks']
 
     # seeds = [0, 1, 2]  # 1, 22, 333
-    seeds = [0, 1, 2]
+    seeds = [0]
 
     dist_port = range(10001, 31120, 1)
     count = 0   
