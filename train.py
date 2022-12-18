@@ -289,10 +289,6 @@ def main_worker(gpu, ngpus_per_node, args):
         logger.info("Finetune stage")
         model.finetune()
 
-    if not args.multiprocessing_distributed or \
-            (args.multiprocessing_distributed and args.rank % ngpus_per_node == 0):
-        model.save_model('latest_model.pth', save_path)
-
     logging.warning(f"GPU {args.rank} training is FINISHED")
 
 

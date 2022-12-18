@@ -33,6 +33,7 @@ class WANDBHook(Hook):
             resume = 'auto'
         else:
             resume = 'never'
+        # resume = 'never'
         
         save_dir = os.path.join(algorithm.args.save_dir, 'wandb', algorithm.args.save_name)
         if not os.path.exists(save_dir):
