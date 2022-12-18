@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import torch
 import torch.nn.functional as F
 
@@ -46,6 +49,25 @@ def entropy_loss(mask, logits_s, prob_model, label_hist):
 
 @ALGORITHMS.register('freematch')
 class FreeMatch(AlgorithmBase):
+    """
+        FreeMatch algorithm (https://arxiv.org/abs/2205.07246).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - T (`float`):
+                Temperature for pseudo-label sharpening
+            - hard_label (`bool`, *optional*, default to `False`):
+                If True, targets have [Batch size] shape with int values. If False, the target is vector
+            - ema_p (`float`):
+                exponential moving average of probability update
+        """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
         self.init(T=args.T, hard_label=args.hard_label, ema_p=args.ema_p)

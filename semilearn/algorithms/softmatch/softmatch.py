@@ -9,8 +9,28 @@ from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, DistAlignEMAHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
+
 @ALGORITHMS.register('softmatch')
 class SoftMatch(AlgorithmBase):
+    """
+        SoftMatch algorithm (https://openreview.net/forum?id=ymt1zQXBDiF&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2023%2FConference%2FAuthors%23your-submissions)).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - T (`float`):
+                Temperature for pseudo-label sharpening
+            - hard_label (`bool`, *optional*, default to `False`):
+                If True, targets have [Batch size] shape with int values. If False, the target is vector
+            - ema_p (`float`):
+                exponential moving average of probability update
+        """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
         self.init(T=args.T, hard_label=args.hard_label, dist_align=args.dist_align, dist_uniform=args.dist_uniform, ema_p=args.ema_p, n_sigma=args.n_sigma, per_class=args.per_class)
