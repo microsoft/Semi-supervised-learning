@@ -113,6 +113,11 @@ def get_config():
     parser.add_argument('--max_length_seconds', type=float, default=4.0)
     parser.add_argument('--sample_rate', type=int, default=16000)
 
+    ## cross domain dataset arguments
+    parser.add_argument('--labeled_domain', type=str, default='product_images', help='labeled domain')
+    parser.add_argument('--unlabeled_domain', type=str, default='real_life', help='unlabeled domain')
+    parser.add_argument('--eval_domain', type=str, default='product_images', help='evaluation domain')
+
     '''
     multi-GPUs & Distrbitued Training
     '''
