@@ -95,7 +95,7 @@ def create_classific_config(alg, seed,
         cfg['mixup_alpha'] = 0.5
         cfg['T'] = 0.5
         if dataset == 'cifar10':
-            cfg['ulb_loss_ratio'] = 75
+            cfg['ulb_loss_ratio'] = 100
         elif dataset == 'cifar100':
             cfg['ulb_loss_ratio'] = 150
         else:
@@ -185,8 +185,10 @@ def create_classific_config(alg, seed,
         cfg['T'] = 0.5
         cfg['ema_p'] = 0.999
         cfg['ent_loss_ratio'] = 0.001
-        if dataset == 'imagenet':
-            cfg['ulb_loss_ratio'] = 1.0
+        cfg['uratio'] = 7
+        cfg['use_quantile'] = False
+        if dataset == 'svhn':
+            cfg['clip_thresh'] = True
     elif alg == 'softmatch':
         cfg['hard_label'] = True
         cfg['T'] = 0.5

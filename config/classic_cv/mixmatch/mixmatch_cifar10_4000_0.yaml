@@ -16,7 +16,7 @@ eval_batch_size: 256
 uratio: 1
 mixup_alpha: 0.5
 T: 0.5
-ulb_loss_ratio: 75
+ulb_loss_ratio: 100
 unsup_warm_up: 0.4
 ema_m: 0.999
 crop_ratio: 0.875
