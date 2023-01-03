@@ -1,6 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
-
 import torch
 import torch.nn.functional as F
 
@@ -49,34 +46,17 @@ def entropy_loss(mask, logits_s, prob_model, label_hist):
 
 @ALGORITHMS.register('freematch')
 class FreeMatch(AlgorithmBase):
-    """
-        FreeMatch algorithm (https://arxiv.org/abs/2205.07246).
-
-        Args:
-            - args (`argparse`):
-                algorithm arguments
-            - net_builder (`callable`):
-                network loading function
-            - tb_log (`TBLog`):
-                tensorboard logger
-            - logger (`logging.Logger`):
-                logger to use
-            - T (`float`):
-                Temperature for pseudo-label sharpening
-            - hard_label (`bool`, *optional*, default to `False`):
-                If True, targets have [Batch size] shape with int values. If False, the target is vector
-            - ema_p (`float`):
-                exponential moving average of probability update
-        """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
-        self.init(T=args.T, hard_label=args.hard_label, ema_p=args.ema_p)
+        self.init(T=args.T, hard_label=args.hard_label, ema_p=args.ema_p, use_quantile=args.use_quantile, clip_thresh=args.clip_thresh)
         self.lambda_e = args.ent_loss_ratio
 
-    def init(self, T, hard_label=True, ema_p=0.999):
+    def init(self, T, hard_label=True, ema_p=0.999, use_quantile=True, clip_thresh=False):
         self.T = T
         self.use_hard_label = hard_label
         self.ema_p = ema_p
+        self.use_quantile = use_quantile
+        self.clip_thresh = clip_thresh
 
 
     def set_hooks(self):
@@ -167,5 +147,7 @@ class FreeMatch(AlgorithmBase):
             SSL_Argument('--hard_label', str2bool, True),
             SSL_Argument('--T', float, 0.5),
             SSL_Argument('--ema_p', float, 0.999),
-            SSL_Argument('--ent_loss_ratio', float, 0.01)
+            SSL_Argument('--ent_loss_ratio', float, 0.01),
+            SSL_Argument('--use_quantile', str2bool, False),
+            SSL_Argument('--clip_thresh', str2bool, False),
         ]

@@ -70,7 +70,10 @@ class MixMatch(AlgorithmBase):
                 sharpen_prob_x_ulb = avg_prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
             
+            
+            self.bn_controller.freeze_bn(self.model)
             outs_x_lb = self.model(x_lb)
+            self.bn_controller.unfreeze_bn(self.model)
             feats_x_lb = outs_x_lb['feat']
             feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feat_x_ulb_w1, 'x_ulb_s':feat_x_ulb_w2}
 

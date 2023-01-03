@@ -26,8 +26,14 @@ class FreeMatchThresholingHook(MaskingHook):
             probs_x_ulb = self.concat_all_gather(probs_x_ulb)
         max_probs, max_idx = torch.max(probs_x_ulb, dim=-1,keepdim=True)
 
-        self.time_p = self.time_p * self.m + (1 - self.m) * torch.quantile(max_probs,0.8) #* max_probs.mean()
-        # self.time_p = torch.clip(self.time_p, 0.0, 0.95)
+        if algorithm.use_quantile:
+            self.time_p = self.time_p * self.m + (1 - self.m) * torch.quantile(max_probs,0.8) #* max_probs.mean()
+        else:
+            self.time_p = self.time_p * self.m + (1 - self.m) * max_probs.mean()
+        
+        if algorithm.clip_thresh:
+            self.time_p = torch.clip(self.time_p, 0.0, 0.95)
+
         self.p_model = self.p_model * self.m + (1 - self.m) * probs_x_ulb.mean(dim=0)
         # cur_p_model = torch.where(probs_x_ulb_w<max_probs.repeat(1,self.args.num_classes),torch.zeros_like(probs_x_ulb_w),probs_x_ulb_w)
         # cur_p_model = cur_p_model.mean(dim=0) / cur_p_model.mean(dim=0).sum()

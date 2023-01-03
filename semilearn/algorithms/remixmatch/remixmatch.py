@@ -134,8 +134,8 @@ class ReMixMatch(AlgorithmBase):
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
 
             
-            outs_x_lb = self.model(x_lb)
             self.bn_controller.freeze_bn(self.model)
+            outs_x_lb = self.model(x_lb)
             outs_x_ulb_s_0 = self.model(x_ulb_s_0)
             outs_x_ulb_s_1 = self.model(x_ulb_s_1)
             self.bn_controller.unfreeze_bn(self.model)
