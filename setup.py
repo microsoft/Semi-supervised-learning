@@ -26,7 +26,7 @@ with pathlib.Path('requirements.txt').open() as requirements_txt:
 
 setup(
     name='semilearn',
-    version='0.3.8a',
+    version='0.3.0',
     description='Unfied Semi-Supervised Learning Benchmark',
     long_description=long_description,
     long_description_content_type='text/markdown',

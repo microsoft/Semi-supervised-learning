@@ -7,7 +7,7 @@
 * Added registry mechanism for calling algorithms.
 * Added wandb and aimstack support.
 * Reformated 'train_step' structure.
-* Updated results with online wandb log.
+* Updated results (and logs) [[Google Drive]](https://drive.google.com/drive/u/0/folders/1bRSqrRyyuDafgOI3VAuqqiuzHG6CexHF) [[One Drive]](https://mailsucaseducn-my.sharepoint.com/personal/wangjindong14_mails_ucas_edu_cn/_layouts/15/onedrive.aspx?ga=1&id=%2Fpersonal%2Fwangjindong14%5Fmails%5Fucas%5Fedu%5Fcn%2FDocuments%2Fshare%2Fhaochen%2FUSB%2F01%5F2023) with online wandb logs [[Wandb]](https://wandb.ai/usb/projects).
 * Stable release semilearn==0.3.0
 * Updated Colab tutorial
 
