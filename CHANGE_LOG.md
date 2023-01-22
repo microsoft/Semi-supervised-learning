@@ -1,6 +1,6 @@
 # Change Log
 
-## xx/01/2023 Update
+## 23/01/2023 Update
 
 * Added imbalanced Semi-Supervised setting and 8 imbalanced algorithms.
 * Added FreeMatch and SoftMatch algorithms.
