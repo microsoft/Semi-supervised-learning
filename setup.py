@@ -6,6 +6,9 @@
 from setuptools import setup, find_packages
 from codecs import open
 from os import path
+import pathlib
+
+import pkg_resources
 
 here = path.abspath(path.dirname(__file__))
 
@@ -13,9 +16,17 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+# requirements
+with pathlib.Path('requirements.txt').open() as requirements_txt:
+    install_requires = [
+        str(requirement)
+        for requirement
+        in pkg_resources.parse_requirements(requirements_txt)
+    ]
+
 setup(
     name='semilearn',
-    version='0.2.4a',
+    version='0.3.0',
     description='Unfied Semi-Supervised Learning Benchmark',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -28,6 +39,7 @@ setup(
     keywords='pytorch semi-supervised-learning',
     packages=find_packages(exclude=['preprocess', 'saved_models', 'data', 'config']),
     include_package_data=True,
-    install_requires=['torch >= 1.8', 'torchvision', 'torchaudio', 'transformers', 'timm', 'progress', 'ruamel.yaml'],
-    python_requires='>=3.7',
+    # install_requires=['torch >= 1.8', 'torchvision', 'torchaudio', 'transformers', 'timm', 'progress', 'ruamel.yaml', 'scikit-image', 'scikit-learn', 'tensorflow', ''],
+    install_requires=install_requires,
+    python_requires='>=3.8',
 )

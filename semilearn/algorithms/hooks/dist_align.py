@@ -92,6 +92,12 @@ class DistAlignQueueHook(Hook):
 
     @torch.no_grad()
     def dist_align(self, algorithm, probs_x_ulb, probs_x_lb=None):
+        """
+        Args:
+            algorithm: base algorithm
+            probs_x_ulb: unlabeled batch probs
+        """
+
         # update queue
         self.update_p(algorithm, probs_x_ulb, probs_x_lb)
 

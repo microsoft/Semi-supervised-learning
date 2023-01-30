@@ -49,11 +49,13 @@ def create_classific_config(alg, seed,
     cfg['load_path'] = None
     cfg['overwrite'] = True
     cfg['use_tensorboard'] = True
+    cfg['use_wandb'] = True
 
     # algorithm config
     cfg['epoch'] = 1024
     cfg['num_train_iter'] = 2 ** 20
     cfg['num_eval_iter'] = 5120
+    cfg['num_log_iter'] = 256
     cfg['num_labels'] = num_labels
     cfg['batch_size'] = 64
     cfg['eval_batch_size'] = 256
@@ -93,7 +95,7 @@ def create_classific_config(alg, seed,
         cfg['mixup_alpha'] = 0.5
         cfg['T'] = 0.5
         if dataset == 'cifar10':
-            cfg['ulb_loss_ratio'] = 75
+            cfg['ulb_loss_ratio'] = 100
         elif dataset == 'cifar100':
             cfg['ulb_loss_ratio'] = 150
         else:
@@ -177,6 +179,46 @@ def create_classific_config(alg, seed,
         cfg['label_smoothing'] = 0.1
         cfg['num_uda_warmup_iter'] = 5000
         cfg['num_stu_wait_iter'] = 3000
+        
+    elif alg == 'freematch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['ema_p'] = 0.999
+        cfg['ent_loss_ratio'] = 0.001
+        cfg['uratio'] = 7
+        cfg['use_quantile'] = False
+        if dataset == 'svhn':
+            cfg['clip_thresh'] = True
+    elif alg == 'softmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['dist_align'] = True
+        cfg['dist_uniform'] = True
+        cfg['per_class'] = False
+        cfg['ema_p'] = 0.999
+        cfg['ulb_loss_ratio'] = 1.0
+        cfg['n_sigma'] = 2
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+
+    elif alg == 'freematch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['ema_p'] = 0.999
+        cfg['ent_loss_ratio'] = 0.001
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+    elif alg == 'softmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['dist_align'] = True
+        cfg['dist_uniform'] = True
+        cfg['per_class'] = False
+        cfg['ema_p'] = 0.999
+        cfg['ulb_loss_ratio'] = 1.0
+        cfg['n_sigma'] = 2
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
 
     # cfg['img']
     cfg['ema_m'] = 0.999
@@ -218,6 +260,7 @@ def create_classific_config(alg, seed,
     # other config
     cfg['overwrite'] = True
     cfg['amp'] = False
+    cfg['use_wandb'] = True
 
     return cfg
 
@@ -229,16 +272,15 @@ def exp_classific_cv(label_amount):
     save_path = r'./saved_models/classic_cv'
 
     if not os.path.exists(config_file):
-        os.mkdir(config_file)
+        os.makedirs(config_file)
     if not os.path.exists(save_path):
-        os.mkdir(save_path)
+        os.makedirs(save_path)
 
 
-    algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch']
+    algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
+            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch']
     datasets = ['cifar100', 'svhn', 'stl10', 'cifar10']
 
-    # seeds = [0, 1, 2] 
     seeds = [0]
 
     dist_port = range(10001, 11120, 1)
@@ -263,7 +305,8 @@ def exp_classific_cv(label_amount):
                     weight_decay = 1e-3
                     # depth = 28
                     # widen_factor = 8
-                    net = 'wrn_28_8'
+                    # net = 'wrn_28_8'
+                    net = 'wrn_28_2'
                     img_size = 32 
 
                 elif dataset == 'svhn':

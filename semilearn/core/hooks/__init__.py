@@ -10,3 +10,5 @@ from .priority import Priority, get_priority
 from .sampler_seed import DistSamplerSeedHook
 from .timer import TimerHook
 from .ema import EMAHook
+from .wandb import WANDBHook
+from .aim import AimHook

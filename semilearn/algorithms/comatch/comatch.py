@@ -6,20 +6,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, concat_all_gather
+from semilearn.algorithms.utils import SSL_Argument, str2bool, concat_all_gather
 
 
 class CoMatch_Net(nn.Module):
     def __init__(self, base, proj_size=128):
         super(CoMatch_Net, self).__init__()
         self.backbone = base
-        self.feat_planes = base.num_features
+        self.num_features = base.num_features
         
         self.mlp_proj = nn.Sequential(*[
-            nn.Linear(self.feat_planes, self.feat_planes),
+            nn.Linear(self.num_features, self.num_features),
             nn.ReLU(inplace=False),
-            nn.Linear(self.feat_planes, proj_size)
+            nn.Linear(self.num_features, proj_size)
         ])
         
     def l2norm(self, x, power=2):
@@ -38,6 +39,7 @@ class CoMatch_Net(nn.Module):
         return matcher
 
 
+# TODO: move this to criterions
 def comatch_contrastive_loss(feats_x_ulb_s_0, feats_x_ulb_s_1, Q, T=0.2):
     # embedding similarity
     sim = torch.exp(torch.mm(feats_x_ulb_s_0, feats_x_ulb_s_1.t())/ T) 
@@ -48,6 +50,7 @@ def comatch_contrastive_loss(feats_x_ulb_s_0, feats_x_ulb_s_1, Q, T=0.2):
     return loss
 
 
+@ALGORITHMS.register('comatch')
 class CoMatch(AlgorithmBase):
     """
         CoMatch algorithm (https://arxiv.org/abs/2011.11183).
@@ -156,9 +159,10 @@ class CoMatch(AlgorithmBase):
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w, feats_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['feat']
+            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb_w, 'x_ulb_s':[feats_x_ulb_s_0, feats_x_ulb_s_1]}
 
             # supervised loss
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             
             with torch.no_grad():
@@ -166,7 +170,8 @@ class CoMatch(AlgorithmBase):
                 feats_x_lb = feats_x_lb.detach()
                 feats_x_ulb_w = feats_x_ulb_w.detach()
 
-                probs = torch.softmax(logits_x_ulb_w, dim=1)            
+                # probs = torch.softmax(logits_x_ulb_w, dim=1)            
+                probs = self.compute_prob(logits_x_ulb_w)
                 # distribution alignment
                 probs = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs.detach())
 
@@ -184,7 +189,7 @@ class CoMatch(AlgorithmBase):
 
                 self.update_bank(feats_w, probs_w)
 
-            unsup_loss = consistency_loss(logits_x_ulb_s_0,
+            unsup_loss = self.consistency_loss(logits_x_ulb_s_0,
                                           probs,
                                           'ce',
                                           mask=mask)
@@ -200,17 +205,13 @@ class CoMatch(AlgorithmBase):
 
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_c * contrast_loss
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
-
-
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        tb_dict['train/unsup_loss'] = unsup_loss.item()
-        tb_dict['train/contrast_loss'] = contrast_loss.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = mask.float().mean().item()
-        return tb_dict
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+                                         unsup_loss=unsup_loss.item(), 
+                                         contrast_loss=contrast_loss.item(),
+                                         total_loss=total_loss.item(), 
+                                         util_ratio=mask.float().mean().item())
+        return out_dict, log_dict
 
     def get_save_dict(self):
         save_dict =  super().get_save_dict()

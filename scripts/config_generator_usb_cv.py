@@ -48,19 +48,19 @@ def create_usb_cv_config(alg, seed,
     cfg['load_path'] = None
     cfg['overwrite'] = True
     cfg['use_tensorboard'] = True
-
+    cfg['use_wandb'] = True
 
     if dataset == 'imagenet':
         cfg['epoch'] = 500
         cfg['num_train_iter'] = 1024 * 500
-        cfg['num_log_iter'] = 512
+        cfg['num_log_iter'] = 256
         cfg['num_eval_iter'] = 5120
         cfg['batch_size'] = 256
         cfg['eval_batch_size'] = 512
     else:
         cfg['epoch'] = 200
         cfg['num_train_iter'] = 1024 * 200
-        cfg['num_log_iter'] = 512
+        cfg['num_log_iter'] = 256
         cfg['num_eval_iter'] = 2048
         cfg['batch_size'] = 8
         cfg['eval_batch_size'] = 16
@@ -101,24 +101,6 @@ def create_usb_cv_config(alg, seed,
         cfg['ulb_loss_ratio'] = 1.0
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 10.0
-    elif alg == 'freematch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['ema_p'] = 0.999
-        cfg['ent_loss_ratio'] = 0.001
-        if dataset == 'imagenet':
-            cfg['ulb_loss_ratio'] = 1.0
-    elif alg == 'softmatch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['dist_align'] = True
-        cfg['dist_uniform'] = True
-        cfg['per_class'] = False
-        cfg['ema_p'] = 0.999
-        cfg['ulb_loss_ratio'] = 1.0
-        cfg['n_sigma'] = 2
-        if dataset == 'imagenet':
-            cfg['ulb_loss_ratio'] = 1.0
     elif alg == 'pseudolabel':
         cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
@@ -139,6 +121,7 @@ def create_usb_cv_config(alg, seed,
         cfg['hard_label'] = True
         cfg['p_cutoff'] = 0.95
         cfg['ulb_loss_ratio'] = 1.0
+
     elif alg == 'comatch':
         cfg['hard_label'] = False
         cfg['p_cutoff'] = 0.95
@@ -150,7 +133,7 @@ def create_usb_cv_config(alg, seed,
         cfg['smoothing_alpha'] = 0.9
         cfg['T'] = 0.2
         cfg['da_len'] = 32
-        
+        cfg['ema_m'] = 0.999
         if dataset == 'stl10':
             cfg['contrast_loss_ratio'] = 5.0
 
@@ -172,7 +155,8 @@ def create_usb_cv_config(alg, seed,
         cfg['K'] = 256
         cfg['da_len'] = 32
         cfg['smoothing_alpha'] = 0.9
-
+        cfg['ema_m'] = 0.999
+        
         if dataset in ['cifar10', 'svhn',  'cifar100', 'stl10']:
             cfg['T'] = 0.1
         else:
@@ -217,6 +201,27 @@ def create_usb_cv_config(alg, seed,
         cfg['num_uda_warmup_iter'] = 5000
         cfg['num_stu_wait_iter'] = 3000
 
+
+    elif alg == 'freematch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['ema_p'] = 0.999
+        cfg['ent_loss_ratio'] = 0.001
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+    elif alg == 'softmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['dist_align'] = True
+        cfg['dist_uniform'] = True
+        cfg['per_class'] = False
+        cfg['ema_p'] = 0.999
+        cfg['ulb_loss_ratio'] = 1.0
+        cfg['n_sigma'] = 2
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+
+
     cfg['img_size'] = img_size
     cfg['crop_ratio'] = crop_ratio
 
@@ -252,6 +257,10 @@ def create_usb_cv_config(alg, seed,
     cfg['dist_backend'] = 'nccl'
     cfg['gpu'] = None
 
+    if alg == 'crmatch' and dataset == 'stl10':
+        cfg['multiprocessing_distributed'] = False
+        cfg['gpu'] = 0
+
     # other config
     cfg['overwrite'] = True
     cfg['use_pretrain'] = True
@@ -273,7 +282,7 @@ def exp_usb_cv(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'softmatch', 'freematch']
+             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch']
     datasets = ['cifar100', 'eurosat', 'semi_aves', 'tissuemnist', 'stl10']
     # algs = ['fixmatch', 'flexmatch', 'comatch', 'simmatch']
     # datasets = ['imagenet']
@@ -286,7 +295,7 @@ def exp_usb_cv(label_amount):
     pretrain_path = 'https://github.com/microsoft/Semi-supervised-learning/releases/download/v.0.0.0'
     weight_decay = 5e-4
     # lr = 5e-5
-    warmup = 5
+    warmup = 0
     amp = False
 
     for alg in algs:
@@ -335,12 +344,13 @@ def exp_usb_cv(label_amount):
                     num_labels = label_amount[3] * num_classes
                     img_size = 96
                     crop_ratio = 0.875
+                    warmup = 5
 
                     net = 'vit_base_patch16_96'
                     pretrain_name = 'mae_pretrain_vit_base.pth'
 
                     lr = 1e-4
-                    layer_decay - 0.65 
+                    layer_decay = 0.65 
                 
                 elif dataset == 'semi_aves':
                     num_classes = 200
