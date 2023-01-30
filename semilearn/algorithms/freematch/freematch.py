@@ -14,7 +14,7 @@ def replace_inf_to_zero(val):
     return val
 
 def entropy_loss(mask, logits_s, prob_model, label_hist):
-    mask = mask.long()
+    mask = mask.bool()
 
     # select samples
     logits_s = logits_s[mask]
