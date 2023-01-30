@@ -5,11 +5,9 @@ resume: True
 load_path: ./saved_models/classic_cv/remixmatch_stl10_40_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
 epoch: 1024
 num_train_iter: 1048576
 num_eval_iter: 5120
-num_log_iter: 256
 num_labels: 40
 batch_size: 64
 eval_batch_size: 256
@@ -42,6 +40,6 @@ seed: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: True
-dist_url: tcp://127.0.0.1:10027
+dist_url: tcp://127.0.0.1:10023
 dist_backend: nccl
 gpu: None

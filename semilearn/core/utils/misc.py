@@ -88,17 +88,17 @@ class TBLog:
             self.writer = SummaryWriter(os.path.join(self.tb_dir, file_name))
             
 
-    def update(self, log_dict, it, suffix=None, mode="train"):
+    def update(self, tb_dict, it, suffix=None, mode="train"):
         """
         Args
-            log_dict: contains scalar values for updating tensorboard
+            tb_dict: contains scalar values for updating tensorboard
             it: contains information of iteration (int).
             suffix: If not None, the update key has the suffix.
         """
         if suffix is None:
             suffix = ''
         if self.use_tensorboard:
-            for key, value in log_dict.items():
+            for key, value in tb_dict.items():
                 self.writer.add_scalar(suffix + key, value, it)
 
 

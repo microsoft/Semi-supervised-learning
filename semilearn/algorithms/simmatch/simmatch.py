@@ -5,22 +5,20 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
-from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import DistAlignQueueHook, FixedThresholdingHook
-from semilearn.algorithms.utils import SSL_Argument, concat_all_gather
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, concat_all_gather
 
 
 class SimMatch_Net(nn.Module):
     def __init__(self, base, proj_size=128):
         super(SimMatch_Net, self).__init__()
         self.backbone = base
-        self.num_features = base.num_features
+        self.feat_planes = base.num_features
         
         self.mlp_proj = nn.Sequential(*[
-            nn.Linear(self.num_features, self.num_features),
+            nn.Linear(self.feat_planes, self.feat_planes),
             nn.ReLU(inplace=False),
-            nn.Linear(self.num_features
-            , proj_size)
+            nn.Linear(self.feat_planes, proj_size)
         ])
         
     def l2norm(self, x, power=2):
@@ -38,7 +36,6 @@ class SimMatch_Net(nn.Module):
         matcher = self.backbone.group_matcher(coarse, prefix='backbone.')
         return matcher
 
-@ALGORITHMS.register('simmatch')
 class SimMatch(AlgorithmBase):
     """
     SimMatch algorithm (https://arxiv.org/abs/2203.06915).
@@ -160,7 +157,7 @@ class SimMatch(AlgorithmBase):
                 logits_x_ulb_s, feats_x_ulb_s = outs_x_ulb_s['logits'], outs_x_ulb_s['feat']
                 # logits_x_ulb_s, feats_x_ulb_s = self.model(x_ulb_s)
 
-            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             self.ema.apply_shadow()
             with torch.no_grad():
@@ -170,7 +167,6 @@ class SimMatch(AlgorithmBase):
                 ema_probs_x_ulb_w = F.softmax(ema_logits_x_ulb_w, dim=-1)
                 ema_probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=ema_probs_x_ulb_w.detach())
             self.ema.restore()
-            feat_dict = {'x_lb': ema_feats_x_lb, 'x_ulb_w':ema_feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
             with torch.no_grad():
                 teacher_logits = ema_feats_x_ulb_w @ bank
@@ -197,21 +193,24 @@ class SimMatch(AlgorithmBase):
             # compute mask
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
-            unsup_loss = self.consistency_loss(logits_x_ulb_s,
-                                               probs_x_ulb_w,
-                                               'ce',
-                                               mask=mask)
+            unsup_loss = consistency_loss(logits_x_ulb_s,
+                                          probs_x_ulb_w,
+                                          'ce',
+                                          mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_in * in_loss
 
             self.update_bank(ema_feats_x_lb, y_lb, idx_lb)
 
-        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
-        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
-                                         unsup_loss=unsup_loss.item(), 
-                                         total_loss=total_loss.item(), 
-                                         util_ratio=mask.float().mean().item())
-        return out_dict, log_dict
+        # parameter updates
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
+
+        tb_dict = {}
+        tb_dict['train/sup_loss'] = sup_loss.item()
+        tb_dict['train/unsup_loss'] = unsup_loss.item()
+        tb_dict['train/total_loss'] = total_loss.item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
+        return tb_dict
     
     def get_save_dict(self):
         save_dict = super().get_save_dict()

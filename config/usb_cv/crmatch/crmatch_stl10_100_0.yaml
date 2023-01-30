@@ -5,10 +5,9 @@ resume: True
 load_path: ./saved_models/usb_cv//crmatch_stl10_100_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
 epoch: 200
 num_train_iter: 204800
-num_log_iter: 256
+num_log_iter: 512
 num_eval_iter: 2048
 batch_size: 8
 eval_batch_size: 16
@@ -23,7 +22,7 @@ img_size: 96
 crop_ratio: 0.875
 optim: AdamW
 lr: 0.0001
-layer_decay: 0.65
+layer_decay: 0.95
 momentum: 0.9
 weight_decay: 0.0005
 amp: False
@@ -39,9 +38,9 @@ num_workers: 4
 seed: 0
 world_size: 1
 rank: 0
-multiprocessing_distributed: False
+multiprocessing_distributed: True
 dist_url: tcp://127.0.0.1:10065
 dist_backend: nccl
-gpu: 0
+gpu: None
 use_pretrain: True
 pretrain_path: https://github.com/microsoft/Semi-supervised-learning/releases/download/v.0.0.0/mae_pretrain_vit_base.pth

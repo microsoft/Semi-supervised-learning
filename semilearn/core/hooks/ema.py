@@ -7,10 +7,9 @@ from semilearn.core.utils import EMA
 
 
 class EMAHook(Hook):
-    """
-    EMA model Hook for updating ema version of the model
-    """
-
+    def __init__(self) -> None:
+        super().__init__()
+    
     def before_run(self, algorithm):
         algorithm.ema = EMA(algorithm.model, algorithm.ema_m)
         algorithm.ema.register()

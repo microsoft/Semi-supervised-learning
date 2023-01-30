@@ -5,11 +5,9 @@ resume: True
 load_path: ./saved_models/classic_cv/flexmatch_svhn_40_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
 epoch: 1024
 num_train_iter: 1048576
 num_eval_iter: 5120
-num_log_iter: 256
 num_labels: 40
 batch_size: 64
 eval_batch_size: 256

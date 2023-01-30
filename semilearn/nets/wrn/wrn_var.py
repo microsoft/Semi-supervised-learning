@@ -28,33 +28,32 @@ class PSBatchNorm2d(nn.BatchNorm2d):
 
 
 class BasicBlock(nn.Module):
-    def __init__(self, in_planes, out_planes, stride, dropRate=0.0, activate_before_residual=False):
+    def __init__(self, in_planes, out_planes, stride, drop_rate=0.0, activate_before_residual=False):
         super(BasicBlock, self).__init__()
-        self.bn1 = nn.BatchNorm2d(in_planes, momentum=0.001)
-        self.relu1 = nn.LeakyReLU(negative_slope=0.1, inplace=True)
+        self.bn1 = nn.BatchNorm2d(in_planes, momentum=0.001, eps=0.001)
+        self.relu1 = nn.LeakyReLU(negative_slope=0.1, inplace=False)
         self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_planes, momentum=0.001)
-        self.relu2 = nn.LeakyReLU(negative_slope=0.1, inplace=True)
+                               padding=1, bias=True)
+        self.bn2 = nn.BatchNorm2d(out_planes, momentum=0.001, eps=0.001)
+        self.relu2 = nn.LeakyReLU(negative_slope=0.1, inplace=False)
         self.conv2 = nn.Conv2d(out_planes, out_planes, kernel_size=3, stride=1,
-                               padding=1, bias=False)
-        self.droprate = dropRate
+                               padding=1, bias=True)
+        self.drop_rate = drop_rate
         self.equalInOut = (in_planes == out_planes)
         self.convShortcut = (not self.equalInOut) and nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride,
-                               padding=0, bias=False) or None
+                                                                padding=0, bias=True) or None
         self.activate_before_residual = activate_before_residual
-        
+
     def forward(self, x):
-        if not self.equalInOut and self.activate_before_residual == True:
+        if not self.equalInOut:
             x = self.relu1(self.bn1(x))
         else:
             out = self.relu1(self.bn1(x))
         out = self.relu2(self.bn2(self.conv1(out if self.equalInOut else x)))
-        if self.droprate > 0:
-            out = F.dropout(out, p=self.droprate, training=self.training)
+        if self.drop_rate > 0:
+            out = F.dropout(out, p=self.drop_rate, training=self.training)
         out = self.conv2(out)
         return torch.add(x if self.equalInOut else self.convShortcut(x), out)
-
 
 
 class NetworkBlock(nn.Module):
@@ -86,7 +85,7 @@ class WideResNetVar(nn.Module):
                                padding=1, bias=True)
         # 1st block
         self.block1 = NetworkBlock(
-            n, channels[0], channels[1], block, first_stride, drop_rate, activate_before_residual=True)
+            n, channels[0], channels[1], block, first_stride, drop_rate)
         # 2nd block
         self.block2 = NetworkBlock(
             n, channels[1], channels[2], block, 2, drop_rate)
@@ -99,7 +98,7 @@ class WideResNetVar(nn.Module):
         # global average pooling and classifier
         self.bn1 = nn.BatchNorm2d(channels[4], momentum=0.001, eps=0.001)
         self.relu = nn.LeakyReLU(negative_slope=0.1, inplace=False)
-        self.classifier = nn.Linear(channels[4], num_classes)
+        self.fc = nn.Linear(channels[4], num_classes)
         self.channels = channels[4]
         self.num_features = channels[4]
 
@@ -127,7 +126,7 @@ class WideResNetVar(nn.Module):
         """
 
         if only_fc:
-            return self.classifier(x)
+            return self.fc(x)
         
         out = self.extract(x)
         out = F.adaptive_avg_pool2d(out, 1)
@@ -136,7 +135,7 @@ class WideResNetVar(nn.Module):
         if only_feat:
             return out
 
-        output = self.classifier(out)
+        output = self.fc(out)
         result_dict = {'logits':output, 'feat':out}
         return result_dict
     

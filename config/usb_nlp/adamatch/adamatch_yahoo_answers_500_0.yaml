@@ -5,7 +5,6 @@ resume: True
 load_path: ./saved_models/usb_nlp/adamatch_yahoo_answers_500_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
 epoch: 100
 num_train_iter: 102400
 num_warmup_iter: 5120
@@ -14,7 +13,6 @@ num_eval_iter: 2048
 num_labels: 500
 batch_size: 8
 eval_batch_size: 8
-ema_m: 0.0
 hard_label: True
 T: 0.5
 p_cutoff: 0.95
@@ -22,6 +20,7 @@ ulb_loss_ratio: 1.0
 ema_p: 0.999
 uratio: 1
 use_cat: False
+ema_m: 0.0
 optim: AdamW
 lr: 0.0001
 momentum: 0.9

@@ -26,15 +26,6 @@ class MaskingHook(Hook):
                       *args, **kwargs):
         """
         generate mask for unlabeled loss
-
-        Args:
-            algorithm: base algorithm
-            logits_x_lb: labeled batch logits (or probs, need to set softmax_x_lb to False)
-            logits_x_ulb: unlabeled batch logits (or probs, need to set softmax_x_ulb to False)
-            idx_lb: labeled batch index
-            idx_ulb: unlabeled batch index
-            softmax_x_lb: flag of using softmax on labeled logits 
-            softmax_x_ulb: flag of using softmax on unlabeled logits 
         """
         raise NotImplementedError
 
@@ -47,8 +38,7 @@ class FixedThresholdingHook(MaskingHook):
     @torch.no_grad()
     def masking(self, algorithm, logits_x_ulb, softmax_x_ulb=True, *args, **kwargs):
         if softmax_x_ulb:
-            # probs_x_ulb = torch.softmax(logits_x_ulb.detach(), dim=-1)
-            probs_x_ulb = algorithm.compute_prob(logits_x_ulb.detach())
+            probs_x_ulb = torch.softmax(logits_x_ulb.detach(), dim=-1)
         else:
             # logits is already probs
             probs_x_ulb = logits_x_ulb.detach()

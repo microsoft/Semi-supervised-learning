@@ -69,20 +69,20 @@ def get_stl10(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
     lb_data, lb_targets = dset_lb.data.transpose([0, 2, 3, 1]), dset_lb.labels.astype(np.int64)
     ulb_data = dset_ulb.data.transpose([0, 2, 3, 1])
 
+    # TODO: check this
+
     # Note this data can have imbalanced labeled set, and with unkown unlabeled set
     ulb_data = np.concatenate([ulb_data, lb_data], axis=0)
     lb_idx, _ = sample_labeled_unlabeled_data(args, lb_data, lb_targets, num_classes,
                                               lb_num_labels=num_labels,
                                               ulb_num_labels=args.ulb_num_labels,
                                               lb_imbalance_ratio=args.lb_imb_ratio,
-                                              ulb_imbalance_ratio=args.ulb_imb_ratio,
-                                              load_exist=True)
-    ulb_targets = np.ones((ulb_data.shape[0], )) * -1
+                                              ulb_imbalance_ratio=args.ulb_imb_ratio)
+    ulb_targets = None
     lb_data, lb_targets = lb_data[lb_idx], lb_targets[lb_idx]
     if include_lb_to_ulb:
         ulb_data = np.concatenate([lb_data, ulb_data], axis=0)
         ulb_targets = np.concatenate([lb_targets, np.ones((ulb_data.shape[0] - lb_data.shape[0], )) * -1], axis=0)
-    ulb_targets = ulb_targets.astype(np.int64)
 
     # output the distribution of labeled data for remixmatch
     count = [0 for _ in range(num_classes)]
