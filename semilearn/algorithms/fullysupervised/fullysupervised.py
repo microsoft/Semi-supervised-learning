@@ -3,9 +3,10 @@
 
 
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss
+from semilearn.core.utils import ALGORITHMS
 
 
+@ALGORITHMS.register('fullysupervised')
 class FullySupervised(AlgorithmBase):
     """
         Train a fully supervised model using labeled data only. This serves as a baseline for comparison.
@@ -28,16 +29,11 @@ class FullySupervised(AlgorithmBase):
         with self.amp_cm():
 
             logits_x_lb = self.model(x_lb)['logits']
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
-
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=sup_loss)
-
-        # tensorboard_dict update
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        return tb_dict
+        out_dict = self.process_out_dict(loss=sup_loss)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item())
+        return out_dict, log_dict
 
     
     def train(self):
@@ -45,7 +41,7 @@ class FullySupervised(AlgorithmBase):
         self.model.train()
         self.call_hook("before_run")
             
-        for epoch in range(self.epochs):
+        for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
             
             # prevent the training iterations exceed args.num_train_iter
@@ -61,9 +57,12 @@ class FullySupervised(AlgorithmBase):
                     break
 
                 self.call_hook("before_train_step")
-                self.tb_dict = self.train_step(**self.process_batch(**data_lb))
+                self.out_dict, self.log_dict = self.train_step(**self.process_batch(**data_lb))
                 self.call_hook("after_train_step")
                 self.it += 1
 
             self.call_hook("after_train_epoch")
         self.call_hook("after_run")
+
+
+ALGORITHMS['supervised'] = FullySupervised

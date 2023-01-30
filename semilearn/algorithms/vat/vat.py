@@ -7,9 +7,11 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool
+from semilearn.core.utils import ALGORITHMS
+from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
+@ALGORITHMS.register('vat')
 class VAT(AlgorithmBase):
     """
         Virtual Adversarial Training algorithm (https://arxiv.org/abs/1704.03976).
@@ -45,12 +47,12 @@ class VAT(AlgorithmBase):
 
         with self.amp_cm():
             logits_x_lb = self.model(x_lb)['logits']
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             if self.vat_embed:
                 self.bn_controller.freeze_bn(self.model)
                 outs_x_ulb_w = self.model(x_ulb_w, return_embed=True)
-                ul_x_embed, ul_y = outs_x_ulb_w['embed'], outs_x_ulb_w['logits']
+                ul_x_embed, ul_y  = outs_x_ulb_w['embed'], outs_x_ulb_w['logits']
                 # ul_x_embed, ul_y = self.model(x_ulb_w, return_embed=True)
                 unsup_loss = self.vat_loss(self.model, x_ulb_w, ul_y, eps=self.vat_eps, ul_x_embed=ul_x_embed, vat_embed=True)
                 self.bn_controller.unfreeze_bn(self.model)
@@ -65,16 +67,12 @@ class VAT(AlgorithmBase):
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup + self.lambda_ent * loss_entmin
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
-
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        tb_dict['train/unsup_loss'] = unsup_loss.item()
-        tb_dict['train/loss_entmin'] = loss_entmin.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-
-        return tb_dict
+        out_dict = self.process_out_dict(loss=total_loss)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+                                         unsup_loss=unsup_loss.item(), 
+                                         total_loss=total_loss.item(), 
+                                         loss_entmin=loss_entmin.item())
+        return out_dict, log_dict
 
     def vat_loss(self, model, ul_x, ul_y, xi=1e-6, eps=6, num_iters=1, ul_x_embed=None, vat_embed=False):
         # find r_adv

@@ -6,20 +6,42 @@ import torch
 
 from .utils import AdaMatchThresholdingHook
 from semilearn.core import AlgorithmBase
+from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, DistAlignEMAHook
-from semilearn.algorithms.utils import ce_loss, consistency_loss,  SSL_Argument, str2bool
+from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
+@ALGORITHMS.register('adamatch')
 class AdaMatch(AlgorithmBase):
+    """
+        AdaMatch algorithm (https://arxiv.org/abs/2106.04732).
+
+        Args:
+            - args (`argparse`):
+                algorithm arguments
+            - net_builder (`callable`):
+                network loading function
+            - tb_log (`TBLog`):
+                tensorboard logger
+            - logger (`logging.Logger`):
+                logger to use
+            - T (`float`):
+                Temperature for pseudo-label sharpening
+            - p_cutoff(`float`):
+                Confidence threshold for generating pseudo-labels
+            - hard_label (`bool`, *optional*, default to `False`):
+                If True, targets have [Batch size] shape with int values. If False, the target is vector
+            - ema_p (`float`):
+                momentum for average probability
+    """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
-        self.init(p_cutoff=args.p_cutoff, T=args.T, hard_label=args.hard_label, dist_align=args.dist_align, ema_p=args.ema_p)
+        self.init(p_cutoff=args.p_cutoff, T=args.T, hard_label=args.hard_label, ema_p=args.ema_p)
     
-    def init(self, p_cutoff, T, hard_label=True, dist_align=True, ema_p=0.999):
+    def init(self, p_cutoff, T, hard_label=True, ema_p=0.999):
         self.p_cutoff = p_cutoff
         self.T = T
         self.use_hard_label = hard_label
-        self.dist_align = dist_align
         self.ema_p = ema_p
 
 
@@ -42,20 +64,28 @@ class AdaMatch(AlgorithmBase):
                 outputs = self.model(inputs)
                 logits_x_lb = outputs['logits'][:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(2)
+                feats_x_lb = outputs['feat'][:num_lb]
+                feats_x_ulb_w, feats_x_ulb_s = outputs['feat'][num_lb:].chunk(2)
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
+                feats_x_lb = outs_x_lb['feat']
                 outs_x_ulb_s = self.model(x_ulb_s)
                 logits_x_ulb_s = outs_x_ulb_s['logits']
+                feats_x_ulb_s = outs_x_ulb_s['feat']
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w = outs_x_ulb_w['logits']
+                    feats_x_ulb_w = outs_x_ulb_w['feat']
+            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
                     
 
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-            probs_x_lb = torch.softmax(logits_x_lb.detach(), dim=-1)
-            probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
+            # probs_x_lb = torch.softmax(logits_x_lb.detach(), dim=-1)
+            # probs_x_ulb_w = torch.softmax(logits_x_ulb_w.detach(), dim=-1)
+            probs_x_lb = self.compute_prob(logits_x_lb.detach())
+            probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
 
             # distribution alignment 
             probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w, probs_x_lb=probs_x_lb)
@@ -71,21 +101,20 @@ class AdaMatch(AlgorithmBase):
                                           softmax=False)
 
             # calculate loss
-            unsup_loss = consistency_loss(logits_x_ulb_s,
-                                          pseudo_label,
-                                          'ce',
-                                          mask=mask)
+            unsup_loss = self.consistency_loss(logits_x_ulb_s,
+                                               pseudo_label,
+                                               'ce',
+                                               mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+                                         unsup_loss=unsup_loss.item(), 
+                                         total_loss=total_loss.item(), 
+                                         util_ratio=mask.float().mean().item())
+        return out_dict, log_dict
 
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        tb_dict['train/unsup_loss'] = unsup_loss.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-        tb_dict['train/mask_ratio'] = mask.mean().item()
-        return tb_dict
 
     def get_save_dict(self):
         save_dict = super().get_save_dict()
@@ -107,7 +136,6 @@ class AdaMatch(AlgorithmBase):
         return [
             SSL_Argument('--hard_label', str2bool, True),
             SSL_Argument('--T', float, 0.5),
-            SSL_Argument('--dist_align', str2bool, True),
             SSL_Argument('--ema_p', float, 0.999),
             SSL_Argument('--p_cutoff', float, 0.95),
         ]

@@ -6,6 +6,9 @@ import numpy as np
 
 
 def interleave_offsets(batch, nu):
+    """
+    not used
+    """
     groups = [batch // (nu + 1)] * (nu + 1)
     for x in range(batch - sum(groups)):
         groups[-x - 1] += 1
@@ -17,6 +20,9 @@ def interleave_offsets(batch, nu):
 
 
 def interleave(xy, batch):
+    """
+    not used
+    """
     nu = len(xy) - 1
     offsets = interleave_offsets(batch, nu)
     xy = [[v[offsets[p]:offsets[p + 1]] for p in range(nu + 1)] for v in xy]
@@ -55,3 +61,14 @@ def mixup_one_target(x, y, alpha=1.0, is_bias=False):
     mixed_x = lam * x + (1 - lam) * x[index]
     mixed_y = lam * y + (1 - lam) * y[index]
     return mixed_x, mixed_y, lam
+
+
+def smooth_targets(logits, targets, smoothing=0.1):
+    """
+    label smoothing
+    """
+    with torch.no_grad():
+        true_dist = torch.zeros_like(logits)
+        true_dist.fill_(smoothing / (logits.shape[-1] - 1))
+        true_dist.scatter_(1, targets.data.unsqueeze(1), (1 - smoothing))
+    return true_dist

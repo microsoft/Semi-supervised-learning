@@ -7,31 +7,38 @@ import numpy as np
 import torch
 from torch.utils.data import sampler, DataLoader
 import torch.distributed as dist
-from semilearn.datasets.samplers import DistributedSampler
 from io import BytesIO
 
 # TODO: better way
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 
-name2sampler = {'RandomSampler': DistributedSampler}
-
-
 def split_ssl_data(args, data, targets, num_classes,
                    lb_num_labels, ulb_num_labels=None,
                    lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
-                   lb_index=None, ulb_index=None, include_lb_to_ulb=True):
+                   lb_index=None, ulb_index=None, include_lb_to_ulb=True, load_exist=True):
     """
     data & target is splitted into labeled and unlabeld data.
     
     Args
-        index: If np.array of index is given, select the data[index], target[index] as labeled samples.
+        data: data to be split to labeled and unlabeled 
+        targets: targets to be split to labeled and unlabeled 
+        num_classes: number of total classes
+        lb_num_labels: number of labeled samples. 
+                       If lb_imbalance_ratio is 1.0, lb_num_labels denotes total number of samples.
+                       Otherwise it denots the number of samples in head class.
+        ulb_num_labels: similar to lb_num_labels but for unlabeled data.
+                        default to None, denoting use all remaininig data except for labeled data as unlabeled set
+        lb_imbalance_ratio: imbalance ratio for labeled data
+        ulb_imbalance_ratio: imbalance ratio for unlabeled data
+        lb_index: If np.array of index is given, select the data[index], target[index] as labeled samples.
+        ulb_index: If np.array of index is given, select the data[index], target[index] as labeled samples.
         include_lb_to_ulb: If True, labeled data is also included in unlabeld data
     """
     data, targets = np.array(data), np.array(targets)
     lb_idx, ulb_idx = sample_labeled_unlabeled_data(args, data, targets, num_classes, 
                                                     lb_num_labels, ulb_num_labels,
-                                                    lb_imbalance_ratio, ulb_imbalance_ratio)
+                                                    lb_imbalance_ratio, ulb_imbalance_ratio, load_exist=False)
     
     # manually set lb_idx and ulb_idx, do not use except for debug
     if lb_index is not None:
@@ -52,15 +59,15 @@ def sample_labeled_data():
 def sample_labeled_unlabeled_data(args, data, target, num_classes,
                                   lb_num_labels, ulb_num_labels=None,
                                   lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
-                                  load_exist=False):
+                                  load_exist=True):
     '''
     samples for labeled data
     (sampling with balanced ratio over classes)
     '''
     dump_dir = os.path.join(base_dir, 'data', args.dataset, 'labeled_idx')
     os.makedirs(dump_dir, exist_ok=True)
-    lb_dump_path = os.path.join(dump_dir, f'lb_labels{args.num_labels}_seed{args.seed}_idx.npy')
-    ulb_dump_path = os.path.join(dump_dir, f'ulb_labels{args.num_labels}_seed{args.seed}_idx.npy')
+    lb_dump_path = os.path.join(dump_dir, f'lb_labels{args.num_labels}_{args.lb_imb_ratio}_seed{args.seed}_idx.npy')
+    ulb_dump_path = os.path.join(dump_dir, f'ulb_labels{args.num_labels}_{args.ulb_imb_ratio}_seed{args.seed}_idx.npy')
 
     if os.path.exists(lb_dump_path) and os.path.exists(ulb_dump_path) and load_exist:
         lb_idx = np.load(lb_dump_path)
@@ -80,11 +87,11 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
 
     if ulb_imbalance_ratio == 1.0:
         # balanced setting
-        if ulb_num_labels is not None and ulb_num_labels != 'None':
+        if ulb_num_labels is None or ulb_num_labels == 'None':
+            pass # ulb_samples_per_class = [int(len(data) / num_classes) - lb_samples_per_class[c] for c in range(num_classes)] # [int(len(data) / num_classes) - int(lb_num_labels / num_classes)] * num_classes
+        else:
             assert ulb_num_labels % num_classes == 0, "ulb_num_labels must be divideable by num_classes in balanced setting"
             ulb_samples_per_class = [int(ulb_num_labels / num_classes)] * num_classes
-        else:
-            ulb_samples_per_class = None
     else:
         # imbalanced setting
         assert ulb_num_labels is not None, "ulb_num_labels must be set set in imbalanced setting"
@@ -97,7 +104,7 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
         idx = np.where(target == c)[0]
         np.random.shuffle(idx)
         lb_idx.extend(idx[:lb_samples_per_class[c]])
-        if ulb_samples_per_class is None:
+        if ulb_num_labels is None or ulb_num_labels == 'None':
             ulb_idx.extend(idx[lb_samples_per_class[c]:])
         else:
             ulb_idx.extend(idx[lb_samples_per_class[c]:lb_samples_per_class[c]+ulb_samples_per_class[c]])
@@ -114,6 +121,9 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
 
 
 def make_imbalance_data(max_num_labels, num_classes, gamma):
+    """
+    calculate samplers per class for imbalanced data
+    """
     mu = np.power(1 / abs(gamma), 1 / (num_classes - 1))
     samples_per_class = []
     for c in range(num_classes):
@@ -124,9 +134,6 @@ def make_imbalance_data(max_num_labels, num_classes, gamma):
     if gamma < 0:
         samples_per_class = samples_per_class[::-1]
     return samples_per_class
-
-
-
 
 
 def get_collactor(args, net):

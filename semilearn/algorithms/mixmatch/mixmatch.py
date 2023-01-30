@@ -5,9 +5,11 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool, interleave, mixup_one_target
+from semilearn.core.utils import ALGORITHMS
+from semilearn.algorithms.utils import SSL_Argument, str2bool, mixup_one_target
 
 
+@ALGORITHMS.register('mixmatch')
 class MixMatch(AlgorithmBase):
     """
         MixMatch algorithm (https://arxiv.org/abs/1905.02249).
@@ -50,20 +52,30 @@ class MixMatch(AlgorithmBase):
                 self.bn_controller.freeze_bn(self.model)
                 outs_x_ulb_w1 = self.model(x_ulb_w)
                 logits_x_ulb_w1 = outs_x_ulb_w1['logits']
+                feat_x_ulb_w1 = outs_x_ulb_w1['feat']
+
                 # logits_x_ulb_w1 = self.model(x_ulb_w)
                 outs_x_ulb_w2 = self.model(x_ulb_s)
                 logits_x_ulb_w2 = outs_x_ulb_w2['logits']
+                feat_x_ulb_w2 = outs_x_ulb_w2['feat']
+
                 # logits_x_ulb_w2 = self.model(x_ulb_s)
                 self.bn_controller.unfreeze_bn(self.model)
                 
                 # avg
-                avg_prob_x_ulb = (torch.softmax(logits_x_ulb_w1, dim=1) + torch.softmax(logits_x_ulb_w2, dim=1)) / 2
+                # avg_prob_x_ulb = (torch.softmax(logits_x_ulb_w1, dim=1) + torch.softmax(logits_x_ulb_w2, dim=1)) / 2
+                avg_prob_x_ulb = (self.compute_prob(logits_x_ulb_w1) + self.compute_prob(logits_x_ulb_w2)) / 2
                 # avg_prob_x_ulb = (avg_prob_x_ulb / avg_prob_x_ulb.sum(dim=-1, keepdim=True))
                 # sharpening
                 sharpen_prob_x_ulb = avg_prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
             
+            
+            self.bn_controller.freeze_bn(self.model)
             outs_x_lb = self.model(x_lb)
+            self.bn_controller.unfreeze_bn(self.model)
+            feats_x_lb = outs_x_lb['feat']
+            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feat_x_ulb_w1, 'x_ulb_s':feat_x_ulb_w2}
 
             # with torch.no_grad():
             # Pseudo Label
@@ -77,7 +89,7 @@ class MixMatch(AlgorithmBase):
                                                    self.mixup_alpha,
                                                    is_bias=True)
             mixed_x = list(torch.split(mixed_x, num_lb))
-            mixed_x = interleave(mixed_x, num_lb)
+            # mixed_x = interleave(mixed_x, num_lb)
 
             if self.mixup_manifold:
                 logits = [self.model(mixed_x[0], only_fc=self.mixup_manifold)]
@@ -95,13 +107,13 @@ class MixMatch(AlgorithmBase):
                 self.bn_controller.unfreeze_bn(self.model)
 
             # put interleaved samples back
-            logits = interleave(logits, num_lb)
+            # logits = interleave(logits, num_lb)
 
             logits_x = logits[0]
             logits_u = torch.cat(logits[1:], dim=0)
 
-            sup_loss = ce_loss(logits_x, mixed_y[:num_lb], reduction='mean')
-            unsup_loss = consistency_loss(logits_u, mixed_y[num_lb:], name='mse')
+            sup_loss = self.ce_loss(logits_x, mixed_y[:num_lb], reduction='mean')
+            unsup_loss = self.consistency_loss(logits_u, mixed_y[num_lb:], name='mse')
 
             # set ramp_up for lambda_u
             unsup_warmup = float(np.clip(self.it / (self.unsup_warm_up * self.num_train_iter), 0.0, 1.0))
@@ -109,14 +121,11 @@ class MixMatch(AlgorithmBase):
 
             total_loss = sup_loss + lambda_u * unsup_loss
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
-
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        tb_dict['train/unsup_loss'] = unsup_loss.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-        return tb_dict
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+                                         unsup_loss=unsup_loss.item(), 
+                                         total_loss=total_loss.item())
+        return out_dict, log_dict
 
 
     @staticmethod
