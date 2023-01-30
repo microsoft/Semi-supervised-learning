@@ -35,13 +35,14 @@ class Trainer:
         self.algorithm.ema.register()
 
         # train
-        it = 0
-        best_eval_acc = 0.0
-        best_epoch = 0
+        self.algorithm.it = 0
+        self.algorithm.best_eval_acc = 0.0
+        self.algorithm.best_epoch = 0
 
         for epoch in range(self.config.epoch):
+            self.algorithm.epoch = epoch
             print("Epoch: {}".format(epoch))
-            if it > self.config.num_train_iter:
+            if self.algorithm.it > self.config.num_train_iter:
                 break
 
             bar = Bar('Processing', max=len(train_lb_loader))
@@ -50,14 +51,14 @@ class Trainer:
 
             for data_lb, data_ulb in zip(train_lb_loader, train_ulb_loader):
 
-                if it > self.config.num_train_iter:
+                if self.algorithm.it > self.config.num_train_iter:
                     break
                 
                 result = self.algorithm.train_step(**self.algorithm.process_batch(**data_lb, **data_ulb))
 
-                bar.suffix = ("Iter: {batch:4}/{iter:4}.".format(batch=it, iter=len(train_lb_loader)))
+                bar.suffix = ("Iter: {batch:4}/{iter:4}.".format(batch=self.algorithm.it, iter=len(train_lb_loader)))
                 bar.next()
-                it += 1
+                self.algorithm.it += 1
             bar.finish()
 
             # validate
@@ -67,12 +68,12 @@ class Trainer:
             self.algorithm.save_model('latest_model.pth', self.save_path)
 
             # best
-            if result['acc'] > best_eval_acc:
-                best_eval_acc = result['acc']
-                best_epoch = epoch
+            if result['acc'] > self.algorithm.best_eval_acc:
+                self.algorithm.best_eval_acc = result['acc']
+                self.algorithm.best_epoch = self.algorithm.epoch
                 self.algorithm.save_model('model_best.pth', self.save_path)
         
-        self.logger.info("Best acc {:.4f} at epoch {:d}".format(best_eval_acc, best_epoch))
+        self.logger.info("Best acc {:.4f} at epoch {:d}".format(self.algorithm.best_eval_acc, self.algorithm.best_epoch))
         self.logger.info("Training finished.")
 
 

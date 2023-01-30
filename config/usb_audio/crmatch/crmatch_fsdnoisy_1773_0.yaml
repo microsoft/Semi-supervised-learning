@@ -13,13 +13,13 @@ num_warmup_iter: 5120
 num_labels: 1773
 batch_size: 8
 eval_batch_size: 16
+ema_m: 0.0
 hard_label: True
 p_cutoff: 0.95
 ulb_loss_ratio: 1.0
 rot_loss_ratio: 0.0
 uratio: 1
 use_cat: False
-ema_m: 0.0
 optim: AdamW
 lr: 0.0005
 momentum: 0.9
@@ -33,7 +33,7 @@ data_dir: ./data
 dataset: fsdnoisy
 train_sampler: RandomSampler
 num_classes: 20
-num_workers: 1
+num_workers: 4
 max_length_seconds: 5.0
 sample_rate: 16000
 seed: 0
@@ -43,3 +43,4 @@ multiprocessing_distributed: False
 dist_url: tcp://127.0.0.1:10062
 dist_backend: nccl
 gpu: None
+use_wandb: True

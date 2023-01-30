@@ -7,10 +7,9 @@ import os
 from .hook import Hook
 
 class CheckpointHook(Hook):
-    def __init__(self):
-        super().__init__()
-    
-
+    """
+    Checkpoint Hook for saving checkpoint
+    """
     def after_train_step(self, algorithm):
         # must be called after evaluation for saving the best
         if self.every_n_iters(algorithm, algorithm.num_eval_iter) or self.is_last_iter(algorithm):

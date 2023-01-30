@@ -2,16 +2,24 @@
 # Licensed under the MIT License.
 
 import torch
-
 from .hook import Hook
 
 
 class ParamUpdateHook(Hook):
-    def __init__(self) -> None:
-        super().__init__()
+    """
+    Parameter Update Hook
+
+    necessary for update the model parameters
+    """
     
-    # specific param_update function, called inside train_step of each algorithm
-    def param_update(self, algorithm, loss):
+    def before_train_step(self, algorithm):
+        if hasattr(algorithm, 'start_run'):
+            torch.cuda.synchronize()
+            algorithm.start_run.record()
+
+    # call after each train_step to update parameters
+    def after_train_step(self, algorithm):
+        loss = algorithm.out_dict['loss']
         # algorithm.optimizer.zero_grad()
         # update parameters
         if algorithm.use_amp:
@@ -27,5 +35,12 @@ class ParamUpdateHook(Hook):
                 torch.nn.utils.clip_grad_norm_(algorithm.model.parameters(), algorithm.clip_grad)
             algorithm.optimizer.step()
 
-        algorithm.scheduler.step()
+        if algorithm.scheduler is not None:
+            algorithm.scheduler.step()
         algorithm.model.zero_grad()
+
+        if hasattr(algorithm, 'end_run'):
+            algorithm.end_run.record()
+            torch.cuda.synchronize()
+            algorithm.log_dict['train/run_time'] = algorithm.start_run.elapsed_time(algorithm.end_run) / 1000.
+

@@ -5,9 +5,10 @@ resume: True
 load_path: ./saved_models/usb_cv//fixmatch_stl10_100_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
+use_wandb: True
 epoch: 200
 num_train_iter: 204800
-num_log_iter: 512
+num_log_iter: 256
 num_eval_iter: 2048
 batch_size: 8
 eval_batch_size: 16
@@ -23,7 +24,7 @@ img_size: 96
 crop_ratio: 0.875
 optim: AdamW
 lr: 0.0001
-layer_decay: 0.95
+layer_decay: 0.65
 momentum: 0.9
 weight_decay: 0.0005
 amp: False

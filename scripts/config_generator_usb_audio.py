@@ -58,6 +58,7 @@ def create_usb_audio_config(alg, seed,
     cfg['num_labels'] = num_labels
     cfg['batch_size'] = 8
     cfg['eval_batch_size'] = 16
+    cfg['ema_m'] = 0.0
 
     if alg == 'fixmatch':
         cfg['hard_label'] = True
@@ -124,9 +125,11 @@ def create_usb_audio_config(alg, seed,
         cfg['da_len'] = 32
         cfg['smoothing_alpha'] = 0.9
         cfg['T'] = 0.2
+        cfg['ema_m'] = 0.999
     elif alg == 'meanteacher':
         cfg['ulb_loss_ratio'] = 50
         cfg['unsup_warm_up'] = 0.4
+        cfg['ema_m'] = 0.999
     elif alg == 'pimodel':
         cfg['ulb_loss_ratio'] = 10
         cfg['unsup_warm_up'] = 0.4
@@ -147,11 +150,29 @@ def create_usb_audio_config(alg, seed,
         cfg['label_smoothing'] = 0.1
         cfg['num_uda_warmup_iter'] = 5000
         cfg['num_stu_wait_iter'] = 3000
+        cfg['ema_m'] = 0.999
+    elif alg == 'freematch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['ema_p'] = 0.999
+        cfg['ent_loss_ratio'] = 0.001
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+    elif alg == 'softmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['dist_align'] = True
+        cfg['dist_uniform'] = True
+        cfg['per_class'] = False
+        cfg['ema_p'] = 0.999
+        cfg['ulb_loss_ratio'] = 1.0
+        cfg['n_sigma'] = 2
+        if dataset == 'imagenet':
+            cfg['ulb_loss_ratio'] = 1.0
+
 
     cfg['uratio'] = 1
     cfg['use_cat'] = False
-
-    cfg['ema_m'] = 0.0
 
     # optim config
     cfg['optim'] = 'AdamW'
@@ -171,7 +192,7 @@ def create_usb_audio_config(alg, seed,
     cfg['dataset'] = dataset
     cfg['train_sampler'] = 'RandomSampler'
     cfg['num_classes'] = num_classes
-    cfg['num_workers'] = 1
+    cfg['num_workers'] = 4
     cfg['max_length_seconds'] = max_length_seconds
     cfg['sample_rate'] = sample_rate
 
@@ -188,6 +209,7 @@ def create_usb_audio_config(alg, seed,
 
     # other config
     cfg['overwrite'] = True
+    cfg['use_wandb'] = True
 
     return cfg
 
@@ -204,7 +226,7 @@ def exp_usb_speech(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch']
+            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch']
     datasets = ['esc50', 'fsdnoisy', 'urbansound8k', 'gtzan', 'superbks']
 
     # seeds = [0, 1, 2]  # 1, 22, 333

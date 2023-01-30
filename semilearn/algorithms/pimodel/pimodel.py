@@ -4,9 +4,11 @@
 import torch 
 import numpy as np
 from semilearn.core import AlgorithmBase
-from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument, str2bool
+from semilearn.core.utils import ALGORITHMS
+from semilearn.algorithms.utils import SSL_Argument, str2bool
 
 
+@ALGORITHMS.register('pimodel')
 class PiModel(AlgorithmBase):
     """
         Pi-Model algorithm (https://arxiv.org/abs/1610.02242).
@@ -36,31 +38,35 @@ class PiModel(AlgorithmBase):
 
             outs_x_lb = self.model(x_lb)
             logits_x_lb = outs_x_lb['logits']
+            feats_x_lb = outs_x_lb['feat']            
+
             # calculate BN only for the first batch
             self.bn_controller.freeze_bn(self.model)
             outs_x_ulb_w = self.model(x_ulb_w)
             logits_x_ulb_w = outs_x_ulb_w['logits']
+            feats_x_ulb_w = outs_x_ulb_w['feat']    
             outs_x_ulb_s = self.model(x_ulb_s)
             logits_x_ulb_s = outs_x_ulb_s['logits']
+            feats_x_ulb_s = outs_x_ulb_s['feat']    
             self.bn_controller.unfreeze_bn(self.model)
 
+            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb_w, 'x_ulb_s': feats_x_ulb_s}
 
-            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
-            unsup_loss = consistency_loss(logits_x_ulb_s,
-                                          torch.softmax(logits_x_ulb_w.detach(), dim=-1),
-                                          'mse')
+            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            unsup_loss = self.consistency_loss(logits_x_ulb_s,
+                                               # torch.softmax(logits_x_ulb_w.detach(), dim=-1),
+                                               self.compute_prob(logits_x_ulb_w.detach()),
+                                               'mse')
             # TODO: move this into masking
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup
 
-        # parameter updates
-        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
-
-        tb_dict = {}
-        tb_dict['train/sup_loss'] = sup_loss.item()
-        tb_dict['train/unsup_loss'] = unsup_loss.item()
-        tb_dict['train/total_loss'] = total_loss.item()
-        return tb_dict
+        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+                                         unsup_loss=unsup_loss.item(), 
+                                         total_loss=total_loss.item())
+        return out_dict, log_dict
+        
 
     @staticmethod
     def get_argument():
