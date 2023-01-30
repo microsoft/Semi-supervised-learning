@@ -51,7 +51,7 @@ class AlgorithmBase:
         self.num_iter_per_epoch = int(self.num_train_iter // self.epochs)
         self.lambda_u = args.ulb_loss_ratio 
         self.use_cat = args.use_cat
-        self.use_amp = args.use_amp
+        self.use_amp = args.amp
         self.clip_grad = args.clip_grad
         self.save_name = args.save_name
         self.save_dir = args.save_dir
