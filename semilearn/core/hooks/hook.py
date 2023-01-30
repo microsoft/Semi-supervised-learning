@@ -23,7 +23,7 @@ class Hook:
     def before_run(self, algorithm):
         pass
 
-    def after_run(self, algorithm):
+    def after_trun(self, algorithm):
         pass
 
     def every_n_epochs(self, algorithm, n):

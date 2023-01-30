@@ -5,10 +5,9 @@ resume: True
 load_path: ./saved_models/usb_cv//crmatch_eurosat_20_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
 epoch: 200
 num_train_iter: 204800
-num_log_iter: 256
+num_log_iter: 512
 num_eval_iter: 2048
 batch_size: 8
 eval_batch_size: 16

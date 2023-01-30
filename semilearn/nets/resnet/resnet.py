@@ -170,7 +170,7 @@ class ResNet50(nn.Module):
                                        dilate=replace_stride_with_dilation[2])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.num_features = 512 * block.expansion
-        self.classifier = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -233,7 +233,7 @@ class ResNet50(nn.Module):
         if only_feat:
             return x
 
-        out = self.classifier(x)
+        out = self.fc(x)
         result_dict = {'logits':out, 'feat':x}
         return result_dict
 

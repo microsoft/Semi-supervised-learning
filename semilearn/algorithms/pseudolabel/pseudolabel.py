@@ -2,13 +2,12 @@
 # Licensed under the MIT License.
 
 import numpy as np
+import torch
 from semilearn.core import AlgorithmBase
-from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
-from semilearn.algorithms.utils import SSL_Argument
+from semilearn.algorithms.utils import ce_loss, consistency_loss, SSL_Argument
 
 
-@ALGORITHMS.register('pseudolabel')
 class PseudoLabel(AlgorithmBase):
     """
         Pseudo Label algorithm (https://arxiv.org/abs/1908.02983).
@@ -47,18 +46,13 @@ class PseudoLabel(AlgorithmBase):
 
             outs_x_lb = self.model(x_lb)
             logits_x_lb = outs_x_lb['logits']
-            feats_x_lb = outs_x_lb['feat']
-
             # calculate BN only for the first batch
             self.bn_controller.freeze_bn(self.model)
             outs_x_ulb = self.model(x_ulb_w)
             logits_x_ulb = outs_x_ulb['logits']
-            feats_x_ulb = outs_x_ulb['feat']
             self.bn_controller.unfreeze_bn(self.model)
 
-            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb}
-
-            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            sup_loss = ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             # compute mask
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb)
@@ -68,20 +62,23 @@ class PseudoLabel(AlgorithmBase):
                                           logits=logits_x_ulb,
                                           use_hard_label=True)
 
-            unsup_loss = self.consistency_loss(logits_x_ulb,
-                                               pseudo_label,
-                                               'ce',
-                                               mask=mask)
+            unsup_loss = consistency_loss(logits_x_ulb,
+                                          pseudo_label,
+                                          'ce',
+                                          mask=mask)
 
             unsup_warmup = np.clip(self.it / (self.unsup_warm_up * self.num_train_iter),  a_min=0.0, a_max=1.0)
             total_loss = sup_loss + self.lambda_u * unsup_loss * unsup_warmup
 
-        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
-        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
-                                         unsup_loss=unsup_loss.item(), 
-                                         total_loss=total_loss.item(), 
-                                         util_ratio=mask.float().mean().item())
-        return out_dict, log_dict
+        # parameter updates
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
+
+        tb_dict = {}
+        tb_dict['train/sup_loss'] = sup_loss.item()
+        tb_dict['train/unsup_loss'] = unsup_loss.item()
+        tb_dict['train/total_loss'] = total_loss.item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
+        return tb_dict
 
     @staticmethod
     def get_argument():

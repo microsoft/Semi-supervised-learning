@@ -5,7 +5,6 @@ resume: True
 load_path: ./saved_models/usb_nlp/simmatch_yelp_review_1000_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
 epoch: 100
 num_train_iter: 102400
 num_warmup_iter: 5120
@@ -14,7 +13,6 @@ num_eval_iter: 2048
 num_labels: 1000
 batch_size: 8
 eval_batch_size: 8
-ema_m: 0.0
 p_cutoff: 0.95
 in_loss_ratio: 1.0
 ulb_loss_ratio: 1.0
@@ -25,6 +23,7 @@ smoothing_alpha: 0.9
 T: 0.1
 uratio: 1
 use_cat: False
+ema_m: 0.0
 optim: AdamW
 lr: 5e-05
 momentum: 0.9

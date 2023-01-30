@@ -9,9 +9,9 @@ from copy import deepcopy
 from PIL import Image
 
 from semilearn.core import AlgorithmBase
-from semilearn.core.utils import get_data_loader, ALGORITHMS
+from semilearn.core.utils import get_data_loader
 from semilearn.algorithms.hooks import FixedThresholdingHook
-from semilearn.algorithms.utils import SSL_Argument, str2bool
+from semilearn.algorithms.utils import ce_loss, SSL_Argument, str2bool
 
 
 def rotate_img(img, rot):
@@ -63,27 +63,27 @@ class CRMatch_Net(nn.Module):
         super(CRMatch_Net, self).__init__()
         self.backbone = base
         self.use_rot = use_rot
-        self.num_features = base.num_features
+        self.feat_planes = base.num_features
         self.args = args
 
         if self.use_rot:
             self.rot_classifier = nn.Sequential(
-                nn.Linear(self.num_features, self.num_features),
+                nn.Linear(self.feat_planes, self.feat_planes),
                 nn.ReLU(inplace=False),
-                nn.Linear(self.num_features, 4)
+                nn.Linear(self.feat_planes, 4)
             )
         if 'wrn' in args.net or 'resnet' in args.net:
             if args.dataset == 'stl10':
-                feat_map_size = 6 * 6 * self.num_features
+                feat_map_size = 6 * 6 * self.feat_planes
             elif args.dataset == 'imagenet':
-                feat_map_size = 7 * 7 * self.num_features
+                feat_map_size = 7 * 7 * self.feat_planes
             else:
-                feat_map_size = 8 * 8 * self.num_features
+                feat_map_size = 8 * 8 * self.feat_planes
         elif 'vit' in args.net or 'bert' in args.net or 'wave2vec' in args.net:
             feat_map_size = self.backbone.num_features
         else:
             raise NotImplementedError
-        self.ds_classifier = nn.Linear(feat_map_size, self.num_features, bias=True)
+        self.ds_classifier = nn.Linear(feat_map_size, self.feat_planes, bias=True)
 
     def forward(self, x):
         feat_maps = self.backbone.extract(x)
@@ -116,7 +116,6 @@ class CRMatch_Net(nn.Module):
         return matcher
 
 
-@ALGORITHMS.register('crmatch')
 class CRMatch(AlgorithmBase):
     """
         CRMatch algorithm (https://arxiv.org/abs/2112.05825).
@@ -184,7 +183,7 @@ class CRMatch(AlgorithmBase):
         self.model.train()
         self.call_hook("before_run")
 
-        for epoch in range(self.start_epoch, self.epochs):
+        for epoch in range(self.epochs):
             self.epoch = epoch
             
             # prevent the training iterations exceed args.num_train_iter
@@ -212,7 +211,7 @@ class CRMatch(AlgorithmBase):
                     x_ulb_rot = None
                     rot_v = None
 
-                self.out_dict, self.log_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb, x_ulb_rot=x_ulb_rot, rot_v=rot_v))
+                self.tb_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb, x_ulb_rot=x_ulb_rot, rot_v=rot_v))
 
                 self.call_hook("after_train_step")
                 self.it += 1
@@ -234,33 +233,28 @@ class CRMatch(AlgorithmBase):
                 else:
                     inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s), dim=0).contiguous()
                 outputs = self.model(inputs)
-                logits, logits_rot, logits_ds, feats = outputs['logits'], outputs['logits_rot'], outputs['logits_ds'], outputs['feat']
+                logits, logits_rot, logits_ds = outputs['logits'], outputs['logits_rot'], outputs['logits_ds']
                 logits_x_lb = logits[:num_lb]
-                feats_x_lb = feats[:num_lb]
                 logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:num_lb + 2 * num_ulb].chunk(2)
-                feats_x_ulb_w, feats_x_ulb_s = feats[num_lb:num_lb + 2 * num_ulb].chunk(2)
                 logits_ds_w, logits_ds_s = logits_ds[num_lb:num_lb + 2 * num_ulb].chunk(2)
             else:
                 outs_x_lb = self.model(x_lb)
                 logits_x_lb = outs_x_lb['logits']
-                feats_x_lb = outs_x_lb['feat']
                 # logits_x_lb, _, _ = self.model(x_lb)
                 
                 outs_x_ulb_s = self.model(x_ulb_s)
-                logits_x_ulb_s,logits_ds_s,feats_x_ulb_s = outs_x_ulb_s['logits'], outs_x_ulb_s['logits_ds'], outs_x_ulb_s['feat']
+                logits_x_ulb_s,logits_ds_s = outs_x_ulb_s['logits'], outs_x_ulb_s['logits_ds']
                 # logits_x_ulb_s, _, logits_ds_s = self.model(x_ulb_s)
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
-                    logits_x_ulb_w, logits_ds_w, feats_x_ulb_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds'], outs_x_ulb_w['feat']
-            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
-
+                    logits_x_ulb_w, logits_ds_w = outs_x_ulb_w['logits'], outs_x_ulb_w['logits_ds']
+            
             with torch.no_grad():
                 y_ulb = torch.argmax(logits_x_ulb_w, dim=-1)
                 mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)    
 
-            Lx = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
-            Lu = (self.ce_loss(logits_x_ulb_s, y_ulb, reduction='none') * mask).mean()
-            # TODO: move this to criterions
+            Lx = ce_loss(logits_x_lb, y_lb, reduction='mean')
+            Lu = (ce_loss(logits_x_ulb_s, y_ulb, reduction='none') * mask).mean()
             Ld = F.cosine_embedding_loss(logits_ds_s, logits_ds_w, -torch.ones(logits_ds_s.size(0)).float().cuda(self.gpu), reduction='none')
             Ld = (Ld * mask).mean()
 
@@ -271,16 +265,18 @@ class CRMatch(AlgorithmBase):
                     logits_rot = logits_rot[num_lb + 2 * num_ulb:]
                 else:
                     logits_rot = self.model(x_ulb_rot)['logits_rot']
-                Lrot = self.ce_loss(logits_rot, rot_v, reduction='mean')
+                Lrot = ce_loss(logits_rot, rot_v, reduction='mean')
                 total_loss += Lrot
 
-        out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
+        # parameter updates
+        self.call_hook("param_update", "ParamUpdateHook", loss=total_loss)
 
-        log_dict = self.process_log_dict(sup_loss=Lx.item(), 
-                                         unsup_loss=Lu.item(), 
-                                         total_loss=total_loss.item(), 
-                                         util_ratio=mask.float().mean().item())
-        return out_dict, log_dict
+        tb_dict = {}
+        tb_dict['train/sup_loss'] = Lx.item()
+        tb_dict['train/unsup_loss'] = Lu.item()
+        tb_dict['train/total_loss'] = total_loss.item()
+        tb_dict['train/mask_ratio'] = mask.float().mean().item()
+        return tb_dict
 
 
     @staticmethod

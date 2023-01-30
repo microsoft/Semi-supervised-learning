@@ -10,13 +10,15 @@ from torchvision.datasets import ImageFolder
 from PIL import Image
 from torchvision import transforms
 import math
+
 from semilearn.datasets.augmentation import RandAugment, RandomResizedCropAndInterpolation, str_to_interp_mode
-from semilearn.datasets.cv_datasets.datasetbase import BasicDataset
+from .datasetbase import BasicDataset
 
 
 mean, std = {}, {}
 mean['imagenet'] = [0.485, 0.456, 0.406]
 std['imagenet'] = [0.229, 0.224, 0.225]
+img_size = 224
 
 
 def accimage_loader(path):
@@ -44,6 +46,8 @@ def default_loader(path):
 
 
 def get_imagenet(args, alg, name, num_labels, num_classes, data_dir='./data', include_lb_to_ulb=True):
+    num_labels = num_labels // num_classes
+
     img_size = args.img_size
     crop_ratio = args.crop_ratio
 
@@ -73,12 +77,9 @@ def get_imagenet(args, alg, name, num_labels, num_classes, data_dir='./data', in
 
     data_dir = os.path.join(data_dir, name.lower())
 
-    dataset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, ulb=False, alg=alg)
-    percentage = num_labels / len(dataset)
+    lb_dset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, ulb=False, alg=alg, num_labels=num_labels)
 
-    lb_dset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, ulb=False, alg=alg, percentage=percentage)
-
-    ulb_dset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, alg=alg, ulb=True, strong_transform=transform_strong, include_lb_to_ulb=include_lb_to_ulb, lb_index=lb_dset.lb_idx)
+    ulb_dset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, alg=alg, ulb=True, strong_transform=transform_strong)
 
     eval_dset = ImagenetDataset(root=os.path.join(data_dir, "val"), transform=transform_val, alg=alg, ulb=False)
 
@@ -87,14 +88,12 @@ def get_imagenet(args, alg, name, num_labels, num_classes, data_dir='./data', in
 
 
 class ImagenetDataset(BasicDataset, ImageFolder):
-    def __init__(self, root, transform, ulb, alg, strong_transform=None, percentage=-1, include_lb_to_ulb=True, lb_index=None):
+    def __init__(self, root, transform, ulb, alg, strong_transform=None, num_labels=-1):
         self.alg = alg
         self.is_ulb = ulb
-        self.percentage = percentage
+        self.num_labels = num_labels
         self.transform = transform
         self.root = root
-        self.include_lb_to_ulb = include_lb_to_ulb
-        self.lb_index = lb_index
 
         is_valid_file = None
         extensions = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.tiff', '.webp')
@@ -111,7 +110,7 @@ class ImagenetDataset(BasicDataset, ImageFolder):
 
         self.classes = classes
         self.class_to_idx = class_to_idx
-        self.data = [s[0] for s in samples]
+        self.data = samples
         self.targets = [s[1] for s in samples]
 
         self.strong_transform = strong_transform
@@ -121,9 +120,8 @@ class ImagenetDataset(BasicDataset, ImageFolder):
 
 
     def __sample__(self, index):
-        path = self.data[index]
+        path, target = self.data[index]
         sample = self.loader(path)
-        target = self.targets[index]
         return sample, target
 
     def make_dataset(
@@ -142,8 +140,9 @@ class ImagenetDataset(BasicDataset, ImageFolder):
         if extensions is not None:
             def is_valid_file(x: str) -> bool:
                 return x.lower().endswith(extensions)
-        
+
         lb_idx = {}
+
         for target_class in sorted(class_to_idx.keys()):
             class_index = class_to_idx[target_class]
             target_dir = os.path.join(directory, target_class)
@@ -151,19 +150,18 @@ class ImagenetDataset(BasicDataset, ImageFolder):
                 continue
             for root, _, fnames in sorted(os.walk(target_dir, followlinks=True)):
                 random.shuffle(fnames)
-                if self.percentage != -1:
-                    fnames = fnames[:int(len(fnames) * self.percentage)]
-                if self.percentage != -1:
+                if self.num_labels != -1:
+                    fnames = fnames[:self.num_labels]
+                if self.num_labels != -1:
                     lb_idx[target_class] = fnames
                 for fname in fnames:
-                    if not self.include_lb_to_ulb:
-                        if fname in self.lb_index[target_class]:
-                            continue
                     path = os.path.join(root, fname)
                     if is_valid_file(path):
                         item = path, class_index
                         instances.append(item)
+        if self.num_labels != -1:
+            with open('./sampled_label_idx.json', 'w') as f:
+                json.dump(lb_idx, f)
+        del lb_idx
         gc.collect()
-        self.lb_idx = lb_idx
         return instances
-
