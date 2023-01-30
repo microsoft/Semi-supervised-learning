@@ -7,6 +7,7 @@ from torch import Tensor
 import torch.nn as nn
 from typing import Type, Any, Callable, Union, List, Optional
 
+from semilearn.nets.utils import load_checkpoint
 
 def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
     """3x3 convolution with padding"""
@@ -263,4 +264,6 @@ class ResNet50(nn.Module):
 
 def resnet50(pretrained=False, pretrained_path=None, **kwargs):
     model = ResNet50(**kwargs)
+    if pretrained:
+        model = load_checkpoint(model, pretrained_path)
     return model
