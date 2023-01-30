@@ -87,6 +87,7 @@
 <!-- News and Updates -->
 
 ## News and Updates
+- [01/30/2023] Update semilearn==0.3.0. Add [FreeMatch](https://arxiv.org/abs/2205.07246) and [SoftMatch](https://arxiv.org/abs/2301.10921). Add imbalanced algorithms. Update results and add wandb support. Refer [CHANGE_LOG](CHANGE_LOG.md) for details. [[Results]](https://github.com/microsoft/Semi-supervised-learning/tree/main/results)[[Logs]](https://drive.google.com/drive/folders/1bRSqrRyyuDafgOI3VAuqqiuzHG6CexHF?usp=sharing)[[Wandb]](https://wandb.ai/usb)
 
 - [10/16/2022] Dataset download link and process instructions released! [[Datasets](https://github.com/microsoft/Semi-supervised-learning/tree/main/preprocess)]
 
