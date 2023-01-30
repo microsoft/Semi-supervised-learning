@@ -48,7 +48,7 @@ def create_usb_cv_config(alg, seed,
     cfg['load_path'] = None
     cfg['overwrite'] = True
     cfg['use_tensorboard'] = True
-    cfg['use_wandb'] = True
+    cfg['use_wandb'] = False
 
     if dataset == 'imagenet':
         cfg['epoch'] = 500

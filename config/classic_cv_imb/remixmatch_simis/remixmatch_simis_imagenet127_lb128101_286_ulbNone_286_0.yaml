@@ -5,7 +5,7 @@ resume: True
 load_path: ./saved_models/classic_cv_imb/remixmatch_simis_imagenet127_lb128101_286_ulbNone_286_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
+use_wandb: False
 epoch: 200
 num_train_iter: 500000
 num_eval_iter: 2500

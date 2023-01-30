@@ -260,7 +260,7 @@ def create_classific_config(alg, seed,
     # other config
     cfg['overwrite'] = True
     cfg['amp'] = False
-    cfg['use_wandb'] = True
+    cfg['use_wandb'] = False
 
     return cfg
 

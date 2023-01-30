@@ -5,7 +5,7 @@ resume: True
 load_path: ./saved_models/usb_nlp/remixmatch_yahoo_answers_500_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
+use_wandb: False
 epoch: 100
 num_train_iter: 102400
 num_warmup_iter: 5120

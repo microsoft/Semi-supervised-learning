@@ -5,7 +5,7 @@ resume: True
 load_path: ./saved_models/usb_cv//pseudolabel_eurosat_20_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
+use_wandb: False
 epoch: 200
 num_train_iter: 204800
 num_log_iter: 256

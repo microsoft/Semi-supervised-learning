@@ -46,4 +46,4 @@ multiprocessing_distributed: False
 dist_url: tcp://127.0.0.1:10031
 dist_backend: nccl
 gpu: None
-use_wandb: True
+use_wandb: False

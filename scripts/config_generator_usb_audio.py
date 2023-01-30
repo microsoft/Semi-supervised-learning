@@ -209,7 +209,7 @@ def create_usb_audio_config(alg, seed,
 
     # other config
     cfg['overwrite'] = True
-    cfg['use_wandb'] = True
+    cfg['use_wandb'] = False
 
     return cfg
 

@@ -5,7 +5,7 @@ resume: True
 load_path: ./saved_models/classic_cv_imb/remixmatch_darp_cifar100_lb150_10_ulb300_10_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
+use_wandb: False
 epoch: 256
 num_train_iter: 262144
 num_eval_iter: 1024

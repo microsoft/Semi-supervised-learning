@@ -5,7 +5,7 @@ resume: True
 load_path: ./saved_models/classic_cv_imb/fixmatch_crest_cifar10_lb500_150_ulb4000_150_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-use_wandb: True
+use_wandb: False
 epoch: 128
 num_train_iter: 65536
 num_eval_iter: 1024

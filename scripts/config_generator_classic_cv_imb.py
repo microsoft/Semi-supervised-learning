@@ -192,7 +192,7 @@ def create_classic_cv_imb_config(alg, seed, dataset, net, num_classes, num_label
     else:
         pass
 
-    cfg['use_wandb'] = True
+    cfg['use_wandb'] = False
     # cfg['use_aim'] = True
     return cfg
 
