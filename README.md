@@ -323,7 +323,7 @@ The USB comunity is maintained by:
 
 ## Citing USB
 
-Please cite us if you fine USB helpful for your project/paper:
+Please cite us if you fine this project helpful for your project/paper:
 
 ```
 @inproceedings{usb2022,
@@ -333,6 +333,27 @@ Please cite us if you fine USB helpful for your project/paper:
   title = {USB: A Unified Semi-supervised Learning Benchmark for Classification},
   booktitle = {Thirty-sixth Conference on Neural Information Processing Systems Datasets and Benchmarks Track}
   year = {2022}
+}
+
+@article{wang2023freematch},
+  title={FreeMatch: Self-adaptive Thresholding for Semi-supervised Learning},
+  author={Wang, Yidong and Chen, Hao and Heng, Qiang and Hou, Wenxin and Fan, Yue and and Wu, Zhen and Wang, Jindong and Savvides, Marios and Shinozaki, Takahiro and Raj, Bhiksha and Schiele, Bernt and Xie, Xing},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2023}
+}
+
+@article{chen2023softmatch},
+  title={FreeMatch: Self-adaptive Thresholding for Semi-supervised Learning},
+  author={Chen, Hao and Tao, Ran and Fan, Yue and Wang, Yidong and Wang, Jindong and Schiele, Bernt and Xie, Xing and Raj, Bhiksha and Savvides, Marios},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2023}
+}
+
+@article{zhang2021flexmatch},
+  title={FlexMatch: Boosting Semi-supervised Learning with Curriculum Pseudo Labeling},
+  author={Zhang, Bowen and Wang, Yidong and Hou, Wenxin and Wu, Hao and Wang, Jindong and Okumura, Manabu and Shinozaki, Takahiro},
+  booktitle={Neural Information Processing Systems (NeurIPS)},
+  year={2021}
 }
 ```
 
