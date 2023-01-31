@@ -23,7 +23,7 @@ class FreeMatchThresholingHook(MaskingHook):
     @torch.no_grad()
     def update(self, algorithm, probs_x_ulb):
         if algorithm.distributed and algorithm.world_size > 1:
-            probs_x_ulb = self.concat_all_gather(probs_x_ulb)
+            probs_x_ulb = concat_all_gather(probs_x_ulb)
         max_probs, max_idx = torch.max(probs_x_ulb, dim=-1,keepdim=True)
 
         if algorithm.use_quantile:
