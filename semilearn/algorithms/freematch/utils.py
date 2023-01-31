@@ -16,9 +16,9 @@ class FreeMatchThresholingHook(MaskingHook):
         self.num_classes = num_classes
         self.m = momentum
         
-        self.p_model = torch.ones((self.num_classes)) # / self.args.num_classes
-        self.label_hist = torch.ones((self.num_classes)) # / self.args.num_classes
-        self.time_p = self.p_model.mean() # * self.args.num_classes
+        self.p_model = torch.ones((self.num_classes)) / self.args.num_classes
+        self.label_hist = torch.ones((self.num_classes)) / self.args.num_classes
+        self.time_p = self.p_model.mean()
     
     @torch.no_grad()
     def update(self, algorithm, probs_x_ulb):
@@ -35,9 +35,6 @@ class FreeMatchThresholingHook(MaskingHook):
             self.time_p = torch.clip(self.time_p, 0.0, 0.95)
 
         self.p_model = self.p_model * self.m + (1 - self.m) * probs_x_ulb.mean(dim=0)
-        # cur_p_model = torch.where(probs_x_ulb_w<max_probs.repeat(1,self.args.num_classes),torch.zeros_like(probs_x_ulb_w),probs_x_ulb_w)
-        # cur_p_model = cur_p_model.mean(dim=0) / cur_p_model.mean(dim=0).sum()
-        # self.p_model = self.p_model * self.ema_p + (1 - self.ema_p) * cur_p_model
         hist = torch.bincount(max_idx.reshape(-1), minlength=self.p_model.shape[0]).to(self.p_model.dtype) 
         self.label_hist = self.label_hist * self.m + (1 - self.m) * (hist / hist.sum())
 
