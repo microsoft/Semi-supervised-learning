@@ -1,6 +1,6 @@
 # Benchmark Results
 
-This folder contains benchmark results for 14 SSL algorithms. We report the best error rate, top-1-1, top-1-20, and top-1-50. Each setting runs 3 different random seeds and computes the average performance with standard deviation.
+This folder contains benchmark results for 14 SSL algorithms. We report the best error rate（top-1-1 and top-1-20 results can be found in drive）. Each setting runs 3 different random seeds and computes the average performance with standard deviation.
 
 ## Reproduction on Classic CV Benchmark
 
