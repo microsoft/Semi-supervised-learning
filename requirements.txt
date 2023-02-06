@@ -21,7 +21,7 @@ mkl-random==1.2.2
 mkl-service==2.4.0
 networkx==2.6.3
 numpy
-oauthlib==3.2.1
+oauthlib==3.2.2
 olefile==0.46
 packaging==21.3
 Pillow==9.0.0
