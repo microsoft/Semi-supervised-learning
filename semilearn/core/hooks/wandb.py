@@ -43,7 +43,6 @@ class WANDBHook(Hook):
                               tags=tags, 
                               config=algorithm.args.__dict__, 
                               project=project, 
-                              entity="usb",
                               resume=resume,
                               dir=save_dir)
 
