@@ -57,7 +57,7 @@ tqdm==4.64.0
 transformers==4.20.1
 typing-extensions==4.3.0
 urllib3==1.26.9
-Werkzeug==2.1.2
+Werkzeug==2.2.3
 zipp==3.8.0
 pynacl
 wandb
