@@ -42,7 +42,7 @@ class Dash(AlgorithmBase):
         """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
-        # dash specificed arguments
+        # dash specified arguments
         self.init(T=args.T, num_wu_iter=args.num_wu_iter, num_wu_eval_iter=args.num_wu_eval_iter)
     
     def init(self, T, num_wu_iter=2048, num_wu_eval_iter=100):
@@ -129,7 +129,7 @@ class Dash(AlgorithmBase):
                 log_dict = {}
                 log_dict['train/sup_loss'] = sup_loss.item()
                 log_dict['lr'] = self.optimizer.param_groups[0]['lr']
-                log_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
+                log_dict['train/prefetch_time'] = start_batch.elapsed_time(end_batch) / 1000.
                 log_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
 
                 if self.it % self.num_wu_eval_iter == 0:

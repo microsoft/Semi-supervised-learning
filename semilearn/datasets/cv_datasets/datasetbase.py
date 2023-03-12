@@ -16,7 +16,7 @@ class BasicDataset(Dataset):
     """
     BasicDataset returns a pair of image and labels (targets).
     If targets are not given, BasicDataset returns None as the label.
-    This class supports strong augmentation for Fixmatch,
+    This class supports strong augmentation for FixMatch,
     and return both weakly and strongly augmented images.
     """
 

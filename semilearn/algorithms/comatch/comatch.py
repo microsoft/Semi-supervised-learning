@@ -84,7 +84,7 @@ class CoMatch(AlgorithmBase):
     """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
-        # comatch specificed arguments
+        # comatch specified arguments
         self.init(T=args.T, p_cutoff=args.p_cutoff, 
                   contrast_p_cutoff=args.contrast_p_cutoff, hard_label=args.hard_label, 
                   queue_batch=args.queue_batch, smoothing_alpha=args.smoothing_alpha, da_len=args.da_len)

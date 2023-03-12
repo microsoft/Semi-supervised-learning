@@ -34,7 +34,7 @@ class UDA(AlgorithmBase):
     """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger)
-        # uda specificed arguments
+        # uda specified arguments
         self.init(T=args.T, p_cutoff=args.p_cutoff, tsa_schedule=args.tsa_schedule)
 
     def init(self, T, p_cutoff, tsa_schedule='none'):
@@ -130,6 +130,6 @@ class UDA(AlgorithmBase):
         return [
             SSL_Argument('--tsa_schedule', str, 'none', 'TSA mode: none, linear, log, exp'),
             SSL_Argument('--T', float, 0.4, 'Temperature sharpening'),
-            SSL_Argument('--p_cutoff', float, 0.8, 'confidencial masking threshold'),
+            SSL_Argument('--p_cutoff', float, 0.8, 'confidential masking threshold'),
             # SSL_Argument('--use_flex', str2bool, False),
         ]

@@ -27,7 +27,7 @@ class MeanTeacher(AlgorithmBase):
     """
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         super().__init__(args, net_builder, tb_log, logger, **kwargs)
-        # mean teacher specificed arguments
+        # mean teacher specified arguments
         self.init(unsup_warm_up=args.unsup_warm_up)
     
     def init(self, unsup_warm_up=0.4):

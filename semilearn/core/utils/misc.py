@@ -17,7 +17,7 @@ def over_write_args_from_dict(args, dict):
 
 def over_write_args_from_file(args, yml):
     """
-    overwrite arguments acocrding to config file
+    overwrite arguments according to config file
     """
     if yml == '':
         return
@@ -77,7 +77,7 @@ def count_parameters(model):
 
 class TBLog:
     """
-    Construc tensorboard writer (self.writer).
+    Construct tensorboard writer (self.writer).
     The tensorboard is saved at os.path.join(tb_dir, file_name).
     """
 
@@ -104,7 +104,7 @@ class TBLog:
 
 class Bn_Controller:
     """
-    Batch Norm controler
+    Batch Norm controller
     """
     def __init__(self):
         """

@@ -1,6 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-# Code in this file is adpated from timm
+# Code in this file is adapted from timm
 
 import torch
 import torchvision.transforms.functional as F

@@ -22,7 +22,7 @@ class WANDBHook(Hook):
         name = algorithm.save_name
         project = algorithm.save_dir.split('/')[-1]
 
-        # tages
+        # tags
         benchmark = f'benchmark: {project}'
         dataset = f'dataset: {algorithm.args.dataset}'
         data_setting = f'setting: {algorithm.args.dataset}_lb{algorithm.args.num_labels}_{algorithm.args.lb_imb_ratio}_ulb{algorithm.args.ulb_num_labels}_{algorithm.args.ulb_imb_ratio}'

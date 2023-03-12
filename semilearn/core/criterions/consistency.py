@@ -16,7 +16,7 @@ def consistency_loss(logits, targets, name='ce', mask=None):
     consistency regularization loss in semi-supervised learning.
 
     Args:
-        logits: logit to calculate the loss on and back-propagion, usually being the strong-augmented unlabeled samples
+        logits: logit to calculate the loss on and back-propagation, usually being the strong-augmented unlabeled samples
         targets: pseudo-labels (either hard label or soft label)
         name: use cross-entropy ('ce') or mean-squared-error ('mse') to calculate loss
         mask: masks to mask-out samples when calculating the loss, usually being used as confidence-masking-out

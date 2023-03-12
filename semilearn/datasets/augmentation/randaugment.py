@@ -1,6 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-# Code in this file is adpated from rpmcruz/autoaugment
+# Code in this file is adapted from rpmcruz/autoaugment
 # https://github.com/rpmcruz/autoaugment/blob/master/transformations.py
 # This code is modified version of one of ildoonet, for randaugmentation of fixmatch.
 

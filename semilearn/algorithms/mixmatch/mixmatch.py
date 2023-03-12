@@ -34,7 +34,7 @@ class MixMatch(AlgorithmBase):
     """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger)
-        # mixmatch specificed arguments
+        # mixmatch specified arguments
         self.init(T=args.T, unsup_warm_up=args.unsup_warm_up, mixup_alpha=args.mixup_alpha, mixup_manifold=args.mixup_manifold)
 
     def init(self, T, unsup_warm_up=0.01525, mixup_alpha=0.5, mixup_manifold=False):

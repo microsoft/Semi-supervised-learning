@@ -47,7 +47,7 @@ class SAWWeightsHook(Hook):
         # convert to one_hot
         pred_x_ulb = F.one_hot(pred_x_ulb, num_classes=algorithm.num_classes)
         
-        # get pesuedo label counts 
+        # get pseudo label counts 
         pl_x_ulb_counts = pred_x_ulb.sum(dim=0)
         pl_x_ulb_counts = torch.maximum(pl_x_ulb_counts, torch.ones_like(pl_x_ulb_counts))
 

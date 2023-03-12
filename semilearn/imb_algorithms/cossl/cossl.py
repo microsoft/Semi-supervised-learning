@@ -177,7 +177,7 @@ class CoSSL(ImbAlgorithmBase):
         self.register_hook(CoSSLParamUpdateHook(), "ParamUpdateHook", "HIGHEST")
 
     def process_batch(self, **kwargs):
-        # get core algorithm parameteters
+        # get core algorithm parameters
         input_args = signature(super().train_step).parameters
         input_args = list(input_args.keys())
         return super().process_batch(input_args=input_args, **kwargs)
@@ -245,7 +245,7 @@ class CoSSL(ImbAlgorithmBase):
         teacher_loss = self.ce_loss(teacher_logits, new_target_tensor, reduction='mean')
  
         out_dict['loss'] += teacher_loss
-        log_dict['trian/tea_loss'] = teacher_loss.item()
+        log_dict['train/tea_loss'] = teacher_loss.item()
         return out_dict, log_dict
 
 

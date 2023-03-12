@@ -22,7 +22,7 @@ def get_json_dset(args, alg='fixmatch', dataset='acmIb', num_labels=40, num_clas
             onehot: If True, the target is converted into onehot vector.
             
         Returns:
-            BasicDataset (for labeled data), BasicDataset (for unlabeld data)
+            BasicDataset (for labeled data), BasicDataset (for unlabeled data)
         """
         json_dir = os.path.join(data_dir, dataset)
         

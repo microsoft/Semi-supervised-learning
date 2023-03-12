@@ -20,7 +20,7 @@ class CReSTLoggingHook(LoggingHook):
         
         elif self.every_n_iters(algorithm, algorithm.num_log_iter):
             if not algorithm.distributed or (algorithm.distributed and algorithm.rank % algorithm.ngpus_per_node == 0):
-                algorithm.print_fn(f"{algorithm.gen + 1} gneration {algorithm.it + 1} iteration, USE_EMA: {algorithm.ema_m != 0}, {algorithm.tb_dict}")
+                algorithm.print_fn(f"{algorithm.gen + 1} generation {algorithm.it + 1} iteration, USE_EMA: {algorithm.ema_m != 0}, {algorithm.tb_dict}")
 
 
 class CReSTCheckpointHook(CheckpointHook):

@@ -29,7 +29,7 @@ class DistributedSampler(Sampler):
 
     def __init__(self, dataset, num_replicas=None, rank=None, num_samples=None, **kwargs):
         if not isinstance(num_samples, int) or num_samples <= 0:
-            raise ValueError("num_samples should be a positive integeral "
+            raise ValueError("num_samples should be a positive integer "
                              "value, but got num_samples={}".format(num_samples))
 
         if num_replicas is None:

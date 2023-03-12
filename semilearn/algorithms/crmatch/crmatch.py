@@ -139,7 +139,7 @@ class CRMatch(AlgorithmBase):
         self.lambda_rot = args.rot_loss_ratio
         self.use_rot = self.lambda_rot > 0
         super().__init__(args, net_builder,  tb_log, logger)
-        # crmatch specificed arguments
+        # crmatch specified arguments
         self.init(p_cutoff=args.p_cutoff, hard_label=args.hard_label)
         
 
