@@ -18,7 +18,7 @@ class ABCNet(nn.Module):
         self.backbone = backbone
         self.num_features = backbone.num_features
 
-        # auxilary classifier
+        # auxiliary classifier
         self.aux_classifier = nn.Linear(self.backbone.num_features, num_classes)
     
     def forward(self, x, **kwargs):
@@ -59,7 +59,7 @@ class ABC(ImbAlgorithmBase):
 
         super(ABC, self).__init__(args, net_builder, tb_log, logger, **kwargs)
 
-        # comput lb imb ratio
+        # compute lb imb ratio
         lb_class_dist = [0 for _ in range(self.num_classes)]
         for c in  self.dataset_dict['train_lb'].targets:
             lb_class_dist[c] += 1
@@ -77,7 +77,7 @@ class ABC(ImbAlgorithmBase):
         self.abc_loss_ratio = abc_loss_ratio
 
     def process_batch(self, **kwargs):
-        # get core algorithm parameteters
+        # get core algorithm parameters
         input_args = signature(super().train_step).parameters
         input_args = list(input_args.keys())
         return super().process_batch(input_args=input_args, **kwargs)

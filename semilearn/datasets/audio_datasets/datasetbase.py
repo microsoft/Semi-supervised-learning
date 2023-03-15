@@ -29,7 +29,7 @@ class WaveformTransforms:
             ["speed", f'{speed:.5f}'],  # reduce the speed
             # This only changes sample rate, so it is necessary to
             # add `rate` effect with original sample rate after this.
-            ["reverb", "-w"],  # Reverbration gives some dramatic feeling
+            ["reverb", "-w"],  # Reverberation gives some dramatic feeling
         ]
         effects = random.choices(effects_list, k=self.n)
 
@@ -46,7 +46,7 @@ class BasicDataset(Dataset):
     """
     BasicDataset returns a pair of image and labels (targets).
     If targets are not given, BasicDataset returns None as the label.
-    This class supports strong augmentation for Fixmatch,
+    This class supports strong augmentation for FixMatch,
     and return both weakly and strongly augmented images.
     """
     # add transform 

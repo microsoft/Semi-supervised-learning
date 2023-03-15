@@ -44,7 +44,7 @@ def get_semi_aves(args, alg, dataset, train_split='l_train_val', ulb_split='u_tr
         transforms.Normalize(imgnet_mean, imgnet_std)
     ])
 
-    # NOTE this dataset is inherently imbalanced with unknow distribution
+    # NOTE this dataset is inherently imbalanced with unknown distribution
     train_labeled_dataset = iNatDataset(alg, data_dir, train_split, dataset, transform=transform_weak)
     train_unlabeled_dataset = iNatDataset(alg, data_dir, ulb_split, dataset, is_ulb=True, transform=transform_weak, transform_strong=transform_strong)
     test_dataset = iNatDataset(alg, data_dir, 'test', dataset, transform=transform_val)

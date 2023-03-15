@@ -69,7 +69,7 @@ def get_stl10(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
     lb_data, lb_targets = dset_lb.data.transpose([0, 2, 3, 1]), dset_lb.labels.astype(np.int64)
     ulb_data = dset_ulb.data.transpose([0, 2, 3, 1])
 
-    # Note this data can have imbalanced labeled set, and with unkown unlabeled set
+    # Note this data can have imbalanced labeled set, and with unknown unlabeled set
     ulb_data = np.concatenate([ulb_data, lb_data], axis=0)
     lb_idx, _ = sample_labeled_unlabeled_data(args, lb_data, lb_targets, num_classes,
                                               lb_num_labels=num_labels,

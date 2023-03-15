@@ -28,8 +28,8 @@ class PseudoLabelingHook(Hook):
         Args:
             algorithm: base algorithm
             logits: logits (or probs, need to set softmax to False)
-            use_hard_label: flag of using hard labels intead of soft labels
-            T: tempreture parameters
+            use_hard_label: flag of using hard labels instead of soft labels
+            T: temperature parameters
             softmax: flag of using softmax on logits
             label_smoothing: label_smoothing parameter
         """

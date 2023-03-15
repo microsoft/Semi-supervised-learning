@@ -165,7 +165,7 @@ The detailed instructions for downloading and processing are shown in [Dataset D
 
 ## Usage
 
-USB is easy to use and extend. Going through the belowing examples will help you faimiliar with USB for quick use, evaluate an exsiting SSL algorithm on your own dataset, or developing new SSL algorithms.
+USB is easy to use and extend. Going through the bellowing examples will help you familiar with USB for quick use, evaluate an existing SSL algorithm on your own dataset, or developing new SSL algorithms.
 
 ### Quick Start with USB package
 
@@ -208,7 +208,7 @@ to use GPU in a container.
 
 ### Training
 
-Here is an example to train FixMatch on CIFAR-100 with 200 labels. Trianing other supported algorithms (on other datasets with different label settings) can be specified by a config file:
+Here is an example to train FixMatch on CIFAR-100 with 200 labels. Training other supported algorithms (on other datasets with different label settings) can be specified by a config file:
 
 ```sh
 python train.py --c config/usb_cv/fixmatch/fixmatch_cifar100_200_0.yaml
@@ -216,7 +216,7 @@ python train.py --c config/usb_cv/fixmatch/fixmatch_cifar100_200_0.yaml
 
 ### Evaluation
 
-After trianing, you can check the evaluation performance on training logs, or running evaluation script:
+After training, you can check the evaluation performance on training logs, or running evaluation script:
 
 ```
 python eval.py --dataset cifar100 --num_classes 100 --load_path /PATH/TO/CHECKPOINT

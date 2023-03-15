@@ -24,7 +24,7 @@ def get_pkl_dset(args, alg='fixmatch', dataset='esc50', num_labels=40, num_class
         onehot: If True, the target is converted into onehot vector.
         
     Returns:
-        BasicDataset (for labeled data), BasicDataset (for unlabeld data)
+        BasicDataset (for labeled data), BasicDataset (for unlabeled data)
     """
     data_dir = os.path.join(data_dir, dataset)
 

@@ -178,7 +178,7 @@ def main(args):
         if args.load_path is None:
             raise Exception('Resume of training requires --load_path in the args')
         if os.path.abspath(save_path) == os.path.abspath(args.load_path) and not args.overwrite:
-            raise Exception('Saving & Loading pathes are same. \
+            raise Exception('Saving & Loading paths are same. \
                             If you want over-write, give --overwrite in the argument.')
 
     if args.seed is not None:
@@ -219,7 +219,7 @@ def main_worker(gpu, ngpus_per_node, args):
     global best_acc1
     args.gpu = gpu
 
-    # random seed has to be set for the syncronization of labeled data sampling in each process.
+    # random seed has to be set for the synchronization of labeled data sampling in each process.
     assert args.seed is not None
     random.seed(args.seed)
     torch.manual_seed(args.seed)

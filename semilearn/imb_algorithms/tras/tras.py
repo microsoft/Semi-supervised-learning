@@ -92,7 +92,7 @@ class TRAS(ImbAlgorithmBase):
         self.warmup_epochs = warmup_epochs
 
     def process_batch(self, **kwargs):
-        # get core algorithm parameteters
+        # get core algorithm parameters
         input_args = signature(super().train_step).parameters
         input_args = list(input_args.keys())
         return super().process_batch(input_args=input_args, **kwargs)

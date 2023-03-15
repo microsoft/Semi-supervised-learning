@@ -42,7 +42,7 @@ class FlexMatch(AlgorithmBase):
         """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger) 
-        # flexmatch specificed arguments
+        # flexmatch specified arguments
         self.init(T=args.T, p_cutoff=args.p_cutoff, hard_label=args.hard_label, thresh_warmup=args.thresh_warmup)
     
     def init(self, T, p_cutoff, hard_label=True, thresh_warmup=True):

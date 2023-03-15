@@ -18,7 +18,7 @@ def split_ssl_data(args, data, targets, num_classes,
                    lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
                    lb_index=None, ulb_index=None, include_lb_to_ulb=True, load_exist=True):
     """
-    data & target is splitted into labeled and unlabeld data.
+    data & target is splitted into labeled and unlabeled data.
     
     Args
         data: data to be split to labeled and unlabeled 
@@ -26,14 +26,14 @@ def split_ssl_data(args, data, targets, num_classes,
         num_classes: number of total classes
         lb_num_labels: number of labeled samples. 
                        If lb_imbalance_ratio is 1.0, lb_num_labels denotes total number of samples.
-                       Otherwise it denots the number of samples in head class.
+                       Otherwise it denotes the number of samples in head class.
         ulb_num_labels: similar to lb_num_labels but for unlabeled data.
-                        default to None, denoting use all remaininig data except for labeled data as unlabeled set
+                        default to None, denoting use all remaining data except for labeled data as unlabeled set
         lb_imbalance_ratio: imbalance ratio for labeled data
         ulb_imbalance_ratio: imbalance ratio for unlabeled data
         lb_index: If np.array of index is given, select the data[index], target[index] as labeled samples.
         ulb_index: If np.array of index is given, select the data[index], target[index] as labeled samples.
-        include_lb_to_ulb: If True, labeled data is also included in unlabeld data
+        include_lb_to_ulb: If True, labeled data is also included in unlabeled data
     """
     data, targets = np.array(data), np.array(targets)
     lb_idx, ulb_idx = sample_labeled_unlabeled_data(args, data, targets, num_classes, 
@@ -78,7 +78,7 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
     # get samples per class
     if lb_imbalance_ratio == 1.0:
         # balanced setting, lb_num_labels is total number of labels for labeled data
-        assert lb_num_labels % num_classes == 0, "lb_num_labels must be divideable by num_classes in balanced setting"
+        assert lb_num_labels % num_classes == 0, "lb_num_labels must be dividable by num_classes in balanced setting"
         lb_samples_per_class = [int(lb_num_labels / num_classes)] * num_classes
     else:
         # imbalanced setting, lb_num_labels is the maximum number of labels for class 1
@@ -90,7 +90,7 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
         if ulb_num_labels is None or ulb_num_labels == 'None':
             pass # ulb_samples_per_class = [int(len(data) / num_classes) - lb_samples_per_class[c] for c in range(num_classes)] # [int(len(data) / num_classes) - int(lb_num_labels / num_classes)] * num_classes
         else:
-            assert ulb_num_labels % num_classes == 0, "ulb_num_labels must be divideable by num_classes in balanced setting"
+            assert ulb_num_labels % num_classes == 0, "ulb_num_labels must be dividable by num_classes in balanced setting"
             ulb_samples_per_class = [int(ulb_num_labels / num_classes)] * num_classes
     else:
         # imbalanced setting

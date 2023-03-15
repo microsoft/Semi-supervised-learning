@@ -63,7 +63,7 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
 
     Args
         args: argparse arguments
-        algorithm: algrorithm name, used for specific return items in __getitem__ of datasets
+        algorithm: algorithm name, used for specific return items in __getitem__ of datasets
         dataset: dataset name 
         num_labels: number of labeled data in dataset
         num_classes: number of classes

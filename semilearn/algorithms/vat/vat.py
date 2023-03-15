@@ -34,7 +34,7 @@ class VAT(AlgorithmBase):
     """
     def __init__(self, args, net_builder, tb_log=None, logger=None):
         super().__init__(args, net_builder, tb_log, logger)
-        # remixmatch specificed arguments
+        # remixmatch specified arguments
         self.init(unsup_warm_up=args.unsup_warm_up, vat_eps=args.vat_eps, vat_embed=args.vat_embed)
         self.lambda_ent = args.ent_loss_ratio
 

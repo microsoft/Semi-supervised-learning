@@ -65,7 +65,7 @@ def get_static(file_name):
             'BestIt': stat['bestIt'],
             'Finish': True}
 
-# str = r"[2021-04-13 15:57:33,078 INFO] 228000 iteration, USE_EMA: True, {'train/sup_loss': tensor(0.0311, device='cuda:0'), 'train/unsup_loss': tensor(0.2391, device='cuda:0'), 'train/total_loss': tensor(0.3913, device='cuda:0'), 'train/mask_ratio': tensor(0.5246, device='cuda:0'), 'lr': 0.028670201217471786, 'train/prefecth_time': 0.0050832958221435545,'train/run_time': 0.315829833984375, 'eval/loss': tensor(1.0763, device='cuda:0'), 'eval/top-1-acc': 0.6306},BEST_EVAL_ACC: 0.9348, at 173000 iters"
+# str = r"[2021-04-13 15:57:33,078 INFO] 228000 iteration, USE_EMA: True, {'train/sup_loss': tensor(0.0311, device='cuda:0'), 'train/unsup_loss': tensor(0.2391, device='cuda:0'), 'train/total_loss': tensor(0.3913, device='cuda:0'), 'train/mask_ratio': tensor(0.5246, device='cuda:0'), 'lr': 0.028670201217471786, 'train/prefetch_time': 0.0050832958221435545,'train/run_time': 0.315829833984375, 'eval/loss': tensor(1.0763, device='cuda:0'), 'eval/top-1-acc': 0.6306},BEST_EVAL_ACC: 0.9348, at 173000 iters"
 
 statics = {}
 for name in os.listdir(save_path):

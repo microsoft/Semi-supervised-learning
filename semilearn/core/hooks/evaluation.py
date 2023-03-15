@@ -8,7 +8,7 @@ from .hook import Hook
 
 class EvaluationHook(Hook):
     """
-    Evaluation Hook for valiation during training
+    Evaluation Hook for validation during training
     """
     
     def after_train_step(self, algorithm):
