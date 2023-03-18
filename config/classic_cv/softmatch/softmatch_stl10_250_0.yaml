@@ -21,6 +21,7 @@ per_class: False
 ema_p: 0.999
 ulb_loss_ratio: 1.0
 n_sigma: 2
+uratio: 7
 ema_m: 0.999
 crop_ratio: 0.875
 img_size: 96

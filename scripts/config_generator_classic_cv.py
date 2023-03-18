@@ -198,25 +198,7 @@ def create_classific_config(alg, seed,
         cfg['ema_p'] = 0.999
         cfg['ulb_loss_ratio'] = 1.0
         cfg['n_sigma'] = 2
-        if dataset == 'imagenet':
-            cfg['ulb_loss_ratio'] = 1.0
-
-    elif alg == 'freematch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['ema_p'] = 0.999
-        cfg['ent_loss_ratio'] = 0.001
-        if dataset == 'imagenet':
-            cfg['ulb_loss_ratio'] = 1.0
-    elif alg == 'softmatch':
-        cfg['hard_label'] = True
-        cfg['T'] = 0.5
-        cfg['dist_align'] = True
-        cfg['dist_uniform'] = True
-        cfg['per_class'] = False
-        cfg['ema_p'] = 0.999
-        cfg['ulb_loss_ratio'] = 1.0
-        cfg['n_sigma'] = 2
+        cfg['uratio'] = 7
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 1.0
 
