@@ -133,6 +133,12 @@ then use pip to install required packages:
 pip install -r requirements.txt
 ```
 
+From now on, you can start use USB by typing 
+
+```sh
+python train.py --c config/usb_cv/fixmatch/fixmatch_cifar100_200_0.yaml
+```
+
 ### Installation
 
 We provide a Python package *semilearn* of USB for users who want to start training/testing the supported SSL algorithms on their data quickly:
