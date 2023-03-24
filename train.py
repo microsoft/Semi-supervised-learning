@@ -38,7 +38,7 @@ def get_config():
     parser.add_argument('--use_aim', action='store_true', help='Use aim to plot and save curves')
 
     '''
-    Training Configuration of FixMatch
+    Training Configurations
     '''
     parser.add_argument('--epoch', type=int, default=1)
     parser.add_argument('--num_train_iter', type=int, default=20,
@@ -48,18 +48,18 @@ def get_config():
     parser.add_argument('--num_eval_iter', type=int, default=10,
                         help='evaluation frequency')
     parser.add_argument('--num_log_iter', type=int, default=5,
-                        help='logging frequencu')
+                        help='logging frequency')
     parser.add_argument('-nl', '--num_labels', type=int, default=400)
     parser.add_argument('-bsz', '--batch_size', type=int, default=8)
     parser.add_argument('--uratio', type=int, default=1,
-                        help='the ratio of unlabeled data to labeld data in each mini-batch')
+                        help='the ratio of unlabeled data to labeled data in each mini-batch')
     parser.add_argument('--eval_batch_size', type=int, default=16,
                         help='batch size of evaluation data loader (it does not affect the accuracy)')
     parser.add_argument('--ema_m', type=float, default=0.999, help='ema momentum for eval_model')
     parser.add_argument('--ulb_loss_ratio', type=float, default=1.0)
 
     '''
-    Optimizer configurations
+    Optimizer Configurations
     '''
     parser.add_argument('--optim', type=str, default='SGD')
     parser.add_argument('--lr', type=float, default=3e-2)
@@ -117,7 +117,7 @@ def get_config():
     parser.add_argument('--sample_rate', type=int, default=16000)
 
     '''
-    multi-GPUs & Distrbitued Training
+    Multi-GPUs & Distributed Training
     '''
 
     ## args for distributed training (from https://github.com/pytorch/examples/blob/master/imagenet/main.py)

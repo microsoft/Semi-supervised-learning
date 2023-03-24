@@ -39,7 +39,7 @@ class TRASNet(nn.Module):
         self.backbone = backbone
         self.num_features = backbone.num_features
 
-        # auxilary classifier
+        # auxiliary classifier
         self.aux_classifier = nn.Linear(self.backbone.num_features, num_classes)
     
     def forward(self, x, **kwargs):
@@ -63,7 +63,7 @@ class TRAS(ImbAlgorithmBase):
         super().__init__(args, **kwargs)
         assert args.algorithm == 'fixmatch', "Adsh only supports FixMatch as the base algorithm."
 
-        # comput lb imb ratio
+        # compute lb imb ratio
         lb_class_dist = [0 for _ in range(self.num_classes)]
         for c in  self.dataset_dict['train_lb'].targets:
             lb_class_dist[c] += 1

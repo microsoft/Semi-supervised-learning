@@ -202,7 +202,7 @@ def TFE(args, labeled_loader, unlabeled_loader, tfe_model, num_classes, num_samp
                 other_cls_probs = torch.cat([labeled_cls_prob_stack[other_labeled_data_idx], unlabeled_cls_prob_stack], dim=0)
 
                 assert len(other_cls_feats) == len(other_cls_probs)
-                # the total number of data should be the same for label-unlabel split, and current-the-rest split
+                # the total number of data should be the same for label-unlabeled split, and current-the-rest split
                 assert (len(other_cls_feats) + len(current_cls_feats)) == (len(labeled_feature_stack) + len(unlabeled_feature_stack))
 
                 # sort other_cls_feats according to the probs assigned to class i
