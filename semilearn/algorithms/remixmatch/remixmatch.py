@@ -133,6 +133,12 @@ class ReMixMatch(AlgorithmBase):
                 sharpen_prob_x_ulb = prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
 
+                if self.args.imb_algorithm == "darp":
+                    sharpen_prob_x_ulb = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                                                        logits=sharpen_prob_x_ulb,
+                                                        use_hard_label=False,
+                                                        softmax=False)
+
             
             self.bn_controller.freeze_bn(self.model)
             outs_x_lb = self.model(x_lb)
