@@ -87,7 +87,7 @@ class SoftMatch(AlgorithmBase):
             probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w, probs_x_lb=probs_x_lb)
 
             # calculate weight
-            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w)
+            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
             # generate unlabeled targets using pseudo label hook
             pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
