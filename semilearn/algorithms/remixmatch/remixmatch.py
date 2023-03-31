@@ -133,10 +133,13 @@ class ReMixMatch(AlgorithmBase):
                 sharpen_prob_x_ulb = prob_x_ulb ** (1 / self.T)
                 sharpen_prob_x_ulb = (sharpen_prob_x_ulb / sharpen_prob_x_ulb.sum(dim=-1, keepdim=True)).detach()
 
-                if self.args.imb_algorithm == "darp":
+                # if pseudo labeling hook is registered, call it 
+                # this is implemented for imbalanced algorithm - DARP and DASO
+                if self.registered_hook("PseudoLabelingHook"):
                     sharpen_prob_x_ulb = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
                                                         logits=sharpen_prob_x_ulb,
                                                         use_hard_label=False,
+                                                        T=self.T,
                                                         softmax=False)
 
             
