@@ -16,8 +16,8 @@ class FreeMatchThresholingHook(MaskingHook):
         self.num_classes = num_classes
         self.m = momentum
         
-        self.p_model = torch.ones((self.num_classes)) # / self.num_classes
-        self.label_hist = torch.ones((self.num_classes)) # / self.num_classes
+        self.p_model = torch.ones((self.num_classes)) / self.num_classes
+        self.label_hist = torch.ones((self.num_classes)) / self.num_classes
         self.time_p = self.p_model.mean()
     
     @torch.no_grad()
