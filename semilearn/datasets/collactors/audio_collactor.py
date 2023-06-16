@@ -68,7 +68,7 @@ class DataCollatorWithPadding:
             truncation=True,
         )['input_values']
             
-        if 'labels' in batch:
+        if 'label' in batch and len(s_features)==0:  # I think it should be 'label' here
             return {'idx_lb': batch['idx'].long(), 'x_lb': batch['input_values'], 'y_lb': batch['labels'].long()}
         else:
             if len(s_features) > 0:

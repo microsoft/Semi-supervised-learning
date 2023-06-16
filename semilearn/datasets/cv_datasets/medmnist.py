@@ -927,7 +927,7 @@ def get_medmnist(args, alg, dataset_name, num_labels, num_classes, data_dir='./d
             train_labeled_data = np.concatenate([train_labeled_data, train_unlabeled_data], axis=0)
             train_labeled_targets = np.concatenate([train_labeled_targets, train_unlabeled_targets], axis=0)
     # construct datasets for training and testing
-    train_labeled_dataset = name2class[dataset_name](alg, root=data_dir, split="train", transform=transform_weak, as_rgb=True)
+    train_labeled_dataset = name2class[dataset_name](alg, root=data_dir, split="train", transform=transform_weak, transform_strong=transform_strong, as_rgb=True)
     train_unlabeled_dataset = name2class[dataset_name](alg, root=data_dir, split="train", is_ulb=True, transform=transform_weak, transform_strong=transform_strong, as_rgb=True)
     train_labeled_dataset.data = train_labeled_data
     train_unlabeled_dataset.data = train_unlabeled_data

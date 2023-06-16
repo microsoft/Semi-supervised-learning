@@ -121,7 +121,7 @@ def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', 
         else:
             train_labeled_idxs = np.concatenate([train_labeled_idxs, train_unlabeled_idxs])
     
-    train_labeled_dataset = EuroSat(alg, data_dir, split="trainval", idx_list=train_labeled_idxs, transform=transform_weak)
+    train_labeled_dataset = EuroSat(alg, data_dir, split="trainval", idx_list=train_labeled_idxs, transform=transform_weak, transform_strong=transform_strong)
     train_unlabeled_dataset = EuroSat(alg, data_dir, split="trainval", is_ulb=True, idx_list=train_unlabeled_idxs, transform=transform_weak, transform_strong=transform_strong)
     val_dataset = EuroSat(alg, data_dir, split="test", transform=transform_val)
 

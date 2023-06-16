@@ -109,7 +109,12 @@ class BasicDataset(Dataset):
             wav = raw_wav
 
         if self.is_ulb == False:
-            return {'idx':idx, 'wav':wav, 'label':target} 
+            if self.alg == 'defixmatch' and self.strong_transform is not None:
+                raw_wav_s = self.strong_transform(raw_wav)
+                wav_s = random_subsample(raw_wav_s, max_length=self.max_length, sample_rate=self.sample_rate)
+                return {'idx':idx, 'wav':wav, 'wav_s': wav_s, 'label':target}
+            else:
+                return {'idx':idx, 'wav':wav, 'label':target} 
         else:
             if self.alg == 'fullysupervised' or self.alg == 'supervised':
                 return {'idx':idx, 'wav':wav, 'label':target} 

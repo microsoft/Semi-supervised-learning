@@ -68,7 +68,7 @@ class DataCollatorWithPadding:
             return_tensors=self.return_tensors,
         )
         
-        if 'label' in batch:
+        if 'label' in batch and len(s_features)==0:
             return {'idx_lb': batch['idx'], 'x_lb': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}, 'y_lb': batch['label']}
         else:
             if len(s_features) > 0:

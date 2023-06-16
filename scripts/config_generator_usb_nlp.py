@@ -171,7 +171,12 @@ def create_usb_nlp_config(alg, seed,
         cfg['n_sigma'] = 2
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 1.0
-
+    elif alg == 'defixmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['p_cutoff'] = 0.95
+        cfg['ulb_loss_ratio'] = 0.5
+        
     cfg['uratio'] = 1
     cfg['use_cat'] = False
 
@@ -225,7 +230,7 @@ def exp_usb_nlp(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'comatch', 'crmatch', 'simmatch', 'adamatch', 'softmatch', 'freematch']
+            'pimodel', 'vat', 'dash', 'comatch', 'crmatch', 'simmatch', 'adamatch', 'softmatch', 'freematch', 'defixmatch']
     datasets = ['aclImdb', 'ag_news', 'amazon_review', 'dbpedia', 'yahoo_answers', 'yelp_review']
 
     seeds = [0]

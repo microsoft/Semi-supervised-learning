@@ -220,7 +220,11 @@ def create_usb_cv_config(alg, seed,
         cfg['n_sigma'] = 2
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 1.0
-
+    elif alg == 'defixmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['p_cutoff'] = 0.95
+        cfg['ulb_loss_ratio'] = 0.5
 
     cfg['img_size'] = img_size
     cfg['crop_ratio'] = crop_ratio
@@ -282,7 +286,7 @@ def exp_usb_cv(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch']
+             'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch', 'defixmatch']
     datasets = ['cifar100', 'eurosat', 'semi_aves', 'tissuemnist', 'stl10']
     # algs = ['fixmatch', 'flexmatch', 'comatch', 'simmatch']
     # datasets = ['imagenet']
