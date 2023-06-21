@@ -68,8 +68,20 @@ class DataCollatorWithPadding:
             return_tensors=self.return_tensors,
         )
         
-        if 'label' in batch and len(s_features)==0:
-            return {'idx_lb': batch['idx'], 'x_lb': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}, 'y_lb': batch['label']}
+        if 'label' in batch:
+            if len(s_features)==0:
+                return {'idx_lb': batch['idx'], 'x_lb': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}, 'y_lb': batch['label']}
+            else:
+                s_batch = self.tokenizer.pad(
+                    s_features,
+                    padding=True,
+                    max_length=None,
+                    pad_to_multiple_of=self.pad_to_multiple_of,
+                    return_tensors=self.return_tensors,
+                )
+                return {'idx_lb': batch['idx'], 'x_lb': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}, 
+                                                'x_lb_s': {'input_ids': s_batch['input_ids'], 'attention_mask': s_batch['attention_mask']}, 
+                                                'y_lb': batch['label']}
         else:
             if len(s_features) > 0:
                 s_batch = self.tokenizer.pad(
