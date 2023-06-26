@@ -70,7 +70,7 @@ class DataCollatorWithPadding:
             
         if 'label' in batch:
             if len(s_features)==0: 
-                return {'idx_lb': batch['idx'].long(), 'x_lb': batch['input_values'], 'y_lb': batch['labels'].long()}
+                return {'idx_lb': batch['idx'].long(), 'x_lb': batch['input_values'], 'y_lb': batch['label'].long()}
             else:
                 s_batch = self.tokenizer(
                         s_features,
