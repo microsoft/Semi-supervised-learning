@@ -68,7 +68,7 @@ class DataCollatorWithPadding:
             truncation=True,
         )['input_values']
             
-        if 'label' in batch:
+        if 'labels' in batch:
             if len(s_features)==0: 
                 return {'idx_lb': batch['idx'].long(), 'x_lb': batch['input_values'], 'y_lb': batch['label'].long()}
             else:
@@ -81,7 +81,7 @@ class DataCollatorWithPadding:
                         return_tensors=self.return_tensors,
                         truncation=True,
                     )
-                return {'idx_lb': batch['idx'].long(), 'x_lb': batch['input_values'], 'x_lb_s': s_batch['input_values']}
+                return {'idx_lb': batch['idx'].long(), 'x_lb': batch['input_values'], 'x_lb_s': s_batch['input_values'], 'y_lb': batch['label'].long()}
         else:
             if len(s_features) > 0:
                 s_batch = self.tokenizer(
