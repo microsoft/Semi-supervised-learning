@@ -2,6 +2,7 @@
 
 ## 23/01/2023 Update
 
+* Added DeFixmatch algorithm.
 * Added imbalanced Semi-Supervised setting and 8 imbalanced algorithms.
 * Added FreeMatch and SoftMatch algorithms.
 * Added registry mechanism for calling algorithms.
