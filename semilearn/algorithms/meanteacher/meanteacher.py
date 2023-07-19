@@ -52,8 +52,8 @@ class MeanTeacher(AlgorithmBase):
 
             self.bn_controller.freeze_bn(self.model)
             outs_x_ulb_s = self.model(x_ulb_s)
-            logits_x_ulb_s = outs_x_ulb_w['logits']
-            feats_x_ulb_s = outs_x_ulb_w['feat']
+            logits_x_ulb_s = outs_x_ulb_s['logits']
+            feats_x_ulb_s = outs_x_ulb_s['feat']
             self.bn_controller.unfreeze_bn(self.model)
 
             feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
