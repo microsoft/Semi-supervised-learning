@@ -61,7 +61,11 @@ class BasicDataset(Dataset):
         sen = self.data[idx]
         # set augmented images
         if self.is_ulb == False:
-            return {'idx':idx, 'text':sen[0], 'label':target} 
+            if self.alg == 'defixmatch':
+                return {'idx':idx, 'text':sen[0], 'text_s': sen[self.random_choose_sen()], 'label':target}
+            else:
+                return {'idx':idx, 'text':sen[0], 'label':target} 
+            
         else:
             if self.alg == 'fullysupervised' or self.alg == 'supervised':
                 return {'idx':idx, 'text':sen[0], 'label':target} 

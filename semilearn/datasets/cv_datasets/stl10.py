@@ -99,7 +99,7 @@ def get_stl10(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
     with open(output_path, 'w') as w:
         json.dump(out, w)
 
-    lb_dset = BasicDataset(alg, lb_data, lb_targets, num_classes, transform_weak, False, None, False)
+    lb_dset = BasicDataset(alg, lb_data, lb_targets, num_classes, transform_weak, False, transform_strong, False)
 
     ulb_dset = BasicDataset(alg, ulb_data, ulb_targets, num_classes, transform_weak, True, transform_strong, False)
 

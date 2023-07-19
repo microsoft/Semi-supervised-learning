@@ -169,6 +169,11 @@ def create_usb_audio_config(alg, seed,
         cfg['n_sigma'] = 2
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 1.0
+    elif alg == 'defixmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['p_cutoff'] = 0.95
+        cfg['ulb_loss_ratio'] = 0.5
 
 
     cfg['uratio'] = 1
@@ -226,7 +231,7 @@ def exp_usb_speech(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch']
+            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch', 'defixmatch']
     datasets = ['esc50', 'fsdnoisy', 'urbansound8k', 'gtzan', 'superbks']
 
     # seeds = [0, 1, 2]  # 1, 22, 333

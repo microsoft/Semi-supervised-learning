@@ -201,6 +201,12 @@ def create_classific_config(alg, seed,
         cfg['uratio'] = 7
         if dataset == 'imagenet':
             cfg['ulb_loss_ratio'] = 1.0
+    elif alg == 'defixmatch':
+        cfg['hard_label'] = True
+        cfg['T'] = 0.5
+        cfg['p_cutoff'] = 0.95
+        cfg['ulb_loss_ratio'] = 0.5
+        cfg['uratio'] = 7
 
     # cfg['img']
     cfg['ema_m'] = 0.999
@@ -260,7 +266,7 @@ def exp_classific_cv(label_amount):
 
 
     algs = ['flexmatch', 'fixmatch', 'uda', 'pseudolabel', 'fullysupervised', 'supervised', 'remixmatch', 'mixmatch', 'meanteacher',
-            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch']
+            'pimodel', 'vat', 'dash', 'crmatch', 'comatch', 'simmatch', 'adamatch', 'freematch', 'softmatch', 'defixmatch']
     datasets = ['cifar100', 'svhn', 'stl10', 'cifar10']
 
     seeds = [0]

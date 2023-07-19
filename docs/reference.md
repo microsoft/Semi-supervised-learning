@@ -12,7 +12,7 @@ Reference
 
 [6] Qizhe Xie, Zihang Dai, Eduard Hovy, Thang Luong, and Quoc Le. Unsupervised data augmen-tation for consistency training.NeurIPS, 33, 2020.
 
-[7] David Berthelot, Nicholas Carlini, Ekin D Cubuk, Alex Kurakin, Kihyuk Sohn, Han Zhang,and Colin Raffel.   Remixmatch:  Semi-supervised learning with distribution matching andaugmentation anchoring. InICLR, 2019.
+[7] David Berthelot, Nicholas Carlini, Ekin D Cubuk, Alex Kurakin, Kihyuk Sohn, Han Zhang,and Colin Raffel.   Remixmatch:  Semi-supervised learning with distribution matching andaugmentation anchoring. In ICLR, 2019.
 
 [8] Kihyuk Sohn, David Berthelot, Nicholas Carlini, Zizhao Zhang, Han Zhang, Colin A Raf-fel, Ekin Dogus Cubuk, Alexey Kurakin, and Chun-Liang Li.  Fixmatch:  Simplifying semi-supervised learning with consistency and confidence.NeurIPS, 33, 2020.
 
@@ -61,3 +61,5 @@ Reference
 [30]Yang, Shu-wen, Po-Han Chi, Yung-Sung Chuang, Cheng-I. Jeff Lai, Kushal Lakhotia, Yist Y. Lin, Andy T. Liu et al. "Superb: Speech processing universal performance benchmark." arXiv preprint arXiv:2105.01051 (2021).
 
 [31]Piczak, Karol J. "ESC: Dataset for environmental sound classification." In Proceedings of the 23rd ACM international conference on Multimedia, pp. 1015-1018. 2015.
+
+[32] Schmutz, Hugo, Humbert, Olivier, Mattei, Pierre-Alexandre, Don't fear the unlabelled: safe semi-supervised learning via simple debiasing, ICLR, 2023

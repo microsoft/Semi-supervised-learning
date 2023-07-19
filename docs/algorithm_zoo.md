@@ -18,3 +18,4 @@ In addtion to fully-supervised method (as a baseline), USB supports the followin
 14. [SimMatch](https://arxiv.org/abs/2203.06915): extends [CoMatch](https://arxiv.org/abs/2011.11183) by considering semantic-level and instance-level consistency regularization. Similar similarity relationship of different augmented versions on the same data with respect to other instances is encouraged during training. In addition, a memory buffer consisting of predictions on labeled data is adopted to connect the two-level regularization.
 15. [Freematch](https://arxiv.org/abs/2205.07246): 
 16. [SoftMatch](https://openreview.net/forum?id=ymt1zQXBDiF&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2023%2FConference%2FAuthors%23your-submissions)):
+17. [DeFixMatch] (https://arxiv.org/abs/2203.07512)
