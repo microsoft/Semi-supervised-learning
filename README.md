@@ -53,6 +53,8 @@
     ·
     <a href="https://www.microsoft.com/en-us/research/lab/microsoft-research-asia/articles/pushing-the-limit-of-semi-supervised-learning-with-the-unified-semi-supervised-learning-benchmark/">Blog</a>
     ·
+    <a href="https://medium.com/p/849f42bbc32a">Blog (Pytorch)</a>
+    ·
     <a href="https://zhuanlan.zhihu.com/p/566055279">Blog (Chinese)</a>
     ·
     <a href="https://nips.cc/virtual/2022/poster/55710">Video</a>
@@ -87,7 +89,10 @@
 <!-- News and Updates -->
 
 ## News and Updates
+
 - [07/07/2023] Add [DeFixmatch](https://arxiv.org/abs/2203.07512).
+
+- [06/01/2023] USB has officially joined the Pytorch ecosystem! [[Pytorch blog](https://medium.com/p/849f42bbc32a)]
 
 - [01/30/2023] Update semilearn==0.3.0. Add [FreeMatch](https://arxiv.org/abs/2205.07246) and [SoftMatch](https://arxiv.org/abs/2301.10921). Add imbalanced algorithms. Update results and add wandb support. Refer [CHANGE_LOG](CHANGE_LOG.md) for details. [[Results]](https://github.com/microsoft/Semi-supervised-learning/tree/main/results)[[Logs]](https://drive.google.com/drive/folders/1bRSqrRyyuDafgOI3VAuqqiuzHG6CexHF?usp=sharing)[[Wandb]](https://wandb.ai/usb). Older classic logs can be found here: [[TorchSSL Log]](https://1drv.ms/u/s!AlpW9hcyb0KvmyCfsCjGvhDXG5Nb?e=Xc6amH).
 
