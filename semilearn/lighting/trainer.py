@@ -48,19 +48,24 @@ class Trainer:
             bar = Bar('Processing', max=len(train_lb_loader))
 
             self.algorithm.model.train()
+            self.algorithm.call_hook("before_train_epoch")
 
             for data_lb, data_ulb in zip(train_lb_loader, train_ulb_loader):
 
                 if self.algorithm.it > self.config.num_train_iter:
                     break
                 
+                self.algorithm.call_hook("before_train_step")
                 result = self.algorithm.train_step(**self.algorithm.process_batch(**data_lb, **data_ulb))
-
+                self.algorithm.call_hook("after_train_step")
+                
                 bar.suffix = ("Iter: {batch:4}/{iter:4}.".format(batch=self.algorithm.it, iter=len(train_lb_loader)))
                 bar.next()
                 self.algorithm.it += 1
             bar.finish()
 
+            self.algorithm.call_hook("after_train_epoch")
+            
             # validate
             result = self.evaluate(eval_loader)
 
