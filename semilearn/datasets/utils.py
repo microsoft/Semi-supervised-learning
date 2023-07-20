@@ -52,10 +52,6 @@ def split_ssl_data(args, data, targets, num_classes,
     return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
 
-def sample_labeled_data():
-    pass
-
-
 def sample_labeled_unlabeled_data(args, data, target, num_classes,
                                   lb_num_labels, ulb_num_labels=None,
                                   lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
@@ -88,7 +84,7 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
     if ulb_imbalance_ratio == 1.0:
         # balanced setting
         if ulb_num_labels is None or ulb_num_labels == 'None':
-            pass # ulb_samples_per_class = [int(len(data) / num_classes) - lb_samples_per_class[c] for c in range(num_classes)] # [int(len(data) / num_classes) - int(lb_num_labels / num_classes)] * num_classes
+            ulb_samples_per_class = None
         else:
             assert ulb_num_labels % num_classes == 0, "ulb_num_labels must be dividable by num_classes in balanced setting"
             ulb_samples_per_class = [int(ulb_num_labels / num_classes)] * num_classes
@@ -104,7 +100,7 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
         idx = np.where(target == c)[0]
         np.random.shuffle(idx)
         lb_idx.extend(idx[:lb_samples_per_class[c]])
-        if ulb_num_labels is None or ulb_num_labels == 'None':
+        if ulb_samples_per_class is None:
             ulb_idx.extend(idx[lb_samples_per_class[c]:])
         else:
             ulb_idx.extend(idx[lb_samples_per_class[c]:lb_samples_per_class[c]+ulb_samples_per_class[c]])
