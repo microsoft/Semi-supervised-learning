@@ -16,9 +16,6 @@ joblib==1.2.0
 kiwisolver==1.4.3
 Markdown==3.3.7
 matplotlib==3.5.2
-mkl-fft>=1.3.0
-mkl-random==1.2.2
-mkl-service==2.4.0
 networkx==2.6.3
 numpy
 oauthlib==3.2.1

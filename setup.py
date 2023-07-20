@@ -26,7 +26,7 @@ with pathlib.Path('requirements.txt').open() as requirements_txt:
 
 setup(
     name='semilearn',
-    version='0.3.0',
+    version='0.3.1',
     description='Unfied Semi-Supervised Learning Benchmark',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -41,5 +41,5 @@ setup(
     include_package_data=True,
     # install_requires=['torch >= 1.8', 'torchvision', 'torchaudio', 'transformers', 'timm', 'progress', 'ruamel.yaml', 'scikit-image', 'scikit-learn', 'tensorflow', ''],
     install_requires=install_requires,
-    python_requires='>=3.8',
+    python_requires='>=3.9',
 )
