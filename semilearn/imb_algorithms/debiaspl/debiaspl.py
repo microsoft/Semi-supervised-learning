@@ -49,7 +49,7 @@ class DebiasPL(ImbAlgorithmBase):
     def compute_prob(self, logits):
         # update p_hat
         probs = super().compute_prob(logits)
-        delta_p = probs.mean()
+        delta_p = probs.mean(dim=0)
         self.p_hat = self.ema_m * self.p_hat + (1 - self.ema_p) * delta_p
         return super().compute_prob(logits - self.tau * torch.log(self.p_hat))
 
