@@ -90,7 +90,7 @@
 
 ## News and Updates
 
-- [07/07/2023] Add [DeFixmatch](https://arxiv.org/abs/2203.07512).
+- [07/07/2023] Add [DeFixmatch](https://arxiv.org/abs/2203.07512). Fixed some bugs. Release semilearn=0.3.1/
 
 - [06/01/2023] USB has officially joined the Pytorch ecosystem! [[Pytorch blog](https://medium.com/p/849f42bbc32a)]
 
