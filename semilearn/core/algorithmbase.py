@@ -58,7 +58,7 @@ class AlgorithmBase:
         self.resume = args.resume
         self.algorithm = args.algorithm
 
-        # commaon utils arguments
+        # common utils arguments
         self.tb_log = tb_log
         self.print_fn = print if logger is None else logger.info
         self.ngpus_per_node = torch.cuda.device_count()
@@ -479,7 +479,7 @@ class AlgorithmBase:
             fn_name (str): The function name in each hook to be called, such as
                 "before_train_epoch".
             hook_name (str): The specific hook name to be called, such as
-                "param_update" or "dist_align", uesed to call single hook in train_step.
+                "param_update" or "dist_align", used to call single hook in train_step.
         """
         
         if hook_name is not None:
@@ -499,7 +499,7 @@ class AlgorithmBase:
     @staticmethod
     def get_argument():
         """
-        Get specificed arguments into argparse for each algorithm
+        Get specified arguments into argparse for each algorithm
         """
         return {}
 
@@ -516,7 +516,7 @@ class ImbAlgorithmBase(AlgorithmBase):
     
     def imb_init(self, *args, **kwargs):
         """
-        intiialize imbalanced algorithm parameters
+        initialize imbalanced algorithm parameters
         """
         pass 
 

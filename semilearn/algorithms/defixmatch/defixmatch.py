@@ -100,7 +100,7 @@ class DeFixMatch(AlgorithmBase):
                                                pseudo_label,
                                                'ce',
                                                mask=mask)
-            # generate targets for labeled data using pseudo label hook (debiasing part of the loss)
+            # generate targets for labeled data using pseudo label hook (de-biasing part of the loss)
             anti_pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
                                                 logits=probs_x_lb,
                                                 use_hard_label=self.use_hard_label,

@@ -9,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 def over_write_args_from_dict(args, dict):
     """
-    overwrite arguments acocrding to config file
+    overwrite arguments according to the config file
     """
     for k in dict:
         setattr(args, k, dict[k])

@@ -18,7 +18,7 @@ def get_net_builder(net_name, from_name: bool):
 
     Args
         net_name: 'WideResNet' or network names in torchvision.models
-        from_name: If True, net_buidler takes models in torch.vision models. Then, net_conf is ignored.
+        from_name: If True, net_builder takes models in torch.vision models. Then, net_conf is ignored.
     """
     if from_name:
         import torchvision.models as nets
@@ -132,7 +132,7 @@ def get_data_loader(args,
         shuffle: shuffle in DataLoader
         num_workers: num_workers in DataLoader
         pin_memory: pin_memory in DataLoader
-        data_sampler: data sampler to be used, None|RandomSampler|WeightedRamdomSampler, make sure None is used for test loader
+        data_sampler: data sampler to be used, None|RandomSampler|WeightedRandomSampler, make sure None is used for test loader
         num_epochs: total batch -> (# of batches in dset) * num_epochs 
         num_iters: total batch -> num_iters
         generator: random generator
@@ -185,7 +185,7 @@ def get_optimizer(net, optim_name='SGD', lr=0.1, momentum=0.9, weight_decay=0, l
     return optimizer (name) in torch.optim.
 
     Args:
-        net: model witth parameters to be optimized
+        net: model with parameters to be optimized
         optim_name: optimizer name, SGD|AdamW
         lr: learning rate
         momentum: momentum parameter for SGD
@@ -226,7 +226,7 @@ def get_cosine_schedule_with_warmup(optimizer,
     from torch.optim.lr_scheduler import LambdaLR
     def _lr_lambda(current_step):
         '''
-        _lr_lambda returns a multiplicative factor given an interger parameter epochs.
+        _lr_lambda returns a multiplicative factor given an integer parameter epochs.
         Decaying criteria: last_epoch
         '''
 

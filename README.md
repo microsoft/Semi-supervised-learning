@@ -321,7 +321,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 ## Community and Contact
 
-The USB comunity is maintained by:
+The USB community is maintained by:
 
 - Yidong Wang (yidongwang37@gmail.com), Tokyo Institute of Technology
 - Hao Chen (haoc3@andrew.cmu.edu), Carnegie Mellon University
