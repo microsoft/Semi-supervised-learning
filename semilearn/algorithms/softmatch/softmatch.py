@@ -92,7 +92,7 @@ class SoftMatch(AlgorithmBase):
             # generate unlabeled targets using pseudo label hook
             pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
                                           # make sure this is logits, not dist aligned probs
-                                          # uniform alignment in softmatch do not use aligned probs for generating pesudo labels
+                                          # uniform alignment in softmatch do not use aligned probs for generating pseudo labels
                                           logits=logits_x_ulb_w,
                                           use_hard_label=self.use_hard_label,
                                           T=self.T)

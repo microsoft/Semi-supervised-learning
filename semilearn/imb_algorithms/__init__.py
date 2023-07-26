@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-# will be releasted soon
+# will be released soon
 from semilearn.algorithms import name2alg
 from semilearn.core.utils import IMB_ALGORITHMS
 name2imbalg = IMB_ALGORITHMS

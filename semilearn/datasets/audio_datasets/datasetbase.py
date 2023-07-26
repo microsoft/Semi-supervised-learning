@@ -23,7 +23,7 @@ class WaveformTransforms:
         attenuation = int(-5.0 + 10.0 * random.random())
 
         effects_list = [
-            # ["lowpass", "-1", "300"],  # apply single-pole lowpass filter
+            # ["lowpass", "-1", "300"],  # apply single-pole low-pass filter
             ['gain', '-n', f'{attenuation:.5f}'],  # apply 10 db attenuation
             ["pitch", f'{pitch:.5f}'],
             ["speed", f'{speed:.5f}'],  # reduce the speed

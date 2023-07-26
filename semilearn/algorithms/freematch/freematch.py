@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from .utils import FreeMatchThresholingHook
+from .utils import FreeMatchThresholdingHook
 from semilearn.core import AlgorithmBase
 from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook
@@ -61,7 +61,7 @@ class FreeMatch(AlgorithmBase):
 
     def set_hooks(self):
         self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
-        self.register_hook(FreeMatchThresholingHook(num_classes=self.num_classes, momentum=self.args.ema_p), "MaskingHook")
+        self.register_hook(FreeMatchThresholdingHook(num_classes=self.num_classes, momentum=self.args.ema_p), "MaskingHook")
         super().set_hooks()
 
 

@@ -29,7 +29,7 @@ class Trainer:
 
     def fit(self, train_lb_loader, train_ulb_loader, eval_loader):
         self.algorithm.loader_dict = {
-            'trian_lb': train_lb_loader,
+            'train_lb': train_lb_loader,
             'train_ulb': train_ulb_loader,
             'eval': eval_loader
         }
