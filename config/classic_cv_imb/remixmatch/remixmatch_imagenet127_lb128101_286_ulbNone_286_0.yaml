@@ -6,6 +6,8 @@ load_path: ./saved_models/classic_cv_imb/remixmatch_imagenet127_lb128101_286_ulb
 overwrite: True
 use_tensorboard: True
 use_wandb: False
+use_aim: False
+aim_repo: ./saved_models/classic_cv_imb
 epoch: 200
 num_train_iter: 500000
 num_eval_iter: 2500

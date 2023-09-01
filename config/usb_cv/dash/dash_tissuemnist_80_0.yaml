@@ -6,6 +6,8 @@ load_path: ./saved_models/usb_cv//dash_tissuemnist_80_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 use_wandb: False
+use_aim: False
+aim_repo: ./saved_models/usb_cv/
 epoch: 200
 num_train_iter: 204800
 num_log_iter: 256

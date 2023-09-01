@@ -6,6 +6,8 @@ load_path: ./saved_models/usb_nlp/pseudolabel_amazon_review_1000_0/latest_model.
 overwrite: True
 use_tensorboard: True
 use_wandb: False
+use_aim: False
+aim_repo: ./saved_models/usb_nlp
 epoch: 100
 num_train_iter: 102400
 num_warmup_iter: 5120

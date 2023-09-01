@@ -6,6 +6,8 @@ load_path: ./saved_models/classic_cv/mixmatch_cifar100_10000_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 use_wandb: False
+use_aim: False
+aim_repo: ./saved_models/classic_cv
 epoch: 1024
 num_train_iter: 1048576
 num_eval_iter: 5120

@@ -45,3 +45,5 @@ dist_url: tcp://127.0.0.1:10005
 dist_backend: nccl
 gpu: None
 use_wandb: False
+use_aim: False
+aim_repo: ./saved_models/usb_audio
