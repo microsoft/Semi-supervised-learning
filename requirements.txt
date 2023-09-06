@@ -8,7 +8,7 @@ fonttools==4.33.3
 google-auth==2.9.0
 google-auth-oauthlib==0.4.6
 grpcio==1.53.0
-huggingface-hub==0.8.1
+huggingface-hub==0.14.1
 idna==3.3
 imageio==2.19.3
 importlib-metadata==4.12.0

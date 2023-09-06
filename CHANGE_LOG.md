@@ -1,5 +1,7 @@
 # Change Log
 
+* Fixes hard-coded repository path for Aim experiment tracking.
+
 ## 23/07/15/2023 Update
 
 * Added DeFixmatch algorithm.
