@@ -63,7 +63,6 @@ def create_usb_nlp_config(
     cfg["use_tensorboard"] = True
     cfg["use_wandb"] = False
     cfg["use_aim"] = False
-    cfg["aim_repo"] = cfg["save_dir"]
 
     # algorithm config
     cfg["epoch"] = 100

@@ -51,7 +51,6 @@ def create_classic_config(
     cfg["use_tensorboard"] = True
     cfg["use_wandb"] = True
     cfg["use_aim"] = False
-    cfg["aim_repo"] = cfg["save_dir"]
 
     # algorithm config
     cfg["epoch"] = 1024
@@ -252,7 +251,6 @@ def create_classic_config(
     cfg["amp"] = False
     cfg["use_wandb"] = False
     cfg["use_aim"] = False
-    cfg["aim_repo"] = cfg["save_dir"]
 
     return cfg
 

@@ -65,7 +65,6 @@ def create_usb_cv_config(
     cfg["use_tensorboard"] = True
     cfg["use_wandb"] = False
     cfg["use_aim"] = False
-    cfg["aim_repo"] = cfg["save_dir"]
 
     if dataset == "imagenet":
         cfg["epoch"] = 500

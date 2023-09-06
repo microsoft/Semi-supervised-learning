@@ -50,7 +50,6 @@ def get_config():
     parser.add_argument(
         "--use_aim", action="store_true", help="Use aim to plot and save curves"
     )
-    parser.add_argument("--aim_repo", type=str, default="./saved_models")
 
     """
     Training Configuration of FixMatch

@@ -227,7 +227,6 @@ def create_usb_audio_config(
     cfg["overwrite"] = True
     cfg["use_wandb"] = False
     cfg["use_aim"] = False
-    cfg["aim_repo"] = cfg["save_dir"]
 
     return cfg
 

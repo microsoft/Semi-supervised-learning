@@ -6,8 +6,6 @@ load_path: ./saved_models/classic_cv_imb/fixmatch_adsh_cifar100_lb150_15_ulb300_
 overwrite: True
 use_tensorboard: True
 use_wandb: False
-use_aim: False
-aim_repo: ./saved_models/classic_cv_imb
 epoch: 256
 num_train_iter: 262144
 num_eval_iter: 1024

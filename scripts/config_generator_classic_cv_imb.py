@@ -248,7 +248,6 @@ def create_classic_cv_imb_config(
 
     cfg["use_wandb"] = False
     cfg["use_aim"] = False
-    cfg["aim_repo"] = cfg["save_dir"]
     return cfg
 
 

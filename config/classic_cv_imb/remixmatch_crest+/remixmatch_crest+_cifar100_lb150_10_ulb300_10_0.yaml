@@ -6,8 +6,6 @@ load_path: ./saved_models/classic_cv_imb/remixmatch_crest+_cifar100_lb150_10_ulb
 overwrite: True
 use_tensorboard: True
 use_wandb: False
-use_aim: False
-aim_repo: ./saved_models/classic_cv_imb
 epoch: 128
 num_train_iter: 65536
 num_eval_iter: 1024

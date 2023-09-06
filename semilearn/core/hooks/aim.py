@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+import os
 
 import aim
 
@@ -31,7 +32,8 @@ class AimHook(Hook):
         # initialize aim run
         name = algorithm.save_name
         project = algorithm.save_dir.split("/")[-1]
-        self.run = aim.Run(experiment=name, repo=algorithm.args.aim_repo)
+        repo = os.path.join(algorithm.args.save_dir, "aim", algorithm.args.save_name)
+        self.run = aim.Run(experiment=name, repo=repo)
 
         # set configuration
         self.run["hparams"] = algorithm.args.__dict__
