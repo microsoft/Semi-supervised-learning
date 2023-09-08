@@ -1,5 +1,6 @@
 # Change Log
 
+* Simplified and improved the flexibility of the dependencies.
 * Fixes hard-coded repository path for Aim experiment tracking.
 
 ## 23/07/15/2023 Update
