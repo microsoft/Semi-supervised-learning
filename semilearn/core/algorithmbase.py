@@ -447,6 +447,10 @@ class AlgorithmBase:
             # Using a scheduler, so save its state dict
             save_dict["scheduler"] = self.scheduler.state_dict()
 
+        if hasattr(self, "aim_run_hash"):
+            # Using Aim, so save the run hash so that tracking can be resumed
+            save_dict["aim_run_hash"] = self.aim_run_hash
+
         return save_dict
 
     def save_model(self, save_name, save_path):
@@ -462,9 +466,10 @@ class AlgorithmBase:
 
     def load_model(self, load_path):
         """
-        load model and specified parameters for resume
+        Load a model and the necessary parameters for resuming training.
         """
         checkpoint = torch.load(load_path, map_location="cpu")
+
         self.model.load_state_dict(checkpoint["model"])
         self.ema_model.load_state_dict(checkpoint["ema_model"])
         self.loss_scaler.load_state_dict(checkpoint["loss_scaler"])
@@ -474,9 +479,17 @@ class AlgorithmBase:
         self.best_it = checkpoint["best_it"]
         self.best_eval_acc = checkpoint["best_eval_acc"]
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+
         if self.scheduler is not None and "scheduler" in checkpoint:
+            # Using a scheduler, so load its state dict
             self.scheduler.load_state_dict(checkpoint["scheduler"])
+
+        if "aim_run_hash" in checkpoint:
+            # Using Aim, so load the run hash so that tracking can be resumed
+            self.aim_run_hash = checkpoint["aim_run_hash"]
+
         self.print_fn("Model loaded")
+
         return checkpoint
 
     def check_prefix_state_dict(self, state_dict):
