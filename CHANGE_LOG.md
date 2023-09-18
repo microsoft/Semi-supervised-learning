@@ -1,6 +1,7 @@
 # Change Log
 
 * Change the frequency of Tensorboard logging to every `num_log_iter` iterations.
+* Aim tracking now resumes tracking the same run when resuming training.
 * Simplified and improved the flexibility of the dependencies.
 * Fixes hard-coded repository path for Aim experiment tracking.
 
