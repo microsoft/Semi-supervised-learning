@@ -1,5 +1,6 @@
 # Change Log
 
+* Aim tracking now resumes tracking the same run when resuming training.
 * Simplified and improved the flexibility of the dependencies.
 * Fixes hard-coded repository path for Aim experiment tracking.
 
