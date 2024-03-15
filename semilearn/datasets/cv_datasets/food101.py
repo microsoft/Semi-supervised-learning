@@ -71,7 +71,7 @@ def get_food101(args, alg, name, num_labels, num_classes, data_dir='./data', inc
         lb_data = data
         lb_targets = targets
 
-    lb_dset = Food101Dataset(alg, lb_data, lb_targets, num_classes, transform_weak, False, transform_strong, False)
+    lb_dset = Food101Dataset(alg, lb_data, lb_targets, num_classes, transform_weak, False, None, False)
 
     ulb_dset = Food101Dataset(alg, ulb_data, ulb_targets, num_classes, transform_weak, True, transform_strong, False)
 

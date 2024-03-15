@@ -571,6 +571,7 @@ class MedMNIST(Dataset):
                  alg,
                  split,
                  transform=None,
+                 transform_medium=None,
                  transform_strong=None,
                  target_transform=None,
                  download=False,
@@ -585,6 +586,7 @@ class MedMNIST(Dataset):
         '''
         self.alg = alg
         self.is_ulb = is_ulb
+        self.transform_medium = transform_medium
         self.strong_transform = transform_strong
 
         self.info = INFO[self.flag]
@@ -883,6 +885,16 @@ def get_medmnist(args, alg, dataset_name, num_labels, num_classes, data_dir='./d
         transforms.Normalize(dataset_mean, dataset_std)
     ])
 
+    transform_medium = transforms.Compose([
+        transforms.Resize(img_size),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.RandomCrop(img_size, padding=int(img_size * (1 - crop_ratio)), padding_mode='reflect'),
+        RandAugment(1, 5, exclude_color_aug=True),
+        transforms.ToTensor(),
+        transforms.Normalize(dataset_mean, dataset_std)
+    ])
+
     transform_strong = transforms.Compose([
         transforms.Resize(img_size),
         transforms.RandomHorizontalFlip(),
@@ -928,7 +940,7 @@ def get_medmnist(args, alg, dataset_name, num_labels, num_classes, data_dir='./d
             train_labeled_targets = np.concatenate([train_labeled_targets, train_unlabeled_targets], axis=0)
     # construct datasets for training and testing
     train_labeled_dataset = name2class[dataset_name](alg, root=data_dir, split="train", transform=transform_weak, transform_strong=transform_strong, as_rgb=True)
-    train_unlabeled_dataset = name2class[dataset_name](alg, root=data_dir, split="train", is_ulb=True, transform=transform_weak, transform_strong=transform_strong, as_rgb=True)
+    train_unlabeled_dataset = name2class[dataset_name](alg, root=data_dir, split="train", is_ulb=True, transform=transform_weak, transform_medium=transform_medium, transform_strong=transform_strong, as_rgb=True)
     train_labeled_dataset.data = train_labeled_data
     train_unlabeled_dataset.data = train_unlabeled_data
     train_labeled_dataset.targets = train_labeled_targets

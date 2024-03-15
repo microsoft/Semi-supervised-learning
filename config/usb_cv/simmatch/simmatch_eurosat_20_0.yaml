@@ -2,7 +2,7 @@ algorithm: simmatch
 save_dir: ./saved_models/usb_cv/
 save_name: simmatch_eurosat_20_0
 resume: True
-load_path: ./saved_models/usb_cv//simmatch_eurosat_20_0/latest_model.pth
+load_path: ./saved_models/usb_cv/simmatch_eurosat_20_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 use_wandb: False
@@ -34,9 +34,10 @@ weight_decay: 0.0005
 amp: False
 clip: 0.0
 use_cat: True
+use_epass: True
 net: vit_small_patch2_32
 net_from_name: False
-data_dir: ./data
+data_dir: /home/data
 dataset: eurosat
 train_sampler: RandomSampler
 num_classes: 10

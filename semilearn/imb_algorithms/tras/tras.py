@@ -39,7 +39,7 @@ class TRASNet(nn.Module):
         self.backbone = backbone
         self.num_features = backbone.num_features
 
-        # auxiliary classifier
+        # auxilary classifier
         self.aux_classifier = nn.Linear(self.backbone.num_features, num_classes)
     
     def forward(self, x, **kwargs):
@@ -81,7 +81,7 @@ class TRAS(ImbAlgorithmBase):
         T_logit = torch.softmax(-self.la / 1, dim=0)
         self.T_logit = self.A * T_logit + self.B
 
-        # create tras ce loss
+        # crete tras ce loss
         self.tras_ce_loss = TRASLogitsAdjCELoss(la=self.la)
         self.tras_kl_loss = TRASKLLoss()
 

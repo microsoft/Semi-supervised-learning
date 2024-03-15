@@ -7,7 +7,7 @@ from semilearn.algorithms.utils import concat_all_gather
 from semilearn.algorithms.hooks import MaskingHook
 
 
-class FreeMatchThresholdingHook(MaskingHook):
+class FreeMatchThresholingHook(MaskingHook):
     """
     SAT in FreeMatch
     """

@@ -28,6 +28,15 @@ def get_semi_aves(args, alg, dataset, train_split='l_train_val', ulb_split='u_tr
         transforms.Normalize(imgnet_mean, imgnet_std)
     ])
 
+    transform_medium = transforms.Compose([
+        transforms.Resize((int(math.floor(img_size / crop_ratio)), int(math.floor(img_size / crop_ratio)))),
+        RandomResizedCropAndInterpolation((img_size, img_size)),
+        transforms.RandomHorizontalFlip(),
+        RandAugment(1, 10),
+        transforms.ToTensor(),
+        transforms.Normalize(imgnet_mean, imgnet_std)
+    ])
+
     transform_strong = transforms.Compose([
         transforms.Resize((int(math.floor(img_size / crop_ratio)), int(math.floor(img_size / crop_ratio)))),
         RandomResizedCropAndInterpolation((img_size, img_size)),
@@ -46,7 +55,7 @@ def get_semi_aves(args, alg, dataset, train_split='l_train_val', ulb_split='u_tr
 
     # NOTE this dataset is inherently imbalanced with unknown distribution
     train_labeled_dataset = iNatDataset(alg, data_dir, train_split, dataset, transform=transform_weak, transform_strong=transform_strong)
-    train_unlabeled_dataset = iNatDataset(alg, data_dir, ulb_split, dataset, is_ulb=True, transform=transform_weak, transform_strong=transform_strong)
+    train_unlabeled_dataset = iNatDataset(alg, data_dir, ulb_split, dataset, is_ulb=True, transform=transform_weak, transform_medium=transform_medium, transform_strong=transform_strong)
     test_dataset = iNatDataset(alg, data_dir, 'test', dataset, transform=transform_val)
 
     num_data_per_cls = [0] * train_labeled_dataset.num_classes
@@ -81,7 +90,7 @@ def make_dataset(dataset_root, split, task='All', pl_list=None):
         if task == 'semi_fungi':
             img[idx][0] = os.path.join(dataset_root, x[0] + '.JPG')
         else:
-            img[idx][0] = os.path.join(dataset_root, x[0])
+            img[idx][0] = os.path.join(dataset_root, task, x[0])
         img[idx][1] = int(x[1])
 
     classes = [x[1] for x in img]
@@ -91,7 +100,7 @@ def make_dataset(dataset_root, split, task='All', pl_list=None):
 
 
 class iNatDataset(BasicDataset):
-    def __init__(self, alg, dataset_root, split, task='All', transform=None, transform_strong=None,
+    def __init__(self, alg, dataset_root, split, task='All', transform=None, transform_medium=None, transform_strong=None,
                  loader=dataset_parser.default_loader, pl_list=None, is_ulb=False):
 
         self.alg = alg
@@ -103,10 +112,15 @@ class iNatDataset(BasicDataset):
         self.samples, self.num_classes, self.targets = make_dataset(self.dataset_root, split, self.task, pl_list=pl_list)
 
         self.transform = transform
+        self.medium_transform = transform_medium
+        if self.medium_transform is None:
+            if self.is_ulb:
+                assert self.alg not in ['sequencematch'], f"alg {self.alg} requires strong augmentation"
+
         self.strong_transform = transform_strong
         if self.strong_transform is None:
             if self.is_ulb:
-                assert self.alg not in ['fullysupervised', 'supervised', 'pseudolabel', 'vat', 'pimodel', 'meanteacher', 'mixmatch'], f"alg {self.alg} requires strong augmentation"
+                assert self.alg not in ['fullysupervised', 'supervised', 'pseudolabel', 'vat', 'pimodel', 'meanteacher', 'mixmatch', 'refixmatch'], f"alg {self.alg} requires strong augmentation"
 
         self.data = []
         for i in range(len(self.samples)):

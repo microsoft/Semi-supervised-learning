@@ -35,11 +35,11 @@ def get_config(config):
     parser.add_argument('--num_eval_iter', type=int, default=10,
                         help='evaluation frequency')
     parser.add_argument('--num_log_iter', type=int, default=5,
-                        help='logging frequency')
+                        help='logging frequencu')
     parser.add_argument('-nl', '--num_labels', type=int, default=400)
     parser.add_argument('-bsz', '--batch_size', type=int, default=8)
     parser.add_argument('--uratio', type=int, default=1,
-                        help='the ratio of unlabeled data to labeled data in each mini-batch')
+                        help='the ratio of unlabeled data to labeld data in each mini-batch')
     parser.add_argument('--eval_batch_size', type=int, default=16,
                         help='batch size of evaluation data loader (it does not affect the accuracy)')
     parser.add_argument('--ema_m', type=float, default=0.999, help='ema momentum for eval_model')
@@ -69,7 +69,7 @@ def get_config(config):
     ## core algorithm setting
     parser.add_argument('-alg', '--algorithm', type=str, default='fixmatch', help='ssl algorithm')
     parser.add_argument('--use_cat', type=str2bool, default=True, help='use cat operation in algorithms')
-    parser.add_argument('--amp', type=str2bool, default=False, help='use mixed precision training or not')
+    parser.add_argument('--use_amp', type=str2bool, default=False, help='use mixed precision training or not')
     parser.add_argument('--clip_grad', type=float, default=0)
 
     ## imbalance algorithm setting
@@ -104,7 +104,7 @@ def get_config(config):
     parser.add_argument('--sample_rate', type=int, default=16000)
 
     '''
-    multi-GPUs & Distributed Training
+    multi-GPUs & Distrbitued Training
     '''
 
     ## args for distributed training (from https://github.com/pytorch/examples/blob/master/imagenet/main.py)

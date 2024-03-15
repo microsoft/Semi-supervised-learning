@@ -12,9 +12,10 @@ from semilearn.algorithms.utils import SSL_Argument, str2bool, concat_all_gather
 
 
 class CoMatch_Net(nn.Module):
-    def __init__(self, base, proj_size=128):
+    def __init__(self, base, proj_size=128, epass=False):
         super(CoMatch_Net, self).__init__()
         self.backbone = base
+        self.epass = epass
         self.num_features = base.num_features
         
         self.mlp_proj = nn.Sequential(*[
@@ -22,6 +23,19 @@ class CoMatch_Net(nn.Module):
             nn.ReLU(inplace=False),
             nn.Linear(self.num_features, proj_size)
         ])
+        
+        if self.epass:
+            self.mlp_proj_2 = nn.Sequential(*[
+                nn.Linear(self.num_features, self.num_features),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.num_features, proj_size)
+            ])
+            
+            self.mlp_proj_3 = nn.Sequential(*[
+                nn.Linear(self.num_features, self.num_features),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.num_features, proj_size)
+            ])
         
     def l2norm(self, x, power=2):
         norm = x.pow(power).sum(1, keepdim=True).pow(1. / power)
@@ -31,7 +45,12 @@ class CoMatch_Net(nn.Module):
     def forward(self, x, **kwargs):
         feat = self.backbone(x, only_feat=True)
         logits = self.backbone(feat, only_fc=True)
-        feat_proj = self.l2norm(self.mlp_proj(feat))
+
+        if self.epass:
+            feat_proj = self.l2norm((self.mlp_proj(feat) + self.mlp_proj_2(feat) + self.mlp_proj_3(feat))/3)
+        else:
+            feat_proj = self.l2norm(self.mlp_proj(feat))
+
         return {'logits':logits, 'feat':feat_proj}
 
     def group_matcher(self, coarse=False):
@@ -101,7 +120,7 @@ class CoMatch(AlgorithmBase):
 
         # TODO: put this part into a hook
         # memory smoothing
-        self.queue_size = int(queue_batch * (self.args.uratio + 1) * self.args.batch_size)
+        self.queue_size = int(queue_batch * (self.args.uratio + 1) * self.args.batch_size) if self.args.dataset != 'imagenet' else self.args.K
         self.queue_feats = torch.zeros(self.queue_size, self.args.proj_size).cuda(self.gpu)
         self.queue_probs = torch.zeros(self.queue_size, self.args.num_classes).cuda(self.gpu)
         self.queue_ptr = 0
@@ -115,12 +134,12 @@ class CoMatch(AlgorithmBase):
 
     def set_model(self):
         model = super().set_model()
-        model = CoMatch_Net(model, proj_size=self.args.proj_size)
+        model = CoMatch_Net(model, proj_size=self.args.proj_size, epass=self.args.use_epass)
         return model
     
     def set_ema_model(self):
         ema_model = self.net_builder(num_classes=self.num_classes)
-        ema_model = CoMatch_Net(ema_model, proj_size=self.args.proj_size)
+        ema_model = CoMatch_Net(ema_model, proj_size=self.args.proj_size, epass=self.args.use_epass)
         ema_model.load_state_dict(self.check_prefix_state_dict(self.model.state_dict()))
         return ema_model
 
@@ -132,10 +151,13 @@ class CoMatch(AlgorithmBase):
             probs = concat_all_gather(probs)
         # update memory bank
         length = feats.shape[0]
+        if (self.queue_ptr + length) > self.queue_size:
+            queue_ptr = self.queue_size - self.queue_ptr
+            feats = feats[:queue_ptr]
+            probs = probs[:queue_ptr]
         self.queue_feats[self.queue_ptr:self.queue_ptr + length, :] = feats
         self.queue_probs[self.queue_ptr:self.queue_ptr + length, :] = probs      
         self.queue_ptr = (self.queue_ptr + length) % self.queue_size
-
 
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s_0, x_ulb_s_1):
         num_lb = y_lb.shape[0] 

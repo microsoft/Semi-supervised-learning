@@ -23,7 +23,7 @@ class WaveformTransforms:
         attenuation = int(-5.0 + 10.0 * random.random())
 
         effects_list = [
-            # ["lowpass", "-1", "300"],  # apply single-pole low-pass filter
+            # ["lowpass", "-1", "300"],  # apply single-pole lowpass filter
             ['gain', '-n', f'{attenuation:.5f}'],  # apply 10 db attenuation
             ["pitch", f'{pitch:.5f}'],
             ["speed", f'{speed:.5f}'],  # reduce the speed
@@ -109,12 +109,7 @@ class BasicDataset(Dataset):
             wav = raw_wav
 
         if self.is_ulb == False:
-            if self.alg == 'defixmatch':
-                raw_wav_s = self.strong_transform(raw_wav)
-                wav_s = random_subsample(raw_wav_s, max_length=self.max_length, sample_rate=self.sample_rate)
-                return {'idx':idx, 'wav':wav, 'wav_s': wav_s, 'label':target}
-            else:
-                return {'idx':idx, 'wav':wav, 'label':target} 
+            return {'idx':idx, 'wav':wav, 'label':target} 
         else:
             if self.alg == 'fullysupervised' or self.alg == 'supervised':
                 return {'idx':idx, 'wav':wav, 'label':target} 

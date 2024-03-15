@@ -72,6 +72,17 @@ def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', 
         transforms.Normalize(dataset_mean, dataset_std)
     ])
 
+    transform_medium = transforms.Compose([
+        transforms.Resize(crop_size),
+        transforms.RandomCrop((crop_size, crop_size), padding=int(crop_size * (1 - crop_ratio)), padding_mode='reflect'),
+        # RandomResizedCropAndInterpolation((crop_size, crop_size), scale=(0.8, 1.0)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        RandAugment(1, 5),
+        transforms.ToTensor(),
+        transforms.Normalize(dataset_mean, dataset_std)
+    ])
+
     transform_strong = transforms.Compose([
         transforms.Resize(crop_size),
         transforms.RandomCrop((crop_size, crop_size), padding=int(crop_size * (1 - crop_ratio)), padding_mode='reflect'),
@@ -122,7 +133,7 @@ def get_eurosat(args, alg, dataset, num_labels, num_classes, data_dir='./data', 
             train_labeled_idxs = np.concatenate([train_labeled_idxs, train_unlabeled_idxs])
     
     train_labeled_dataset = EuroSat(alg, data_dir, split="trainval", idx_list=train_labeled_idxs, transform=transform_weak, transform_strong=transform_strong)
-    train_unlabeled_dataset = EuroSat(alg, data_dir, split="trainval", is_ulb=True, idx_list=train_unlabeled_idxs, transform=transform_weak, transform_strong=transform_strong)
+    train_unlabeled_dataset = EuroSat(alg, data_dir, split="trainval", is_ulb=True, idx_list=train_unlabeled_idxs, transform=transform_weak, transform_medium=transform_medium, transform_strong=transform_strong)
     val_dataset = EuroSat(alg, data_dir, split="test", transform=transform_val)
 
     print(f"#Labeled: {len(train_labeled_dataset)} #Unlabeled: {len(train_unlabeled_dataset)} "
@@ -160,16 +171,21 @@ class EuroSat(ImageFolder, BasicDataset):
     TEST_SPLIT_PERCENT = 0.20
     # todo: implement _check_integrity method here!
 
-    def __init__(self, alg, root, split, is_ulb=False, idx_list=None, transform=None, target_transform=None, transform_strong=None):
+    def __init__(self, alg, root, split, is_ulb=False, idx_list=None, transform=None, target_transform=None, transform_medium=None, transform_strong=None):
         """see comments at the beginning of the script"""
         super(EuroSat, self).__init__(root, transform=transform, target_transform=target_transform)
 
         self.is_ulb = is_ulb
         self.alg = alg
+        
+        self.medium_transform = transform_medium
+        if self.medium_transform is None:
+            if self.is_ulb:
+                assert self.alg not in ['sequencematch'], f"alg {self.alg} requires strong augmentation"
         self.strong_transform = transform_strong
         if self.strong_transform is None:
             if self.is_ulb:
-                assert self.alg not in ['fullysupervised', 'supervised', 'pseudolabel', 'vat', 'pimodel', 'meanteacher', 'mixmatch'], f"alg {self.alg} requires strong augmentation"
+                assert self.alg not in ['fullysupervised', 'supervised', 'pseudolabel', 'vat', 'pimodel', 'meanteacher', 'mixmatch', 'refixmatch'], f"alg {self.alg} requires strong augmentation"
 
         unique, counts = np.unique(self.targets, return_counts=True)
         self.num_imgs_per_class = dict(zip(unique, counts))  # dont use os.listdir! due to the order!!!

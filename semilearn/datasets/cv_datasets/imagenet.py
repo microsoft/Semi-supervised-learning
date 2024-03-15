@@ -55,6 +55,15 @@ def get_imagenet(args, alg, name, num_labels, num_classes, data_dir='./data', in
         transforms.Normalize(mean['imagenet'], std['imagenet'])
     ])
 
+    transform_medium = transforms.Compose([
+        transforms.Resize((int(math.floor(img_size / crop_ratio)), int(math.floor(img_size / crop_ratio)))),
+        RandomResizedCropAndInterpolation((img_size, img_size)),
+        transforms.RandomHorizontalFlip(),
+        RandAugment(1, 10),
+        transforms.ToTensor(),
+        transforms.Normalize(mean['imagenet'], std['imagenet'])
+    ])
+
     transform_strong = transforms.Compose([
         transforms.Resize((int(math.floor(img_size / crop_ratio)), int(math.floor(img_size / crop_ratio)))),
         RandomResizedCropAndInterpolation((img_size, img_size)),
@@ -73,12 +82,12 @@ def get_imagenet(args, alg, name, num_labels, num_classes, data_dir='./data', in
 
     data_dir = os.path.join(data_dir, name.lower())
 
-    dataset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, ulb=False, alg=alg, strong_transform=transform_strong)
+    dataset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, ulb=False, alg=alg)
     percentage = num_labels / len(dataset)
 
     lb_dset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, ulb=False, alg=alg, percentage=percentage)
 
-    ulb_dset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, alg=alg, ulb=True, strong_transform=transform_strong, include_lb_to_ulb=include_lb_to_ulb, lb_index=lb_dset.lb_idx)
+    ulb_dset = ImagenetDataset(root=os.path.join(data_dir, "train"), transform=transform_weak, alg=alg, ulb=True, medium_transform=transform_medium, strong_transform=transform_strong, include_lb_to_ulb=include_lb_to_ulb, lb_index=lb_dset.lb_idx)
 
     eval_dset = ImagenetDataset(root=os.path.join(data_dir, "val"), transform=transform_val, alg=alg, ulb=False)
 
@@ -87,7 +96,7 @@ def get_imagenet(args, alg, name, num_labels, num_classes, data_dir='./data', in
 
 
 class ImagenetDataset(BasicDataset, ImageFolder):
-    def __init__(self, root, transform, ulb, alg, strong_transform=None, percentage=-1, include_lb_to_ulb=True, lb_index=None):
+    def __init__(self, root, transform, ulb, alg, medium_transform=None, strong_transform=None, percentage=-1, include_lb_to_ulb=True, lb_index=None):
         self.alg = alg
         self.is_ulb = ulb
         self.percentage = percentage
@@ -114,10 +123,14 @@ class ImagenetDataset(BasicDataset, ImageFolder):
         self.data = [s[0] for s in samples]
         self.targets = [s[1] for s in samples]
 
+        self.medium_transform = medium_transform
+        if self.medium_transform is None:
+            if self.is_ulb:
+                assert self.alg not in ['sequencematch'], f"alg {self.alg} requires strong augmentation"
         self.strong_transform = strong_transform
         if self.strong_transform is None:
             if self.is_ulb:
-                assert self.alg not in ['fullysupervised', 'supervised', 'pseudolabel', 'vat', 'pimodel', 'meanteacher', 'mixmatch'], f"alg {self.alg} requires strong augmentation"
+                assert self.alg not in ['fullysupervised', 'supervised', 'pseudolabel', 'vat', 'pimodel', 'meanteacher', 'mixmatch', 'refixmatch'], f"alg {self.alg} requires strong augmentation"
 
 
     def __sample__(self, index):

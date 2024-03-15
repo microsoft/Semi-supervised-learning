@@ -7,7 +7,7 @@ import torch.nn as nn
 
 class SSL_Argument(object):
     """
-    Algorithm specific argument
+    Algrithm specific argument
     """
     def __init__(self, name, type, default, help=''):
         """

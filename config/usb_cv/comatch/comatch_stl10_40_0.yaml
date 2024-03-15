@@ -2,7 +2,7 @@ algorithm: comatch
 save_dir: ./saved_models/usb_cv/
 save_name: comatch_stl10_40_0
 resume: True
-load_path: ./saved_models/usb_cv//comatch_stl10_40_0/latest_model.pth
+load_path: ./saved_models/usb_cv/comatch_stl10_40_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 use_wandb: False
@@ -36,9 +36,10 @@ weight_decay: 0.0005
 amp: False
 clip: 0.0
 use_cat: True
+use_epass: True
 net: vit_base_patch16_96
 net_from_name: False
-data_dir: ./data
+data_dir: /home/data
 dataset: stl10
 train_sampler: RandomSampler
 num_classes: 10
