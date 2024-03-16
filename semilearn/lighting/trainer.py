@@ -28,17 +28,16 @@ class Trainer:
 
 
     def fit(self, train_lb_loader, train_ulb_loader, eval_loader):
-        self.algorithm.loader_dict = {
-            'train_lb': train_lb_loader,
-            'train_ulb': train_ulb_loader,
-            'eval': eval_loader
-        }
         self.algorithm.model.train()
+
+        # EMA Init
+        self.algorithm.ema = EMA(self.algorithm.model, self.algorithm.ema_m)
+        self.algorithm.ema.register()
+
         # train
         self.algorithm.it = 0
         self.algorithm.best_eval_acc = 0.0
         self.algorithm.best_epoch = 0
-        self.algorithm.call_hook("before_run")
 
         for epoch in range(self.config.epoch):
             self.algorithm.epoch = epoch
@@ -49,26 +48,19 @@ class Trainer:
             bar = Bar('Processing', max=len(train_lb_loader))
 
             self.algorithm.model.train()
-            self.algorithm.call_hook("before_train_epoch")
 
             for data_lb, data_ulb in zip(train_lb_loader, train_ulb_loader):
 
                 if self.algorithm.it > self.config.num_train_iter:
                     break
                 
-                self.algorithm.call_hook("before_train_step")
-                out_dict, log_dict = self.algorithm.train_step(**self.algorithm.process_batch(**data_lb, **data_ulb))
-                self.algorithm.out_dict = out_dict
-                self.algorithm.log_dict = log_dict
-                self.algorithm.call_hook("after_train_step")
-                
+                result = self.algorithm.train_step(**self.algorithm.process_batch(**data_lb, **data_ulb))
+
                 bar.suffix = ("Iter: {batch:4}/{iter:4}.".format(batch=self.algorithm.it, iter=len(train_lb_loader)))
                 bar.next()
                 self.algorithm.it += 1
             bar.finish()
 
-            self.algorithm.call_hook("after_train_epoch")
-            
             # validate
             result = self.evaluate(eval_loader)
 

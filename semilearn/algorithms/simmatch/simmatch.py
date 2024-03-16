@@ -11,18 +11,31 @@ from semilearn.algorithms.utils import SSL_Argument, concat_all_gather
 
 
 class SimMatch_Net(nn.Module):
-    def __init__(self, base, proj_size=128):
+    def __init__(self, base, proj_size=128, epass=False):
         super(SimMatch_Net, self).__init__()
         self.backbone = base
+        self.epass = epass
         self.num_features = base.num_features
         
         self.mlp_proj = nn.Sequential(*[
             nn.Linear(self.num_features, self.num_features),
             nn.ReLU(inplace=False),
-            nn.Linear(self.num_features
-            , proj_size)
+            nn.Linear(self.num_features, proj_size)
         ])
         
+        if self.epass:
+            self.mlp_proj_2 = nn.Sequential(*[
+                nn.Linear(self.num_features, self.num_features),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.num_features, proj_size)
+            ])
+            
+            self.mlp_proj_3 = nn.Sequential(*[
+                nn.Linear(self.num_features, self.num_features),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.num_features, proj_size)
+            ])
+            
     def l2norm(self, x, power=2):
         norm = x.pow(power).sum(1, keepdim=True).pow(1. / power)
         out = x.div(norm)
@@ -31,7 +44,10 @@ class SimMatch_Net(nn.Module):
     def forward(self, x, **kwargs):
         feat = self.backbone(x, only_feat=True)
         logits = self.backbone(feat, only_fc=True)
-        feat_proj = self.l2norm(self.mlp_proj(feat))
+        if self.epass:
+            feat_proj = self.l2norm((self.mlp_proj(feat) + self.mlp_proj_2(feat) + self.mlp_proj_3(feat))/3)
+        else:
+            feat_proj = self.l2norm(self.mlp_proj(feat))
         return {'logits':logits, 'feat':feat_proj}
 
     def group_matcher(self, coarse=False):
@@ -73,7 +89,7 @@ class SimMatch(AlgorithmBase):
         # simmatch specified arguments
         # adjust k 
         self.use_ema_teacher = True
-        if args.dataset in ['cifar10', 'cifar100', 'svhn', 'superks', 'tissuemnist', 'eurosat', 'superbks', 'esc50', 'gtzan', 'urbansound8k', 'aclImdb', 'ag_news', 'dbpedia']:
+        if args.dataset in ['stl10', 'cifar10', 'cifar100', 'svhn', 'superks', 'tissuemnist', 'eurosat', 'superbks', 'esc50', 'gtzan', 'urbansound8k', 'aclImdb', 'ag_news', 'dbpedia']:
             self.use_ema_teacher = False
             self.ema_bank = 0.7
         args.K = args.lb_dest_len
@@ -104,12 +120,12 @@ class SimMatch(AlgorithmBase):
 
     def set_model(self): 
         model = super().set_model()
-        model = SimMatch_Net(model, proj_size=self.args.proj_size)
+        model = SimMatch_Net(model, proj_size=self.args.proj_size, epass=self.args.use_epass)
         return model
     
     def set_ema_model(self):
         ema_model = self.net_builder(num_classes=self.num_classes)
-        ema_model = SimMatch_Net(ema_model, proj_size=self.args.proj_size)
+        ema_model = SimMatch_Net(ema_model, proj_size=self.args.proj_size, epass=self.args.use_epass)
         ema_model.load_state_dict(self.model.state_dict())
         return ema_model    
 
@@ -175,7 +191,7 @@ class SimMatch(AlgorithmBase):
             with torch.no_grad():
                 teacher_logits = ema_feats_x_ulb_w @ bank
                 teacher_prob_orig = F.softmax(teacher_logits / self.T, dim=1)
-                factor = ema_probs_x_ulb_w.gather(1, self.labels_bank.expand([num_ulb, -1]))
+                factor = ema_probs_x_ulb_w.gather(1, self.labels_bank.expand([num_ulb, -1]))    
                 teacher_prob = teacher_prob_orig * factor
                 teacher_prob /= torch.sum(teacher_prob, dim=1, keepdim=True)
 

@@ -50,7 +50,7 @@ class ABC(ImbAlgorithmBase):
             - logger (`logging.Logger`):
                 logger to use
             - abc_p_cutoff (`float`):
-                threshold for the auxiliary classifier
+                threshold for the auxilariy classifier
             - abc_loss_ratio (`float`):
                 loss ration for auxiliary classifier
     """

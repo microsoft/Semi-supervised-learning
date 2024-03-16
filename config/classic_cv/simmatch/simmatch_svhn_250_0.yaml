@@ -17,7 +17,7 @@ p_cutoff: 0.95
 in_loss_ratio: 1.0
 ulb_loss_ratio: 1.0
 proj_size: 128
-K: 256
+K: 250
 da_len: 32
 smoothing_alpha: 0.9
 uratio: 7
@@ -33,6 +33,7 @@ layer_decay: 1.0
 amp: False
 clip: 0.0
 use_cat: True
+use_epass: True
 net: wrn_28_2
 net_from_name: False
 data_dir: ./data

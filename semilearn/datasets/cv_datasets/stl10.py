@@ -47,6 +47,15 @@ def get_stl10(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
         transforms.Normalize(mean[name], std[name])
     ])
 
+    transform_medium = transforms.Compose([
+        transforms.Resize(crop_size),
+        transforms.RandomCrop((crop_size, crop_size), padding=int(crop_size * (1 - crop_ratio)), padding_mode='reflect'),
+        transforms.RandomHorizontalFlip(),
+        RandAugment(1, 5),
+        transforms.ToTensor(),
+        transforms.Normalize(mean[name], std[name])
+    ])
+
     transform_strong = transforms.Compose([
         transforms.Resize(crop_size),
         transforms.RandomCrop((crop_size, crop_size), padding=int(crop_size * (1 - crop_ratio)), padding_mode='reflect'),
@@ -99,13 +108,13 @@ def get_stl10(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
     with open(output_path, 'w') as w:
         json.dump(out, w)
 
-    lb_dset = BasicDataset(alg, lb_data, lb_targets, num_classes, transform_weak, False, transform_strong, False)
+    lb_dset = BasicDataset(alg, lb_data, lb_targets, num_classes, transform_weak, False, transform_strong, transform_strong, False)
 
-    ulb_dset = BasicDataset(alg, ulb_data, ulb_targets, num_classes, transform_weak, True, transform_strong, False)
+    ulb_dset = BasicDataset(alg, ulb_data, ulb_targets, num_classes, transform_weak, True, transform_medium, transform_strong, False)
 
     dset = getattr(torchvision.datasets, name.upper())
     dset_lb = dset(data_dir, split='test', download=True)
     data, targets = dset_lb.data.transpose([0, 2, 3, 1]), dset_lb.labels.astype(np.int64)
-    eval_dset = BasicDataset(alg, data, targets, num_classes, transform_val, False, None, False)
+    eval_dset = BasicDataset(alg, data, targets, num_classes, transform_val, False, None, None, False)
 
     return lb_dset, ulb_dset, eval_dset

@@ -27,6 +27,7 @@ class BasicDataset(Dataset):
                  num_classes=None,
                  transform=None,
                  is_ulb=False,
+                 medium_transform=None,
                  strong_transform=None,
                  onehot=False,
                  *args, 
@@ -52,9 +53,14 @@ class BasicDataset(Dataset):
 
         self.transform = transform
         self.strong_transform = strong_transform
+        self.medium_transform = medium_transform
         if self.strong_transform is None:
             if self.is_ulb:
-                assert self.alg not in ['fullysupervised', 'supervised', 'pseudolabel', 'vat', 'pimodel', 'meanteacher', 'mixmatch'], f"alg {self.alg} requires strong augmentation"
+                assert self.alg not in ['fullysupervised', 'supervised', 'pseudolabel', 'vat', 'pimodel', 'meanteacher', 'mixmatch', 'refixmatch'], f"alg {self.alg} requires strong augmentation"
+    
+        if self.medium_transform is None:
+            if self.is_ulb:
+                assert self.alg not in ['sequencematch'], f"alg {self.alg} requires medium augmentation"
     
     def __sample__(self, idx):
         """ dataset specific sample function """
@@ -85,11 +91,7 @@ class BasicDataset(Dataset):
                 img = Image.fromarray(img)
             img_w = self.transform(img)
             if not self.is_ulb:
-                if self.alg == 'defixmatch' and self.strong_transform is not None:
-                    # NOTE Strong augmentation on the labelled for DeFixMatch
-                    return {'idx_lb': idx, 'x_lb': img_w, 'x_lb_s': self.strong_transform(img), 'y_lb': target} 
-                else:
-                    return {'idx_lb': idx, 'x_lb': img_w, 'y_lb': target}
+                return {'idx_lb': idx, 'x_lb': img_w, 'y_lb': target} 
             else:
                 if self.alg == 'fullysupervised' or self.alg == 'supervised':
                     return {'idx_ulb': idx}
@@ -98,6 +100,9 @@ class BasicDataset(Dataset):
                 elif self.alg == 'pimodel' or self.alg == 'meanteacher' or self.alg == 'mixmatch':
                     # NOTE x_ulb_s here is weak augmentation
                     return {'idx_ulb': idx, 'x_ulb_w': img_w, 'x_ulb_s': self.transform(img)}
+                # elif self.alg == 'sequencematch' or self.alg == 'somematch':
+                elif self.alg == 'sequencematch':
+                    return {'idx_ulb': idx, 'x_ulb_w': img_w, 'x_ulb_m': self.medium_transform(img), 'x_ulb_s': self.strong_transform(img)} 
                 elif self.alg == 'remixmatch':
                     rotate_v_list = [0, 90, 180, 270]
                     rotate_v1 = np.random.choice(rotate_v_list, 1).item()

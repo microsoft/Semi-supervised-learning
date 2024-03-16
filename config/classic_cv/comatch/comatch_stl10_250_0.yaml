@@ -35,6 +35,7 @@ layer_decay: 1.0
 amp: False
 clip: 0.0
 use_cat: True
+use_epass: True
 net: wrn_var_37_2
 net_from_name: False
 data_dir: ./data

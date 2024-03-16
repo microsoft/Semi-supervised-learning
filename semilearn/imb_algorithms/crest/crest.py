@@ -177,7 +177,7 @@ class CReST(ImbAlgorithmBase):
             else:
                 self.cur_dist_align_t = self.dist_align_t
 
-            # re-init every generation
+            # reinit every generation
             if self.gen > 0:
                 self.re_init()
             

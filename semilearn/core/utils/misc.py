@@ -9,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 def over_write_args_from_dict(args, dict):
     """
-    overwrite arguments according to the config file
+    overwrite arguments acocrding to config file
     """
     for k in dict:
         setattr(args, k, dict[k])
@@ -153,6 +153,9 @@ class EMA:
         for name, param in self.model.named_parameters():
             new_average = (1.0 - self.decay) * param.data + self.decay * self.shadow[name]
             self.shadow[name] = new_average.clone()
+        
+        for name, buffer in self.model.named_buffers():
+            self.shadow[name] = buffer.clone()
 
     def apply_shadow(self):
         for name, param in self.model.named_parameters():
