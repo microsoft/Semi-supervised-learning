@@ -90,6 +90,8 @@
 
 ## News and Updates
 
+- [03/16/2024] Add Epass, SequenceMatch, and ReFixMatch. Fixed some typos. 
+
 - [07/07/2023] Add [DeFixmatch](https://arxiv.org/abs/2203.07512). Fixed some bugs. Release semilearn=0.3.1/
 
 - [06/01/2023] USB has officially joined the Pytorch ecosystem! [[Pytorch blog](https://medium.com/p/849f42bbc32a)]
