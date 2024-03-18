@@ -90,7 +90,7 @@
 
 ## News and Updates
 
-- [03/16/2024] Add Epass, SequenceMatch, and ReFixMatch. Fixed some typos. 
+- [03/16/2024] Add [EPASS](https://openaccess.thecvf.com/content/WACV2024/html/Nguyen_Debiasing_Calibrating_and_Improving_Semi-Supervised_Learning_Performance_via_Simple_Ensemble_WACV_2024_paper), [SequenceMatch](https://openaccess.thecvf.com/content/WACV2024/html/Nguyen_SequenceMatch_Revisiting_the_Design_of_Weak-Strong_Augmentations_for_Semi-Supervised_Learning_WACV_2024_paper), and [ReFixMatch](https://openaccess.thecvf.com/content/ICCV2023W/LIMIT/html/Nguyen_Boosting_Semi-Supervised_Learning_by_Bridging_high_and_low-Confidence_Predictions_ICCVW_2023_paper). Fixed some typos. 
 
 - [07/07/2023] Add [DeFixmatch](https://arxiv.org/abs/2203.07512). Fixed some bugs. Release semilearn=0.3.1/
 
