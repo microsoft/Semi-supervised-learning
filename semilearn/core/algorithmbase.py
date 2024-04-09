@@ -132,26 +132,34 @@ class AlgorithmBase:
 
         need_d_cal = self.args.n_cal > 0 
         need_d_th  = self.args.n_th  > 0 
-        take_d_cal_th_from = self.args.take_d_cal_th_from
-        
+
         if(need_d_cal or need_d_th):
+            
+            take_d_cal_th_from = self.args.take_d_cal_th_from
+
             n = self.args.n_cal + self.args.n_th
             #if(self.args.take_from_eval):            
             ds1, ds2 = randomly_split_labeled_basic_dataset(dataset_dict[take_d_cal_th_from],size_1=n)
             dataset_dict[take_d_cal_th_from] = ds2  # remaining n_lb (or n_eval) - n samples 
+            
+            self.print_fn(f"len(d_train) = {len(dataset_dict['train_lb'])} and len(d_eval) = {len(dataset_dict['eval'])}")
 
             if(need_d_cal and  need_d_th):
                 ds11, ds12 = randomly_split_labeled_basic_dataset(ds1,size_1=self.args.n_cal)
                 dataset_dict['d_cal'] = ds11 
                 dataset_dict['d_th']  = ds12
+                self.print_fn(f'len(d_cal) = {len(ds11)} and len(d_th) = {len(ds12)}')
 
             elif(need_d_cal and  not need_d_th):
                 # need only post-hoc calib data.  [for fixed threshold or heuristic thresholds]
                 dataset_dict['d_cal'] = ds1
+                self.print_fn(f'len(d_cal) = {len(ds1)}')
 
             else:
                 # not doing post-hoc calibration but using threshold-estimation
                 dataset_dict['d_th']  = ds1    
+                self.print_fn(f'len(d_th) = {len(ds1)}')
+
             
         if dataset_dict is None:
             return dataset_dict
@@ -354,14 +362,14 @@ class AlgorithmBase:
                     self.cur_clf = PyTorchClassifier(logger=self.logger)
                     self.cur_clf.model = self.model 
 
-                    self.logger.info('========================= Training Post-hoc Calibrator   =========================')
+                    self.print_fn('========================= Training Post-hoc Calibrator   =========================')
                     self.cur_calibrator  = get_calibrator(self.cur_clf,self.post_hoc_calib_conf,self.logger)
                     
                     # randomly split the current available validation points into two parts.
                     # one part will be used for training the calibrator and other part for finding 
                     # the auto-labeling thresholds.
                     
-                    self.logger.info(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
+                    self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
                     self.cur_calibrator.fit(self.dataset_dict['d_cal'], ds_val_nc=self.dataset_dict['d_th'])
                 else:
                     self.logger.info('=========================    No Post-hoc Calibration     =========================')
@@ -376,8 +384,6 @@ class AlgorithmBase:
                 #parameters are updated in the call backs.
                 self.call_hook("after_train_step")
                 # the parameters are updated once the above hooks are called.
-
-
 
                 self.it += 1
             

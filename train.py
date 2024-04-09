@@ -187,6 +187,15 @@ def get_config():
     parser.add_argument("--max_length_seconds", type=float, default=4.0)
     parser.add_argument("--sample_rate", type=int, default=16000)
 
+
+    """
+    Post-hoc calibration 
+    """
+    parser.add_argument("--use_post_hoc_calib", type=bool, default=False) 
+    parser.add_argument("--n_cal",type=int, default=0)
+    parser.add_argument("--n_th",type=int, default=0)
+    parser.add_argument("--take_d_cal_th_from", type=str,default='train_lb')
+
     """
     multi-GPUs & Distributed Training
     """
@@ -360,6 +369,8 @@ def main_worker(gpu, ngpus_per_node, args):
 
     logger = get_logger(args.save_name, save_path, logger_level)
     logger.info(f"Use GPU: {args.gpu} for training")
+    
+    
 
     _net_builder = get_net_builder(args.net, args.net_from_name)
     # optimizer, scheduler, datasets, dataloaders with be set in algorithms
@@ -368,6 +379,9 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         model = get_algorithm(args, _net_builder, tb_log, logger)
     logger.info(f"Number of Trainable Params: {count_parameters(model.model)}")
+    
+    post_hoc_calib_conf = {}
+    model.post_hoc_calib_conf = post_hoc_calib_conf
 
     # SET Devices for (Distributed) DataParallel
     model.model = send_model_cuda(args, model.model)

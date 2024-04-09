@@ -6,13 +6,13 @@ import torch
 import torch.nn.functional as F  
 from .abstract_calibrator import AbstractCalibrator
 
-from src.optimizers import optim_factory
+from confidence_funcs.optimizers import optim_factory
 #from src.classifiers.torch.models.mlp_head import * 
-from src.classifiers.torch.models.dynamic_mlp import * 
-from src.data_layer.dataset_utils import * 
-from src.utils.torch_shenanigans import * 
+from confidence_funcs.classifiers.torch.models.dynamic_mlp import * 
+from confidence_funcs.data_layer.dataset_utils import * 
+from confidence_funcs.utils.torch_shenanigans import * 
 
-from src.core.threshold_estimation import * 
+from confidence_funcs.core.threshold_estimation import * 
 
 import copy 
 class JointAutoLabelingModel(nn.Module):

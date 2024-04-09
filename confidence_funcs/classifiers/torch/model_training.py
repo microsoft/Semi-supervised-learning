@@ -13,11 +13,12 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from .clf_inference import *
 from sklearn.metrics import accuracy_score
-from src.calibration.calibration_utils import *
-import src.utils.metrics as metrics
+
+from confidence_funcs.calibration.calibration_utils import *
+import confidence_funcs.utils.metrics as metrics
 #sys.path.append('./losses')
-from src.classifiers.torch.losses.loss_factory import get_loss_function
-from src.optimizers import optim_factory
+from confidence_funcs.classifiers.torch.losses.loss_factory import get_loss_function
+from confidence_funcs.optimizers import optim_factory
 #import loss_factory as loss_factory
 
 class ModelTraining:
