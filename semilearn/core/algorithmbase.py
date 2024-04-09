@@ -16,6 +16,8 @@ from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, 
 from semilearn.core.utils import get_dataset, get_data_loader, get_optimizer, get_cosine_schedule_with_warmup, Bn_Controller
 from semilearn.core.criterions import CELoss, ConsistencyLoss
 
+from confidence_funcs.calibration.calibrators import get_calibrator
+from confidence_funcs.classifiers.torch.pytorch_clf import PyTorchClassifier
 
 class AlgorithmBase:
     """
@@ -36,6 +38,7 @@ class AlgorithmBase:
         self,
         args,
         net_builder,
+        post_hoc_calib_conf=None,
         tb_log=None,
         logger=None,
         **kwargs):
@@ -102,6 +105,8 @@ class AlgorithmBase:
         self.hooks_dict = OrderedDict() # actual object to be used to call hooks
         self.set_hooks()
 
+        self.post_hoc_calib_conf = post_hoc_calib_conf
+
     def init(self, **kwargs):
         """
         algorithm specific init function, to add parameters into class
@@ -116,6 +121,9 @@ class AlgorithmBase:
         if self.rank != 0 and self.distributed:
             torch.distributed.barrier()
         dataset_dict = get_dataset(self.args, self.algorithm, self.args.dataset, self.args.num_labels, self.args.num_classes, self.args.data_dir, self.args.include_lb_to_ulb)
+        
+        # N_v, nu #N_cal, N_th
+
         if dataset_dict is None:
             return dataset_dict
 
@@ -304,9 +312,49 @@ class AlgorithmBase:
                 if self.it >= self.num_train_iter:
                     break
 
-                self.call_hook("before_train_step")
+                self.call_hook("before_train_step") 
+
+                #for every iter>0, if post-hoc-calib is not none, then learn new g.
+                # validation data ??
+
+                 #<<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+                if( self.post_hoc_calib_conf ):
+                    
+                    self.cur_clf = PyTorchClassifier(logger=self.logger)
+                    self.cur_clf.model = self.model 
+
+                    self.logger.info('========================= Training Post-hoc Calibrator   =========================')
+                    self.cur_calibrator  = get_calibrator(self.cur_clf,self.post_hoc_calib_conf,self.logger)
+                    
+                    # randomly split the current available validation points into two parts.
+                    # one part will be used for training the calibrator and other part for finding 
+                    # the auto-labeling thresholds.
+                    self.dm.select_calib_val_points(calib_frac=self.post_hoc_calib_conf['calib_val_frac'])
+                    
+                    #cur_val_ds_nc , cur_val_idcs_nc  = self.dm.get_cur_non_calib_val_ds()
+                    #cur_val_ds_c , cur_val_idcs_c    = self.dm.get_cur_calib_val_ds()
+
+
+                    self.logger.info(f"Number of validation points for training calibrator : {len(cur_val_ds_c)}")
+                    self.cur_calibrator.fit(cur_val_ds_c, ds_val_nc=cur_val_ds_nc)
+                else:
+                    self.logger.info('=========================    No Post-hoc Calibration     =========================')
+                    self.cur_calibrator = None 
+                
+                #>>>>>>>>>>>>>>>>>>>>>>>>>>> END CALIBRATION BLOCK  >>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+                # this step only computes the loss
                 self.out_dict, self.log_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb))
+
+                #parameters are updated in the call backs.
                 self.call_hook("after_train_step")
+                # the parameters are updated once the above hooks are called.
+
+
+
                 self.it += 1
             
             self.call_hook("after_train_epoch")

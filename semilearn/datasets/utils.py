@@ -52,6 +52,21 @@ def split_ssl_data(args, data, targets, num_classes,
     return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
 
+def randomly_split_labeled_data(data, targets, size_1=None, fraction_1=None):
+    n = len(targets)
+    idx = np.arange(0,n,1)
+    np.random.shuffle(idx)
+
+    if(size_1):
+        s = size_1 
+    elif(fraction_1):
+        s = int(fraction_1*n)
+    else:
+        raise("Give either size_1 or fraction_1")
+    idx1, idx2 = idx[:s], idx[s:]
+    return data[idx1], targets[idx1],  data[idx2], targets[idx2]
+
+
 def sample_labeled_data():
     pass
 

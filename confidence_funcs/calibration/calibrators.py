@@ -19,10 +19,10 @@ from .auto_labeling_optimization_v0_cooper import *
  
 from .abstract_calibrator import * 
 
-from src.classifiers.torch.pytorch_clf import *
-from src.data_layer.datasets.torch_dataset import * 
+from classifiers.torch.pytorch_clf import *
+from data_layer.datasets.torch_dataset import * 
 
-from src.data_layer.dataset_utils import * 
+from data_layer.dataset_utils import * 
 
 def get_calibrator(clf,calib_conf,logger):
     

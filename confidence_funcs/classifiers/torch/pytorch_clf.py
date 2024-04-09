@@ -7,9 +7,11 @@ from .clf_get_embedding import *
 
 class PyTorchClassifier(AbstractClassifier):
 
-    def __init__(self,model_conf,logger,bb_model=None):
+    def __init__(self,model_conf=None,logger=None,bb_model=None):
 
-        self.model = model_factory.get_model(model_conf, logger)
+        if(model_conf):
+            self.model = model_factory.get_model(model_conf, logger)
+        
         self.model_conf = model_conf 
         # if model_conf['should_compile']:
         #     self.model = torch.compile(self.model)
