@@ -40,7 +40,6 @@ class AlgorithmBase:
         self,
         args,
         net_builder,
-        post_hoc_calib_conf=None,
         tb_log=None,
         logger=None,
         **kwargs):
@@ -65,6 +64,7 @@ class AlgorithmBase:
 
         # commaon utils arguments
         self.tb_log = tb_log
+        self.logger = logger 
         self.print_fn = print if logger is None else logger.info
         self.ngpus_per_node = torch.cuda.device_count()
         self.loss_scaler = GradScaler()
@@ -107,7 +107,7 @@ class AlgorithmBase:
         self.hooks_dict = OrderedDict() # actual object to be used to call hooks
         self.set_hooks()
 
-        self.post_hoc_calib_conf = post_hoc_calib_conf
+        self.post_hoc_calib_conf = None
 
     def init(self, **kwargs):
         """
@@ -197,6 +197,8 @@ class AlgorithmBase:
                                                    num_epochs=self.epochs,
                                                    num_workers=2 * self.args.num_workers,
                                                    distributed=self.distributed)
+
+        self.print_fn(f"size of eval dataset = {len(self.dataset_dict['eval'].data)}")
 
         loader_dict['eval'] = get_data_loader(self.args,
                                               self.dataset_dict['eval'],
@@ -362,17 +364,17 @@ class AlgorithmBase:
                     self.cur_clf = PyTorchClassifier(logger=self.logger)
                     self.cur_clf.model = self.model 
 
-                    self.print_fn('========================= Training Post-hoc Calibrator   =========================')
+                    #self.print_fn('========================= Training Post-hoc Calibrator   =========================')
                     self.cur_calibrator  = get_calibrator(self.cur_clf,self.post_hoc_calib_conf,self.logger)
                     
                     # randomly split the current available validation points into two parts.
                     # one part will be used for training the calibrator and other part for finding 
                     # the auto-labeling thresholds.
                     
-                    self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
+                    #self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
                     self.cur_calibrator.fit(self.dataset_dict['d_cal'], ds_val_nc=self.dataset_dict['d_th'])
                 else:
-                    self.logger.info('=========================    No Post-hoc Calibration     =========================')
+                    #self.print_fn('=========================    No Post-hoc Calibration     =========================')
                     self.cur_calibrator = None 
                 
                 #>>>>>>>>>>>>>>>>>>>>>>>>>>> END CALIBRATION BLOCK  >>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -401,11 +403,12 @@ class AlgorithmBase:
 
         eval_loader = self.loader_dict[eval_dest]
         total_loss = 0.0
-        total_num = 0.0
+        total_num = 0.0 
         y_true = []
         y_pred = []
         y_probs = []
         y_logits = []
+
         with torch.no_grad():
             for data in eval_loader:
                 x = data['x_lb']
@@ -428,6 +431,7 @@ class AlgorithmBase:
                 y_logits.append(logits.cpu().numpy())
                 y_probs.extend(torch.softmax(logits, dim=-1).cpu().tolist())
                 total_loss += loss.item() * num_batch
+        
         y_true = np.array(y_true)
         y_pred = np.array(y_pred)
         y_logits = np.concatenate(y_logits)

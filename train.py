@@ -58,7 +58,7 @@ def get_config():
     parser.add_argument(
         "--num_train_iter",
         type=int,
-        default=20,
+        default=1000,
         help="total number of training iterations",
     )
     parser.add_argument(
@@ -68,8 +68,8 @@ def get_config():
         "--num_eval_iter", type=int, default=10, help="evaluation frequency"
     )
     parser.add_argument("--num_log_iter", type=int, default=5, help="logging frequency")
-    parser.add_argument("-nl", "--num_labels", type=int, default=400)
-    parser.add_argument("-bsz", "--batch_size", type=int, default=8)
+    parser.add_argument("-nl", "--num_labels", type=int, default=4000)
+    parser.add_argument("-bsz", "--batch_size", type=int, default=32)
     parser.add_argument(
         "--uratio",
         type=int,
@@ -79,7 +79,7 @@ def get_config():
     parser.add_argument(
         "--eval_batch_size",
         type=int,
-        default=16,
+        default=1000,
         help="batch size of evaluation data loader (it does not affect the accuracy)",
     )
     parser.add_argument(
