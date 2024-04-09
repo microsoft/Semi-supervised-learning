@@ -16,6 +16,8 @@ from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, 
 from semilearn.core.utils import get_dataset, get_data_loader, get_optimizer, get_cosine_schedule_with_warmup, Bn_Controller
 from semilearn.core.criterions import CELoss, ConsistencyLoss
 
+from semilearn.datasets.utils import randomly_split_labeled_basic_dataset
+
 from confidence_funcs.calibration.calibrators import get_calibrator
 from confidence_funcs.classifiers.torch.pytorch_clf import PyTorchClassifier
 
@@ -124,6 +126,33 @@ class AlgorithmBase:
         
         # N_v, nu #N_cal, N_th
 
+        # take_from_train_lb ?
+        # take_from_eval ?
+        # self.args.take_from "train_lb", "eval"
+
+        need_d_cal = self.args.n_cal > 0 
+        need_d_th  = self.args.n_th  > 0 
+        take_d_cal_th_from = self.args.take_d_cal_th_from
+        
+        if(need_d_cal or need_d_th):
+            n = self.args.n_cal + self.args.n_th
+            #if(self.args.take_from_eval):            
+            ds1, ds2 = randomly_split_labeled_basic_dataset(dataset_dict[take_d_cal_th_from],size_1=n)
+            dataset_dict[take_d_cal_th_from] = ds2  # remaining n_lb (or n_eval) - n samples 
+
+            if(need_d_cal and  need_d_th):
+                ds11, ds12 = randomly_split_labeled_basic_dataset(ds1,size_1=self.args.n_cal)
+                dataset_dict['d_cal'] = ds11 
+                dataset_dict['d_th']  = ds12
+
+            elif(need_d_cal and  not need_d_th):
+                # need only post-hoc calib data.  [for fixed threshold or heuristic thresholds]
+                dataset_dict['d_cal'] = ds1
+
+            else:
+                # not doing post-hoc calibration but using threshold-estimation
+                dataset_dict['d_th']  = ds1    
+            
         if dataset_dict is None:
             return dataset_dict
 
@@ -331,14 +360,9 @@ class AlgorithmBase:
                     # randomly split the current available validation points into two parts.
                     # one part will be used for training the calibrator and other part for finding 
                     # the auto-labeling thresholds.
-                    self.dm.select_calib_val_points(calib_frac=self.post_hoc_calib_conf['calib_val_frac'])
                     
-                    #cur_val_ds_nc , cur_val_idcs_nc  = self.dm.get_cur_non_calib_val_ds()
-                    #cur_val_ds_c , cur_val_idcs_c    = self.dm.get_cur_calib_val_ds()
-
-
-                    self.logger.info(f"Number of validation points for training calibrator : {len(cur_val_ds_c)}")
-                    self.cur_calibrator.fit(cur_val_ds_c, ds_val_nc=cur_val_ds_nc)
+                    self.logger.info(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
+                    self.cur_calibrator.fit(self.dataset_dict['d_cal'], ds_val_nc=self.dataset_dict['d_th'])
                 else:
                     self.logger.info('=========================    No Post-hoc Calibration     =========================')
                     self.cur_calibrator = None 

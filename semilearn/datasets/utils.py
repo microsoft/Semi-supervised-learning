@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import sampler, DataLoader
 import torch.distributed as dist
 from io import BytesIO
+import copy 
 
 # TODO: better way
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -51,6 +52,23 @@ def split_ssl_data(args, data, targets, num_classes,
     
     return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
+
+def randomly_split_labeled_basic_dataset(basic_ds, size_1=None, fraction_1=None):
+    
+    data, targets = basic_ds.data , basic_ds.targets
+
+    basic_ds_1 = copy.deepcopy(basic_ds)
+    basic_ds_2 = copy.deepcopy(basic_ds)
+
+    data1,targets1, data2, targets2 = randomly_split_labeled_data(data, targets, size_1=size_1, fraction_1=fraction_1)
+
+    basic_ds_1.data = data1
+    basic_ds_1.targets = targets1 
+
+    basic_ds_2.data =  data2 
+    basic_ds_2.targets = targets2 
+
+    return 
 
 def randomly_split_labeled_data(data, targets, size_1=None, fraction_1=None):
     n = len(targets)
