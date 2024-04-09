@@ -26,6 +26,7 @@ class LoggingHook(Hook):
             
             if not algorithm.tb_log is None:
                 algorithm.tb_log.update(algorithm.log_dict, algorithm.it)
+
         
         elif self.every_n_iters(algorithm, algorithm.num_log_iter):
             if not algorithm.distributed or (algorithm.distributed and algorithm.rank % algorithm.ngpus_per_node == 0):
