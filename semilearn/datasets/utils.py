@@ -68,7 +68,7 @@ def randomly_split_labeled_basic_dataset(basic_ds, size_1=None, fraction_1=None)
     basic_ds_2.data =  data2 
     basic_ds_2.targets = targets2 
 
-    return 
+    return basic_ds_1, basic_ds_2
 
 def randomly_split_labeled_data(data, targets, size_1=None, fraction_1=None):
     n = len(targets)

@@ -146,6 +146,9 @@ class AlgorithmBase:
 
             if(need_d_cal and  need_d_th):
                 ds11, ds12 = randomly_split_labeled_basic_dataset(ds1,size_1=self.args.n_cal)
+                ds11.Y = torch.Tensor( ds11.targets )
+                ds12.Y = torch.Tensor( ds12.targets )
+                print(ds11.Y)
                 dataset_dict['d_cal'] = ds11 
                 dataset_dict['d_th']  = ds12
                 self.print_fn(f'len(d_cal) = {len(ds11)} and len(d_th) = {len(ds12)}')
@@ -345,6 +348,8 @@ class AlgorithmBase:
             
             self.call_hook("before_train_epoch")
 
+            print(len(self.loader_dict['train_lb']), len( self.loader_dict['train_ulb']))
+
             for data_lb, data_ulb in zip(self.loader_dict['train_lb'],
                                          self.loader_dict['train_ulb']):
                 # prevent the training iterations exceed args.num_train_iter
@@ -359,7 +364,7 @@ class AlgorithmBase:
                  #<<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<
 
 
-                if( self.post_hoc_calib_conf ):
+                if( self.post_hoc_calib_conf and self.it%100==0 and self.it>=100):
                     
                     self.cur_clf = PyTorchClassifier(logger=self.logger)
                     self.cur_clf.model = self.model 
@@ -373,6 +378,9 @@ class AlgorithmBase:
                     
                     #self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
                     self.cur_calibrator.fit(self.dataset_dict['d_cal'], ds_val_nc=self.dataset_dict['d_th'])
+                    
+                    self.model.train() 
+
                 else:
                     #self.print_fn('=========================    No Post-hoc Calibration     =========================')
                     self.cur_calibrator = None 

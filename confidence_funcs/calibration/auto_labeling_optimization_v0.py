@@ -86,9 +86,15 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         else:
             features    = clf_inf_out[self.calib_conf['features_key']]
         
+        print(clf_inf_out['labels'], type(clf_inf_out['labels']))
+        print(ds_calib.Y, type(ds_calib.Y))
+        
+        clf_inf_out['labels'] = clf_inf_out['labels'].long()
+        ds_calib.Y  = ds_calib.Y.long()
+
         self.Y_correct = (clf_inf_out['labels'] != ds_calib.Y).long()
         # 1 ==> incorrect prediction (mistake), 0 ==> correct prediction (no mistake)
-        
+        print(torch.sum(self.Y_correct))
         # create dataset with featuers and Y_correct labels 
         self.ds_calib_train = CustomTensorDataset(X= features,Y=clf_inf_out['labels'])
 
@@ -102,7 +108,7 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         self.C_1 = self.calib_conf['auto_lbl_conf']['C_1']
 
         if(not use_prev_model):
-            print('Here **********************************************')
+            #print('Here **********************************************')
 
             if("model_conf" not in calib_conf):
                 g_model_conf = {} 
@@ -333,7 +339,7 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
             
             err_surrogate    = torch.dot(S, targets.float())/torch.sum(S)
             
-            logger.debug(f'Epoch: {epoch} Loss :{total_loss/N}')
+            logger.info(f'Epoch: {epoch} Loss :{total_loss/N}')
 
 
             # for logging and checking progress
@@ -344,11 +350,11 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
             auto_err = torch.sum(torch.logical_and(U,B))/(torch.sum(U)+1)
             cov      = (torch.sum(U))/N
             
-            logger.debug(f"Epoch: {epoch} Surrogate Coverage : {cov_surrogate.item()} Surrogate Error: {err_surrogate.item()} ")
+            logger.info(f"Epoch: {epoch} Surrogate Coverage : {cov_surrogate.item()} Surrogate Error: {err_surrogate.item()} ")
             
-            logger.debug(f'Epoch: {epoch} At t = 0.5, {epoch} Coverage : {cov} \t Error : {auto_err}')
+            logger.info(f'Epoch: {epoch} At t = 0.5, {epoch} Coverage : {cov} \t Error : {auto_err}')
 
-            logger.debug(f"Epoch: {epoch} Model Norm  {model_norm(self.g_model)}")
+            logger.info(f"Epoch: {epoch} Model Norm  {model_norm(self.g_model)}")
 
             if self.ds_val_nc:
                 if self.num_classes > 20 and epoch % 10 == 0 or self.num_classes <= 20 and epoch % 10 == 0:

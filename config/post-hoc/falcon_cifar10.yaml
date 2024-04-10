@@ -1,0 +1,62 @@
+
+name: 'auto_label_opt_v0'
+
+device: "cuda:0"
+
+calib_val_frac: 0.5
+
+type: post_hoc
+
+l1 : 1.0 
+l2 : 100.0
+l3:  0.0
+regularize: False 
+
+class_wise: "independent"
+
+features_key: 'concat'
+alpha_1: 0.1
+
+num_classes : 10 
+use_prev_model: False 
+
+model_conf:
+  input_dimension: -1
+  output_dimension: -1 
+  num_classes: 10
+  layers: 
+    - type: "linear"
+      dim_factor: 2   # input_dimension x dim_factor*input_dimension
+
+    - type: "activation"
+      act_fun: "tanh"
+
+
+training_conf_g: 
+  optimizer: 'sgd'
+  learning_rate: 0.01
+  batch_size: 64
+  max_epochs: 500
+  weight_decay: 0.01
+  momentum: 0.9
+  use_lr_schedule: True 
+  nesterov: False 
+
+training_conf_t: 
+  optimizer: 'sgd'
+  learning_rate: 0.01
+  batch_size: 64
+  max_epochs: 500
+  weight_decay: 0.01
+  momentum: 0.9
+  use_lr_schedule: True 
+  nesterov: False 
+
+auto_lbl_conf: 
+  auto_label_err_threshold: 0.05
+  C_1: 0.25
+  method_name: "selective"  # options "all" | "selective"
+  #score_type: "abs_logit"  # options "confidence" | "margin"
+  score_type: "confidence"
+  class_wise: "independent" # options "joint" | "independent" #makes sense only when using selective 
+  ucb: 'sigma'

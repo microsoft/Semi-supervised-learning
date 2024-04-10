@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
+import torch.nn.functional as F
 
 class ClassfierInference:
     def __init__(self,logger):
@@ -35,13 +36,20 @@ class ClassfierInference:
             lst_all_logits = []
             lst_all_pre_logits = []
             T = 1.0
-            for batch_idx, (data, target, idx) in enumerate(data_loader):
+            for i, data_dict in enumerate(data_loader):
+                data   = data_dict['x_lb']
+                target = data_dict['y_lb']
+
                 if isinstance(data,torch.Tensor):
                     data = data.to(device)
                 if isinstance(target,torch.Tensor):
                     target = target.to(device)
                 out  = model.forward(data)
-                probs = out['probs']
+                probs = F.softmax(out['logits'], dim=1)
+                
+                out['abs_logits'] =  torch.abs(out['logits'])
+                #probs = out['probs']
+
                 confidence, y_hat = torch.max(probs, 1)
                 lst_confs.extend(confidence.cpu().numpy())
                 lst_preds.extend(y_hat.cpu().numpy())

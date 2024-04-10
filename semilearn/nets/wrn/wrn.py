@@ -100,6 +100,8 @@ class WideResNet(nn.Module):
         self.channels = channels[3]
         self.num_features = channels[3]
 
+        
+
         # rot_classifier for Remix Match
         # self.is_remix = is_remix
         # if is_remix:
@@ -129,12 +131,12 @@ class WideResNet(nn.Module):
         out = self.extract(x)
         out = F.adaptive_avg_pool2d(out, 1)
         out = out.view(-1, self.channels)
-
+        
         if only_feat:
             return out
         
         output = self.classifier(out)
-        result_dict = {'logits':output, 'feat':out}
+        result_dict = {'logits':output, 'feat':out,'pre_logits':out}
         return result_dict
 
     def extract(self, x):
