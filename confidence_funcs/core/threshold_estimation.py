@@ -143,13 +143,13 @@ def determine_threshold(lst_classes,inf_out,auto_lbl_conf,val_ds,val_idcs,logger
         t_ = get_threshold(S) 
         lst_t_y = [t_]*(len(lst_classes))
 
-        logger.info('auto-labeling threshold t={} for each class.  '.format(t_))
+        logger.debug('auto-labeling threshold t={} for each class.  '.format(t_))
 
         if(t_<max_t):
             val_idcs_to_rm = [val_idcs[i]  for i in range(n_v) if scores[i]>=t_]
     
     cov = len(val_idcs_to_rm)/len(val_idcs)
     
-    logger.info(f'coverage while threshold estimation : {cov}')
+    logger.debug(f'coverage while threshold estimation : {cov}')
     
     return lst_t_y, val_idcs_to_rm, val_err, cov 

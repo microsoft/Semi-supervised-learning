@@ -45,7 +45,7 @@ class FixMatch(AlgorithmBase):
         self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
 
-    def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
+    def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s, idx_lb, idx_ulb):
         num_lb = y_lb.shape[0]
 
         # inference and calculate sup/unsup losses
@@ -73,23 +73,30 @@ class FixMatch(AlgorithmBase):
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
             
-            # probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
-            probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
-            
-            # if distribution alignment hook is registered, call it 
-            # this is implemented for imbalanced algorithm - CReST
-            if self.registered_hook("DistAlignHook"):
-                probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
 
-            # compute mask
-            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
+            if(self.pseudo_labels is None):
+                # probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
+                probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
+                
+                # if distribution alignment hook is registered, call it 
+                # this is implemented for imbalanced algorithm - CReST
+                if self.registered_hook("DistAlignHook"):
+                    probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
 
-            # generate unlabeled targets using pseudo label hook
-            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
-                                          logits=probs_x_ulb_w,
-                                          use_hard_label=self.use_hard_label,
-                                          T=self.T,
-                                          softmax=False)
+                # compute mask
+                mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
+
+                # generate unlabeled targets using pseudo label hook
+                pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                                            logits=probs_x_ulb_w,
+                                            use_hard_label=self.use_hard_label,
+                                            T=self.T,
+                                            softmax=False)
+            else: 
+                pseudo_label = self.pseudo_labels[idx_ulb]
+                mask         = self.mask[idx_ulb]
+
+            #print(pseudo_label, mask)
 
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
                                                pseudo_label,

@@ -21,6 +21,8 @@ from semilearn.datasets.utils import randomly_split_labeled_basic_dataset
 from confidence_funcs.calibration.calibrators import get_calibrator
 from confidence_funcs.classifiers.torch.pytorch_clf import PyTorchClassifier
 
+from confidence_funcs.core.threshold_estimation import * 
+
 class AlgorithmBase:
     """
         Base class for algorithms
@@ -148,7 +150,7 @@ class AlgorithmBase:
                 ds11, ds12 = randomly_split_labeled_basic_dataset(ds1,size_1=self.args.n_cal)
                 ds11.Y = torch.Tensor( ds11.targets )
                 ds12.Y = torch.Tensor( ds12.targets )
-                print(ds11.Y)
+                #print(ds11.Y)
                 dataset_dict['d_cal'] = ds11 
                 dataset_dict['d_th']  = ds12
                 self.print_fn(f'len(d_cal) = {len(ds11)} and len(d_th) = {len(ds12)}')
@@ -289,6 +291,7 @@ class AlgorithmBase:
             else:
                 var = var.cuda(self.gpu)
             input_dict[arg] = var
+        
         return input_dict
     
 
@@ -339,6 +342,15 @@ class AlgorithmBase:
         self.model.train()
         self.call_hook("before_run")
 
+        device =  str(next(self.model.parameters()).device)  
+        
+        self.pseudo_labels = None 
+        self.mask          = None 
+        
+        #self.pseudo_labels = torch.tensor(self.dataset_dict['train_ulb'].targets).to(device) 
+        #self.mask = torch.ones(len(self.pseudo_labels)).to(device)
+
+
         for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
             
@@ -348,11 +360,15 @@ class AlgorithmBase:
             
             self.call_hook("before_train_epoch")
 
-            print(len(self.loader_dict['train_lb']), len( self.loader_dict['train_ulb']))
-
+            #print(len(self.loader_dict['train_lb']), len( self.loader_dict['train_ulb']))
+            idcs = []
             for data_lb, data_ulb in zip(self.loader_dict['train_lb'],
                                          self.loader_dict['train_ulb']):
                 # prevent the training iterations exceed args.num_train_iter
+                
+                #print(data_ulb['idx_ulb'])
+                #idcs.extend(data_ulb['idx_ulb'].tolist())
+
                 if self.it >= self.num_train_iter:
                     break
 
@@ -377,8 +393,35 @@ class AlgorithmBase:
                     # the auto-labeling thresholds.
                     
                     #self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
-                    self.cur_calibrator.fit(self.dataset_dict['d_cal'], ds_val_nc=self.dataset_dict['d_th'])
+                    self.cur_calibrator.fit(self.dataset_dict['d_cal'], ds_val_nc=self.dataset_dict['d_th']) 
+
+                    #get pseudo labels and mask here.
+                    #estimate threshold, pseudo label etc.
+
+                    val_inf_out_th = self.cur_calibrator.predict(self.dataset_dict['d_th'])
+                    lst_classes = np.arange(0,self.num_classes,1)
+                    auto_lbl_conf = self.post_hoc_calib_conf.auto_lbl_conf
+                    val_idcs = np.arange(0,len(self.dataset_dict['d_th'].targets),1)
+                    eps = auto_lbl_conf.auto_label_err_threshold
                     
+                    lst_t_val, val_idcs_to_rm, val_err, cov  = determine_threshold(lst_classes, val_inf_out_th, auto_lbl_conf,
+                                                                                    self.dataset_dict['d_th'],val_idcs, self.logger,err_threshold=eps)
+
+                    #pseudo label and mask
+                    n_u = len(self.dataset_dict['train_ulb'].targets)
+                    unlbld_inf_out = self.cur_calibrator.predict(self.dataset_dict['train_ulb'])
+                    scores = unlbld_inf_out[auto_lbl_conf['score_type']]
+                    
+                    y_hat = unlbld_inf_out['labels']
+
+                    print(lst_t_val)
+                    tt = torch.tensor([lst_t_val[y_hat[i]] for i in range(n_u)]).to(device) 
+                    scores  = torch.tensor(scores).to(device)  
+                    
+                    self.pseudo_label = y_hat 
+                    self.mask = scores.ge(tt).to(scores.dtype)
+
+
                     self.model.train() 
 
                 else:
@@ -397,7 +440,13 @@ class AlgorithmBase:
 
                 self.it += 1
             
+            #print('EPOCH DONE')
+            #print(len(idcs))
+            #idcs_set = set(idcs)
+            #print(len(idcs_set), min(idcs_set),max(idcs_set)) 
             self.call_hook("after_train_epoch")
+            
+            #return 
 
         self.call_hook("after_run")
 

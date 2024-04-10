@@ -13,7 +13,7 @@ class ClassfierInference:
             inference_conf = {}
             inference_conf['device'] = str(next(model.parameters()).device)  
             
-        inference_conf.setdefault('batch_size',256)
+        inference_conf.setdefault('batch_size',1024)
         inference_conf.setdefault('shuffle',False)
         
         #inference_conf.setdefault('device','cpu')
@@ -37,13 +37,12 @@ class ClassfierInference:
             lst_all_pre_logits = []
             T = 1.0
             for i, data_dict in enumerate(data_loader):
-                data   = data_dict['x_lb']
-                target = data_dict['y_lb']
+                data   = data_dict['x_lb'] if 'x_lb' in data_dict else data_dict['x_ulb_w']
+                #target = data_dict['y_lb'] 
 
                 if isinstance(data,torch.Tensor):
                     data = data.to(device)
-                if isinstance(target,torch.Tensor):
-                    target = target.to(device)
+                
                 out  = model.forward(data)
                 probs = F.softmax(out['logits'], dim=1)
                 

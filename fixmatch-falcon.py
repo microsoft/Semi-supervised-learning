@@ -55,7 +55,7 @@ def get_config():
     """
     Training Configuration of FixMatch
     """
-    parser.add_argument("--epoch", type=int, default=1)
+    parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument(
         "--num_train_iter",
         type=int,
@@ -69,7 +69,7 @@ def get_config():
         "--num_eval_iter", type=int, default=10, help="evaluation frequency"
     )
     parser.add_argument("--num_log_iter", type=int, default=5, help="logging frequency")
-    parser.add_argument("-nl", "--num_labels", type=int, default=10000)
+    parser.add_argument("-nl", "--num_labels", type=int, default=4000)
     parser.add_argument("-bsz", "--batch_size", type=int, default=32)
     parser.add_argument(
         "--uratio",
@@ -80,7 +80,7 @@ def get_config():
     parser.add_argument(
         "--eval_batch_size",
         type=int,
-        default=1000,
+        default=2000,
         help="batch size of evaluation data loader (it does not affect the accuracy)",
     )
     parser.add_argument(
