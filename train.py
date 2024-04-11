@@ -25,6 +25,7 @@ from semilearn.core.utils import (
 )
 from semilearn.imb_algorithms import get_imb_algorithm, name2imbalg
 
+from omegaconf import OmegaConf
 
 def get_config():
     from semilearn.algorithms.utils import str2bool
@@ -54,7 +55,7 @@ def get_config():
     """
     Training Configuration of FixMatch
     """
-    parser.add_argument("--epoch", type=int, default=1)
+    parser.add_argument("--epoch", type=int, default=10)
     parser.add_argument(
         "--num_train_iter",
         type=int,
@@ -79,7 +80,7 @@ def get_config():
     parser.add_argument(
         "--eval_batch_size",
         type=int,
-        default=1000,
+        default=2000,
         help="batch size of evaluation data loader (it does not affect the accuracy)",
     )
     parser.add_argument(
@@ -191,11 +192,12 @@ def get_config():
     """
     Post-hoc calibration 
     """
-    parser.add_argument("--use_post_hoc_calib", type=bool, default=False) 
+    parser.add_argument("--use_post_hoc_calib", type=str2bool, default=False) 
     parser.add_argument("--n_cal",type=int, default=0)
     parser.add_argument("--n_th",type=int, default=0)
     parser.add_argument("--take_d_cal_th_from", type=str,default='train_lb')
 
+    parser.add_argument("--use_true_labels", type=str2bool, default=False)
     """
     multi-GPUs & Distributed Training
     """
@@ -221,7 +223,7 @@ def get_config():
         "--dist-backend", default="nccl", type=str, help="distributed backend"
     )
     parser.add_argument(
-        "--seed", default=1, type=int, help="seed for initializing training. "
+        "--seed", default=0, type=int, help="seed for initializing training. "
     )
     parser.add_argument("--gpu", default=None, type=int, help="GPU id to use.")
     parser.add_argument(
@@ -339,9 +341,11 @@ def main_worker(gpu, ngpus_per_node, args):
     assert args.seed is not None
     random.seed(args.seed)
     torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
     np.random.seed(args.seed)
     cudnn.deterministic = True
     cudnn.benchmark = True
+    
 
     # SET UP FOR DISTRIBUTED TRAINING
     if args.distributed:
@@ -383,8 +387,10 @@ def main_worker(gpu, ngpus_per_node, args):
         model = get_algorithm(args, _net_builder, tb_log, logger)
     logger.info(f"Number of Trainable Params: {count_parameters(model.model)}")
     
-    post_hoc_calib_conf = {}
-    model.post_hoc_calib_conf = post_hoc_calib_conf
+    
+    if(args.use_post_hoc_calib):
+        post_hoc_calib_conf = OmegaConf.load("./config/post-hoc/falcon_cifar10.yaml")
+        model.post_hoc_calib_conf = post_hoc_calib_conf
 
     # SET Devices for (Distributed) DataParallel
     model.model = send_model_cuda(args, model.model)

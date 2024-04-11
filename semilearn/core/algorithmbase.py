@@ -347,8 +347,9 @@ class AlgorithmBase:
         self.pseudo_labels = None 
         self.mask          = None 
         
-        #self.pseudo_labels = torch.tensor(self.dataset_dict['train_ulb'].targets).to(device) 
-        #self.mask = torch.ones(len(self.pseudo_labels)).to(device)
+        if(self.args.use_true_labels):
+            self.pseudo_labels = torch.tensor(self.dataset_dict['train_ulb'].targets).to(device) 
+            self.mask = torch.ones(len(self.pseudo_labels)).to(device)
 
 
         for epoch in range(self.start_epoch, self.epochs):
@@ -368,6 +369,8 @@ class AlgorithmBase:
                 
                 #print(data_ulb['idx_ulb'])
                 #idcs.extend(data_ulb['idx_ulb'].tolist())
+                
+                
 
                 if self.it >= self.num_train_iter:
                     break
