@@ -131,7 +131,7 @@ def determine_threshold(lst_classes,inf_out,auto_lbl_conf,val_ds,val_idcs,logger
             #print(len(S_y),S_y[0])
             t_y = get_threshold(S_y) 
             lst_t_y.append(t_y)
-            logger.info('auto-labeling threshold t_i={} for class {}   '.format(t_y,y))
+            logger.debug('auto-labeling threshold t_i={} for class {}   '.format(t_y,y))
 
             if(t_y<max_t):
                 idcs_vals_rm = [val_idcs[i]  for i in range(n_v) if y_hat[i] == y and scores[i]>=t_y]

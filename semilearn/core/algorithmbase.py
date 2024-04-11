@@ -397,8 +397,10 @@ class AlgorithmBase:
 
                     #get pseudo labels and mask here.
                     #estimate threshold, pseudo label etc.
+                    print('done learning new')
 
                     val_inf_out_th = self.cur_calibrator.predict(self.dataset_dict['d_th'])
+
                     lst_classes = np.arange(0,self.num_classes,1)
                     auto_lbl_conf = self.post_hoc_calib_conf.auto_lbl_conf
                     val_idcs = np.arange(0,len(self.dataset_dict['d_th'].targets),1)
@@ -406,6 +408,8 @@ class AlgorithmBase:
                     
                     lst_t_val, val_idcs_to_rm, val_err, cov  = determine_threshold(lst_classes, val_inf_out_th, auto_lbl_conf,
                                                                                     self.dataset_dict['d_th'],val_idcs, self.logger,err_threshold=eps)
+
+                    print(cov)
 
                     #pseudo label and mask
                     n_u = len(self.dataset_dict['train_ulb'].targets)
@@ -499,8 +503,8 @@ class AlgorithmBase:
         recall = recall_score(y_true, y_pred, average='macro')
         F1 = f1_score(y_true, y_pred, average='macro')
 
-        cf_mat = confusion_matrix(y_true, y_pred, normalize='true')
-        self.print_fn('confusion matrix:\n' + np.array_str(cf_mat))
+        #cf_mat = confusion_matrix(y_true, y_pred, normalize='true')
+        #self.print_fn('confusion matrix:\n' + np.array_str(cf_mat))
         self.ema.restore()
         self.model.train()
 

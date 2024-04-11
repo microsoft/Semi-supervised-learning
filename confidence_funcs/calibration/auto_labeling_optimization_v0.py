@@ -364,7 +364,9 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
                     logger.info(f"Epoch : {epoch}  Actual Coverage on NC VAL : {cov_val_nc}")
                     if(cov_val_nc>max_cov_val_nc):
                         max_cov_val_nc = cov_val_nc
+                        print(cov_val_nc, max_cov_val_nc)
                         best_model_so_far = [copy.deepcopy(self.g_model), copy.deepcopy(self.t)]
+                        #best_model_so_far = [self.g_model.clone().detach(), self.t.clone().detach()]
 
 
             #D['S'].append(S.detach().cpu().numpy())
