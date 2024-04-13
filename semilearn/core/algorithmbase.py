@@ -343,9 +343,14 @@ class AlgorithmBase:
         self.call_hook("before_run")
 
         device =  str(next(self.model.parameters()).device)  
+        n_u = len(self.dataset_dict['train_ulb'].targets)
+
         
         self.pseudo_labels = None 
-        self.mask          = None 
+        self.mask          = torch.zeros(n_u) 
+
+
+        accumulate_pseudo_labels = False
         
         if(self.args.use_true_labels):
             self.pseudo_labels = torch.tensor(self.dataset_dict['train_ulb'].targets).to(device) 
@@ -415,20 +420,36 @@ class AlgorithmBase:
                     print(cov)
 
                     #pseudo label and mask
-                    n_u = len(self.dataset_dict['train_ulb'].targets)
                     unlbld_inf_out = self.cur_calibrator.predict(self.dataset_dict['train_ulb'])
                     scores = unlbld_inf_out[auto_lbl_conf['score_type']]
                     
-                    y_hat = unlbld_inf_out['labels']
+                    y_hat = unlbld_inf_out['labels'].to(device)
 
                     print(lst_t_val)
                     tt = torch.tensor([lst_t_val[y_hat[i]] for i in range(n_u)]).to(device) 
                     scores  = torch.tensor(scores).to(device)  
                     
-                    self.pseudo_label = y_hat 
-                    self.mask = scores.ge(tt).to(scores.dtype)
+                    if(accumulate_pseudo_labels and self.pseudo_labels is not None):
+                        #new mask 
+                        mask = scores.ge(tt) # .to(scores.dtype)
+                        
+                        # the points that are newly psuedo-labeled
+                        mask2 = torch.logical_and(torch.logical_not(self.mask.ge(1.0)), mask) 
 
+                        self.print_fn(f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}")
 
+                        self.pseudo_labels[mask2] = y_hat[mask2]
+
+                        self.mask = torch.logical_or(mask, self.mask).to(scores.dtype).to(device) 
+
+                        self.print_fn(f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}")
+
+                    else:
+                        self.pseudo_labels = y_hat 
+                        self.mask = scores.ge(tt).to(scores.dtype)
+
+                    self.pseudo_labels = self.pseudo_labels.to(device)
+                    self.mask = self.mask.to(device)
                     self.model.train() 
 
                 else:

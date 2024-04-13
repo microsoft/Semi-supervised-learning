@@ -93,6 +93,7 @@ class FixMatch(AlgorithmBase):
                                             T=self.T,
                                             softmax=False)
             else: 
+                
                 pseudo_label = self.pseudo_labels[idx_ulb]
                 mask         = self.mask[idx_ulb]
 
