@@ -149,6 +149,8 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
     def get_S(self, out, y_hat,idx):
         logits     = safe_squeeze(out['logits'])
         confidence = safe_squeeze(out['probs']) 
+        
+        #print(confidence)
         #g = confidence 
         #logits = logits
         #print(torch.norm(logits).item())
@@ -162,6 +164,8 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         #g = logits 
 
         use_t = True
+
+        #self.alpha_1 = 100.0
 
         if(self.calib_conf.class_wise=="joint"):
             t          = safe_squeeze(list(self.t.parameters())[0])    
@@ -240,6 +244,7 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         batch_size = calib_conf['training_conf_g']['batch_size']
         
         alpha_1 = self.calib_conf['alpha_1']
+
 
         l1 = self.calib_conf['l1']
         l2 = self.calib_conf['l2']
@@ -454,9 +459,20 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         G = torch.cat(lst_g, dim=0)
         
         inf_out = clf_inf_out
+        
         inf_out['confidence'] = G.detach().cpu().numpy() #S.detach().cpu().numpy() 
         #inf_out['confidence']  =  S.detach().cpu().numpy() 
         #S.detach().numpy(), U.detach().numpy(), auto_err, cov, A.detach().numpy(), B.detach().numpy()
+        
+        #print(inf_out['confidence'])
+        mask_correct = clf_inf_out['labels'] == Y
+        G_c = G[mask_correct].detach().cpu() 
+
+        mask_incorrect = clf_inf_out['labels'] != Y
+        G_ic = G[mask_incorrect].detach().cpu() 
+
+        #print(G_c.mean(), G_c.min(), G_c.max())
+        #print(G_ic.mean(), G_ic.min(), G_ic.max())
 
         return inf_out 
     

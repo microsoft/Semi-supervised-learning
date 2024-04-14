@@ -74,7 +74,7 @@ class FixMatch(AlgorithmBase):
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
             
 
-            if(self.pseudo_labels is None):
+            if(self.post_hoc_calib_conf is None):
                 # probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
                 probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
                 
@@ -92,12 +92,50 @@ class FixMatch(AlgorithmBase):
                                             use_hard_label=self.use_hard_label,
                                             T=self.T,
                                             softmax=False)
+                
+                if(self.accumulate_pseudo_labels):
+                    #new mask 
+
+                    # the points that are newly psuedo-labeled
+                    #mask2 = torch.logical_and(torch.logical_not(self.mask.ge(1.0)[idx_ulb]), mask) 
+
+                    #self.print_fn(f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}")
+                    #print('here')
+                    #print(mask)
+                    idx_ulb = idx_ulb.to(self.device)
+
+                    mask_bool = mask.ge(1.0)
+                    #print(mask_bool)
+                    
+
+                    idx_ulb_pl = idx_ulb[mask_bool]
+                    self.pseudo_labels[idx_ulb_pl] = pseudo_label[mask_bool]
+
+                    self.mask[idx_ulb] = torch.clamp( mask + self.mask[idx_ulb], min=0.0, max=1.0) #torch.logical_or(mask_bool, self.mask[idx_ulb].ge(1.0)).to(self.mask[idx_ulb].dtype).to(self.device) 
+                    
+                    #print(idx_ulb, len(self.mask)) 
+                    self.print_fn(f"{torch.sum(mask).item()},  {torch.sum( self.mask[idx_ulb] ).item()}, {torch.sum(self.mask).item()} ")
+                    
+
+                    pseudo_label = self.pseudo_labels[idx_ulb]
+                    mask         = self.mask[idx_ulb]
+
+                #else:
+                    #self.pseudo_labels = y_hat 
+                    #self.mask = scores.ge(tt).to(scores.dtype)
+                    #pass
+
             else: 
                 
                 pseudo_label = self.pseudo_labels[idx_ulb]
                 mask         = self.mask[idx_ulb]
 
             #print(pseudo_label, mask)
+            batch_cov = (torch.sum(mask)/ len(idx_ulb)).item()
+            self.print_fn(f"{batch_cov}")
+
+            if not self.tb_log is None:
+                self.tb_log.update({"batch_cov":batch_cov}, self.it)
 
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
                                                pseudo_label,

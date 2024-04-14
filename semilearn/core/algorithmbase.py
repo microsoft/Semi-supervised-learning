@@ -345,12 +345,14 @@ class AlgorithmBase:
         device =  str(next(self.model.parameters()).device)  
         n_u = len(self.dataset_dict['train_ulb'].targets)
 
+        self.device = device
         
-        self.pseudo_labels = None 
-        self.mask          = torch.zeros(n_u) 
+        self.pseudo_labels = torch.zeros(n_u).long().to(device)
+        self.mask          = torch.zeros(n_u).to(device) 
 
 
-        accumulate_pseudo_labels = False
+        #accumulate_pseudo_labels = True
+        self.accumulate_pseudo_labels = self.args.accumulate_pseudo_labels
         
         if(self.args.use_true_labels):
             self.pseudo_labels = torch.tensor(self.dataset_dict['train_ulb'].targets).to(device) 
