@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-import copy
+from pathlib import Path
 import numpy as np 
 from PIL import Image
 import torchvision
@@ -34,8 +34,8 @@ class BasicDataset(Dataset):
                  **kwargs):
         """
         Args
-            data: x_data
-            targets: y_data (if not exist, None)
+            data: x_data. it can be a list of images or a list of image paths.
+            targets (list): y_data (if not exist, None)
             num_classes: number of label classes
             transform: basic transformation of data
             use_strong_transform: If True, this dataset returns both weakly and strongly augmented images.
@@ -73,6 +73,8 @@ class BasicDataset(Dataset):
 
         # set augmented images
         img = self.data[idx]
+        if isinstance(img, (str, Path)):
+            img = Image.open(img)
         return img, target
 
     def __getitem__(self, idx):
