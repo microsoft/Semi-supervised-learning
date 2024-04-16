@@ -29,6 +29,12 @@ class Trainer:
 
     def fit(self, train_lb_loader, train_ulb_loader, eval_loader):
         self.algorithm.model.train()
+        self.algorithm.loader_dict = {
+            'train_lb': train_lb_loader,
+            'train_ulb': train_ulb_loader,
+            'eval': eval_loader,
+        }
+        self.algorithm.call_hook('before_run')
 
         # EMA Init
         self.algorithm.ema = EMA(self.algorithm.model, self.algorithm.ema_m)
@@ -53,8 +59,12 @@ class Trainer:
 
                 if self.algorithm.it > self.config.num_train_iter:
                     break
-                
-                result = self.algorithm.train_step(**self.algorithm.process_batch(**data_lb, **data_ulb))
+
+                self.call_hook('before_train_step')
+                out_dict, log_dict = self.algorithm.train_step(**self.algorithm.process_batch(**data_lb, **data_ulb))
+                self.out_dict = out_dict
+                self.log_dict = log_dict
+                self.call_hook('after_train_step')
 
                 bar.suffix = ("Iter: {batch:4}/{iter:4}.".format(batch=self.algorithm.it, iter=len(train_lb_loader)))
                 bar.next()
