@@ -102,6 +102,9 @@ class FixMatch(AlgorithmBase):
                     #self.print_fn(f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}")
                     #print('here')
                     #print(mask)
+                    
+                    #overwrite previous pseudolabel.
+
                     idx_ulb = idx_ulb.to(self.device)
 
                     mask_bool = mask.ge(1.0)
@@ -131,12 +134,30 @@ class FixMatch(AlgorithmBase):
                 mask         = self.mask[idx_ulb]
 
             #print(pseudo_label, mask)
-            batch_cov = (torch.sum(mask)/ len(idx_ulb)).item()
-            self.print_fn(f"{batch_cov}")
+            n_a_batch = torch.sum(mask)
+            batch_cov = (n_a_batch/ len(idx_ulb)).item() 
+            batch_acc = 0.0 
+            if(n_a_batch>0):
+                batch_acc_mask = self.y_true_ulb[idx_ulb]==self.pseudo_labels[idx_ulb]
+                batch_acc      = torch.sum(batch_acc_mask[mask.ge(1.0)])/n_a_batch 
+            
+
+            #self.print_fn(f"{batch_cov}")
 
             if not self.tb_log is None:
-                self.tb_log.update({"batch_cov":batch_cov}, self.it)
+                self.tb_log.update({"batch_pl_cov":batch_cov, "batch_pl_acc":batch_acc}, self.it)
 
+            
+            n_a = torch.sum(self.mask)
+            cov = n_a/self.n_u 
+            acc = 0.0 
+            if(n_a>0):
+                acc_mask = self.y_true_ulb==self.pseudo_labels
+                acc      = torch.sum(acc_mask[self.mask.ge(1.0)])/n_a
+            
+            if not self.tb_log is None:
+                self.tb_log.update({"agg_pl_cov":cov, "agg_pl_acc":acc}, self.it)
+            
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
                                                pseudo_label,
                                                'ce',

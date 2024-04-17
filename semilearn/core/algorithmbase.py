@@ -343,7 +343,9 @@ class AlgorithmBase:
         self.call_hook("before_run")
 
         device =  str(next(self.model.parameters()).device)  
-        n_u = len(self.dataset_dict['train_ulb'].targets)
+        n_u = len(self.dataset_dict['train_ulb'].targets) 
+        self.n_u = n_u
+        self.y_true_ulb = torch.tensor(self.dataset_dict['train_ulb'].targets).to(device)
 
         self.device = device
         
@@ -431,16 +433,17 @@ class AlgorithmBase:
                     tt = torch.tensor([lst_t_val[y_hat[i]] for i in range(n_u)]).to(device) 
                     scores  = torch.tensor(scores).to(device)  
                     
-                    if(accumulate_pseudo_labels and self.pseudo_labels is not None):
+                    if(self.accumulate_pseudo_labels and self.pseudo_labels is not None):
                         #new mask 
                         mask = scores.ge(tt) # .to(scores.dtype)
                         
-                        # the points that are newly psuedo-labeled
+                        
+                        # overwrite previous pseudolabels.
                         mask2 = torch.logical_and(torch.logical_not(self.mask.ge(1.0)), mask) 
 
                         self.print_fn(f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}")
 
-                        self.pseudo_labels[mask2] = y_hat[mask2]
+                        self.pseudo_labels[mask] = y_hat[mask]
 
                         self.mask = torch.logical_or(mask, self.mask).to(scores.dtype).to(device) 
 
