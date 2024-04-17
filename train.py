@@ -35,7 +35,7 @@ def get_config():
     """
     Saving & loading of the model.
     """
-    
+
     parser.add_argument("--accumulate_pseudo_labels", type=str2bool, default=False)
 
     parser.add_argument("--save_dir", type=str, default="./saved_models")
@@ -193,14 +193,16 @@ def get_config():
 
 
     """
-    Post-hoc calibration 
+    Post-hoc calibration
     """
-    parser.add_argument("--use_post_hoc_calib", type=str2bool, default=False) 
+    parser.add_argument("--use_post_hoc_calib", type=str2bool, default=False)
     parser.add_argument("--n_cal",type=int, default=0)
     parser.add_argument("--n_th",type=int, default=0)
     parser.add_argument("--take_d_cal_th_from", type=str,default='train_lb')
 
     parser.add_argument("--use_true_labels", type=str2bool, default=False)
+
+    parser.add_argument("--re_init", type=str2bool, default=False, help="Whether or not reinitialize g at each round")
     """
     multi-GPUs & Distributed Training
     """
@@ -348,7 +350,7 @@ def main_worker(gpu, ngpus_per_node, args):
     np.random.seed(args.seed)
     cudnn.deterministic = True
     cudnn.benchmark = True
-    
+
 
     # SET UP FOR DISTRIBUTED TRAINING
     if args.distributed:
@@ -371,7 +373,7 @@ def main_worker(gpu, ngpus_per_node, args):
     logger_level = "WARNING"
     tb_log = None
     if args.rank % ngpus_per_node == 0:
-        
+
         print(args.use_tensorboard)
 
         tb_log = TBLog(save_path, "tensorboard", use_tensorboard=args.use_tensorboard)
@@ -379,8 +381,8 @@ def main_worker(gpu, ngpus_per_node, args):
 
     logger = get_logger(args.save_name, save_path, logger_level)
     logger.info(f"Use GPU: {args.gpu} for training")
-    
-    
+
+
 
     _net_builder = get_net_builder(args.net, args.net_from_name)
     # optimizer, scheduler, datasets, dataloaders with be set in algorithms
@@ -389,8 +391,8 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         model = get_algorithm(args, _net_builder, tb_log, logger)
     logger.info(f"Number of Trainable Params: {count_parameters(model.model)}")
-    
-    
+
+
     if(args.use_post_hoc_calib):
         post_hoc_calib_conf = OmegaConf.load("./config/post-hoc/falcon_cifar10.yaml")
         model.post_hoc_calib_conf = post_hoc_calib_conf

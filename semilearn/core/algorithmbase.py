@@ -6,14 +6,40 @@ import contextlib
 import numpy as np
 from inspect import signature
 from collections import OrderedDict
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, top_k_accuracy_score
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    top_k_accuracy_score,
+)
 
 import torch
 import torch.nn.functional as F
 from torch.cuda.amp import autocast, GradScaler
 
-from semilearn.core.hooks import Hook, get_priority, CheckpointHook, TimerHook, LoggingHook, DistSamplerSeedHook, ParamUpdateHook, EvaluationHook, EMAHook, WANDBHook, AimHook
-from semilearn.core.utils import get_dataset, get_data_loader, get_optimizer, get_cosine_schedule_with_warmup, Bn_Controller
+from semilearn.core.hooks import (
+    Hook,
+    get_priority,
+    CheckpointHook,
+    TimerHook,
+    LoggingHook,
+    DistSamplerSeedHook,
+    ParamUpdateHook,
+    EvaluationHook,
+    EMAHook,
+    WANDBHook,
+    AimHook,
+)
+from semilearn.core.utils import (
+    get_dataset,
+    get_data_loader,
+    get_optimizer,
+    get_cosine_schedule_with_warmup,
+    Bn_Controller,
+)
 from semilearn.core.criterions import CELoss, ConsistencyLoss
 
 from semilearn.datasets.utils import randomly_split_labeled_basic_dataset
@@ -21,33 +47,30 @@ from semilearn.datasets.utils import randomly_split_labeled_basic_dataset
 from confidence_funcs.calibration.calibrators import get_calibrator
 from confidence_funcs.classifiers.torch.pytorch_clf import PyTorchClassifier
 
-from confidence_funcs.core.threshold_estimation import * 
+from confidence_funcs.core.threshold_estimation import *
+
 
 class AlgorithmBase:
     """
-        Base class for algorithms
-        init algorithm specific parameters and common parameters
-        
-        Args:
-            - args (`argparse`):
-                algorithm arguments
-            - net_builder (`callable`):
-                network loading function
-            - tb_log (`TBLog`):
-                tensorboard logger
-            - logger (`logging.Logger`):
-                logger to use
+    Base class for algorithms
+    init algorithm specific parameters and common parameters
+
+    Args:
+        - args (`argparse`):
+            algorithm arguments
+        - net_builder (`callable`):
+            network loading function
+        - tb_log (`TBLog`):
+            tensorboard logger
+        - logger (`logging.Logger`):
+            logger to use
     """
-    def __init__(
-        self,
-        args,
-        net_builder,
-        tb_log=None,
-        logger=None,
-        **kwargs):
-        
+
+    def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         # common arguments
         self.args = args
+        self.cur_clf = None
+        self.re_init = args.re_init
         self.num_classes = args.num_classes
         self.ema_m = args.ema_m
         self.epochs = args.epoch
@@ -55,7 +78,7 @@ class AlgorithmBase:
         self.num_eval_iter = args.num_eval_iter
         self.num_log_iter = args.num_log_iter
         self.num_iter_per_epoch = int(self.num_train_iter // self.epochs)
-        self.lambda_u = args.ulb_loss_ratio 
+        self.lambda_u = args.ulb_loss_ratio
         self.use_cat = args.use_cat
         self.use_amp = args.amp
         self.clip_grad = args.clip_grad
@@ -66,7 +89,7 @@ class AlgorithmBase:
 
         # commaon utils arguments
         self.tb_log = tb_log
-        self.logger = logger 
+        self.logger = logger
         self.print_fn = print if logger is None else logger.info
         self.ngpus_per_node = torch.cuda.device_count()
         self.loss_scaler = GradScaler()
@@ -105,8 +128,8 @@ class AlgorithmBase:
         # self.init(**kwargs)
 
         # set common hooks during training
-        self._hooks = []  # record underlying hooks 
-        self.hooks_dict = OrderedDict() # actual object to be used to call hooks
+        self._hooks = []  # record underlying hooks
+        self.hooks_dict = OrderedDict()  # actual object to be used to call hooks
         self.set_hooks()
 
         self.post_hoc_calib_conf = None
@@ -116,7 +139,6 @@ class AlgorithmBase:
         algorithm specific init function, to add parameters into class
         """
         raise NotImplementedError
-    
 
     def set_dataset(self):
         """
@@ -124,54 +146,76 @@ class AlgorithmBase:
         """
         if self.rank != 0 and self.distributed:
             torch.distributed.barrier()
-        dataset_dict = get_dataset(self.args, self.algorithm, self.args.dataset, self.args.num_labels, self.args.num_classes, self.args.data_dir, self.args.include_lb_to_ulb)
-        
+        dataset_dict = get_dataset(
+            self.args,
+            self.algorithm,
+            self.args.dataset,
+            self.args.num_labels,
+            self.args.num_classes,
+            self.args.data_dir,
+            self.args.include_lb_to_ulb,
+        )
+
         # N_v, nu #N_cal, N_th
 
         # take_from_train_lb ?
         # take_from_eval ?
         # self.args.take_from "train_lb", "eval"
 
-        need_d_cal = self.args.n_cal > 0 
-        need_d_th  = self.args.n_th  > 0 
+        need_d_cal = self.args.n_cal > 0
+        need_d_th = self.args.n_th > 0
 
-        if(need_d_cal or need_d_th):
-            
+        if need_d_cal or need_d_th:
             take_d_cal_th_from = self.args.take_d_cal_th_from
 
             n = self.args.n_cal + self.args.n_th
-            #if(self.args.take_from_eval):            
-            ds1, ds2 = randomly_split_labeled_basic_dataset(dataset_dict[take_d_cal_th_from],size_1=n)
-            dataset_dict[take_d_cal_th_from] = ds2  # remaining n_lb (or n_eval) - n samples 
-            
-            self.print_fn(f"len(d_train) = {len(dataset_dict['train_lb'])} and len(d_eval) = {len(dataset_dict['eval'])}")
+            # if(self.args.take_from_eval):
+            ds1, ds2 = randomly_split_labeled_basic_dataset(
+                dataset_dict[take_d_cal_th_from], size_1=n
+            )
+            dataset_dict[take_d_cal_th_from] = (
+                ds2  # remaining n_lb (or n_eval) - n samples
+            )
 
-            if(need_d_cal and  need_d_th):
-                ds11, ds12 = randomly_split_labeled_basic_dataset(ds1,size_1=self.args.n_cal)
-                ds11.Y = torch.Tensor( ds11.targets )
-                ds12.Y = torch.Tensor( ds12.targets )
-                #print(ds11.Y)
-                dataset_dict['d_cal'] = ds11 
-                dataset_dict['d_th']  = ds12
-                self.print_fn(f'len(d_cal) = {len(ds11)} and len(d_th) = {len(ds12)}')
+            self.print_fn(
+                f"len(d_train) = {len(dataset_dict['train_lb'])} and len(d_eval) = {len(dataset_dict['eval'])}"
+            )
 
-            elif(need_d_cal and  not need_d_th):
+            if need_d_cal and need_d_th:
+                ds11, ds12 = randomly_split_labeled_basic_dataset(
+                    ds1, size_1=self.args.n_cal
+                )
+                ds11.Y = torch.Tensor(ds11.targets)
+                ds12.Y = torch.Tensor(ds12.targets)
+                # print(ds11.Y)
+                dataset_dict["d_cal"] = ds11
+                dataset_dict["d_th"] = ds12
+                self.print_fn(f"len(d_cal) = {len(ds11)} and len(d_th) = {len(ds12)}")
+
+            elif need_d_cal and not need_d_th:
                 # need only post-hoc calib data.  [for fixed threshold or heuristic thresholds]
-                dataset_dict['d_cal'] = ds1
-                self.print_fn(f'len(d_cal) = {len(ds1)}')
+                dataset_dict["d_cal"] = ds1
+                self.print_fn(f"len(d_cal) = {len(ds1)}")
 
             else:
                 # not doing post-hoc calibration but using threshold-estimation
-                dataset_dict['d_th']  = ds1    
-                self.print_fn(f'len(d_th) = {len(ds1)}')
+                dataset_dict["d_th"] = ds1
+                self.print_fn(f"len(d_th) = {len(ds1)}")
 
-            
         if dataset_dict is None:
             return dataset_dict
 
-        self.args.ulb_dest_len = len(dataset_dict['train_ulb']) if dataset_dict['train_ulb'] is not None else 0
-        self.args.lb_dest_len = len(dataset_dict['train_lb'])
-        self.print_fn("unlabeled data number: {}, labeled data number {}".format(self.args.ulb_dest_len, self.args.lb_dest_len))
+        self.args.ulb_dest_len = (
+            len(dataset_dict["train_ulb"])
+            if dataset_dict["train_ulb"] is not None
+            else 0
+        )
+        self.args.lb_dest_len = len(dataset_dict["train_lb"])
+        self.print_fn(
+            "unlabeled data number: {}, labeled data number {}".format(
+                self.args.ulb_dest_len, self.args.lb_dest_len
+            )
+        )
         if self.rank == 0 and self.distributed:
             torch.distributed.barrier()
         return dataset_dict
@@ -182,46 +226,54 @@ class AlgorithmBase:
         """
         if self.dataset_dict is None:
             return
-            
+
         self.print_fn("Create train and test data loaders")
         loader_dict = {}
-        loader_dict['train_lb'] = get_data_loader(self.args,
-                                                  self.dataset_dict['train_lb'],
-                                                  self.args.batch_size,
-                                                  data_sampler=self.args.train_sampler,
-                                                  num_iters=self.num_train_iter,
-                                                  num_epochs=self.epochs,
-                                                  num_workers=self.args.num_workers,
-                                                  distributed=self.distributed)
+        loader_dict["train_lb"] = get_data_loader(
+            self.args,
+            self.dataset_dict["train_lb"],
+            self.args.batch_size,
+            data_sampler=self.args.train_sampler,
+            num_iters=self.num_train_iter,
+            num_epochs=self.epochs,
+            num_workers=self.args.num_workers,
+            distributed=self.distributed,
+        )
 
-        loader_dict['train_ulb'] = get_data_loader(self.args,
-                                                   self.dataset_dict['train_ulb'],
-                                                   self.args.batch_size * self.args.uratio,
-                                                   data_sampler=self.args.train_sampler,
-                                                   num_iters=self.num_train_iter,
-                                                   num_epochs=self.epochs,
-                                                   num_workers=2 * self.args.num_workers,
-                                                   distributed=self.distributed)
+        loader_dict["train_ulb"] = get_data_loader(
+            self.args,
+            self.dataset_dict["train_ulb"],
+            self.args.batch_size * self.args.uratio,
+            data_sampler=self.args.train_sampler,
+            num_iters=self.num_train_iter,
+            num_epochs=self.epochs,
+            num_workers=2 * self.args.num_workers,
+            distributed=self.distributed,
+        )
 
         self.print_fn(f"size of eval dataset = {len(self.dataset_dict['eval'].data)}")
 
-        loader_dict['eval'] = get_data_loader(self.args,
-                                              self.dataset_dict['eval'],
-                                              self.args.eval_batch_size,
-                                              # make sure data_sampler is None for evaluation
-                                              data_sampler=None,
-                                              num_workers=self.args.num_workers,
-                                              drop_last=False)
-        
-        if self.dataset_dict['test'] is not None:
-            loader_dict['test'] =  get_data_loader(self.args,
-                                                   self.dataset_dict['test'],
-                                                   self.args.eval_batch_size,
-                                                   # make sure data_sampler is None for evaluation
-                                                   data_sampler=None,
-                                                   num_workers=self.args.num_workers,
-                                                   drop_last=False)
-        self.print_fn(f'[!] data loader keys: {loader_dict.keys()}')
+        loader_dict["eval"] = get_data_loader(
+            self.args,
+            self.dataset_dict["eval"],
+            self.args.eval_batch_size,
+            # make sure data_sampler is None for evaluation
+            data_sampler=None,
+            num_workers=self.args.num_workers,
+            drop_last=False,
+        )
+
+        if self.dataset_dict["test"] is not None:
+            loader_dict["test"] = get_data_loader(
+                self.args,
+                self.dataset_dict["test"],
+                self.args.eval_batch_size,
+                # make sure data_sampler is None for evaluation
+                data_sampler=None,
+                num_workers=self.args.num_workers,
+                drop_last=False,
+            )
+        self.print_fn(f"[!] data loader keys: {loader_dict.keys()}")
         return loader_dict
 
     def set_optimizer(self):
@@ -229,17 +281,28 @@ class AlgorithmBase:
         set optimizer for algorithm
         """
         self.print_fn("Create optimizer and scheduler")
-        optimizer = get_optimizer(self.model, self.args.optim, self.args.lr, self.args.momentum, self.args.weight_decay, self.args.layer_decay)
-        scheduler = get_cosine_schedule_with_warmup(optimizer,
-                                                    self.num_train_iter,
-                                                    num_warmup_steps=self.args.num_warmup_iter)
+        optimizer = get_optimizer(
+            self.model,
+            self.args.optim,
+            self.args.lr,
+            self.args.momentum,
+            self.args.weight_decay,
+            self.args.layer_decay,
+        )
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer, self.num_train_iter, num_warmup_steps=self.args.num_warmup_iter
+        )
         return optimizer, scheduler
 
     def set_model(self):
         """
         initialize model
         """
-        model = self.net_builder(num_classes=self.num_classes, pretrained=self.args.use_pretrain, pretrained_path=self.args.pretrain_path)
+        model = self.net_builder(
+            num_classes=self.num_classes,
+            pretrained=self.args.use_pretrain,
+            pretrained_path=self.args.pretrain_path,
+        )
         return model
 
     def set_ema_model(self):
@@ -281,19 +344,18 @@ class AlgorithmBase:
         for arg, var in kwargs.items():
             if not arg in input_args:
                 continue
-            
+
             if var is None:
                 continue
-            
+
             # send var to cuda
             if isinstance(var, dict):
                 var = {k: v.cuda(self.gpu) for k, v in var.items()}
             else:
                 var = var.cuda(self.gpu)
             input_dict[arg] = var
-        
+
         return input_dict
-    
 
     def process_out_dict(self, out_dict=None, **kwargs):
         """
@@ -304,12 +366,11 @@ class AlgorithmBase:
 
         for arg, var in kwargs.items():
             out_dict[arg] = var
-        
+
         # process res_dict, add output from res_dict to out_dict if necessary
         return out_dict
 
-
-    def process_log_dict(self, log_dict=None, prefix='train', **kwargs):
+    def process_log_dict(self, log_dict=None, prefix="train", **kwargs):
         """
         process the tb_dict as return of train_step
         """
@@ -317,7 +378,7 @@ class AlgorithmBase:
             log_dict = {}
 
         for arg, var in kwargs.items():
-            log_dict[f'{prefix}/' + arg] = var
+            log_dict[f"{prefix}/" + arg] = var
         return log_dict
 
     def compute_prob(self, logits):
@@ -329,11 +390,10 @@ class AlgorithmBase:
         """
         # implement train step for each algorithm
         # compute loss
-        # update model 
+        # update model
         # record log_dict
         # return log_dict
         raise NotImplementedError
-
 
     def train(self):
         """
@@ -342,149 +402,190 @@ class AlgorithmBase:
         self.model.train()
         self.call_hook("before_run")
 
-        device =  str(next(self.model.parameters()).device)  
-        n_u = len(self.dataset_dict['train_ulb'].targets) 
+        device = str(next(self.model.parameters()).device)
+        n_u = len(self.dataset_dict["train_ulb"].targets)
         self.n_u = n_u
-        self.y_true_ulb = torch.tensor(self.dataset_dict['train_ulb'].targets).to(device)
+        self.y_true_ulb = torch.tensor(self.dataset_dict["train_ulb"].targets).to(
+            device
+        )
 
         self.device = device
-        
+
         self.pseudo_labels = torch.zeros(n_u).long().to(device)
-        self.mask          = torch.zeros(n_u).to(device) 
+        self.mask = torch.zeros(n_u).to(device)
 
-
-        #accumulate_pseudo_labels = True
+        # accumulate_pseudo_labels = True
         self.accumulate_pseudo_labels = self.args.accumulate_pseudo_labels
-        
-        if(self.args.use_true_labels):
-            self.pseudo_labels = torch.tensor(self.dataset_dict['train_ulb'].targets).to(device) 
-            self.mask = torch.ones(len(self.pseudo_labels)).to(device)
 
+        if self.args.use_true_labels:
+            self.pseudo_labels = torch.tensor(
+                self.dataset_dict["train_ulb"].targets
+            ).to(device)
+            self.mask = torch.ones(len(self.pseudo_labels)).to(device)
 
         for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
-            
+
             # prevent the training iterations exceed args.num_train_iter
             if self.it >= self.num_train_iter:
                 break
-            
+
             self.call_hook("before_train_epoch")
 
-            #print(len(self.loader_dict['train_lb']), len( self.loader_dict['train_ulb']))
+            # print(len(self.loader_dict['train_lb']), len( self.loader_dict['train_ulb']))
             idcs = []
-            for data_lb, data_ulb in zip(self.loader_dict['train_lb'],
-                                         self.loader_dict['train_ulb']):
+            for data_lb, data_ulb in zip(
+                self.loader_dict["train_lb"], self.loader_dict["train_ulb"]
+            ):
                 # prevent the training iterations exceed args.num_train_iter
-                
-                #print(data_ulb['idx_ulb'])
-                #idcs.extend(data_ulb['idx_ulb'].tolist())
-                
-                
+
+                # print(data_ulb['idx_ulb'])
+                # idcs.extend(data_ulb['idx_ulb'].tolist())
 
                 if self.it >= self.num_train_iter:
                     break
 
-                self.call_hook("before_train_step") 
+                self.call_hook("before_train_step")
 
-                #for every iter>0, if post-hoc-calib is not none, then learn new g.
+                # for every iter>0, if post-hoc-calib is not none, then learn new g.
                 # validation data ??
 
-                 #<<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<
+                # <<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<
 
+                if (
+                        # re init case, train calibrator from scratch every 100 epochs
+                    self.post_hoc_calib_conf
+                    and self.it % 100 == 0
+                    and self.it >= 100
+                    and self.re_init
+                ) or (self.post_hoc_calib_conf and not self.re_init): # keep training case, keep train calibrator every epoch
+                    print(f"{self.re_init = }", "8" * 100)
+                    if self.cur_clf is None:
+                        # at the beginning, cur_clf has to be None, so either case, we have create a classifier instance
+                        self.cur_clf = PyTorchClassifier(logger=self.logger)
+                    elif self.cur_clf is not None and self.re_init:
+                        # when cur_clf is not None, that is, it contains the classifier from the previous "step". If re init, then re init.
+                        self.cur_clf = PyTorchClassifier(logger=self.logger)
+                    else:
+                        # cur_lf is not None and do not re initialize
+                        pass
 
-                if( self.post_hoc_calib_conf and self.it%100==0 and self.it>=100):
-                    
-                    self.cur_clf = PyTorchClassifier(logger=self.logger)
-                    self.cur_clf.model = self.model 
+                    self.cur_clf.model = self.model
 
-                    #self.print_fn('========================= Training Post-hoc Calibrator   =========================')
-                    self.cur_calibrator  = get_calibrator(self.cur_clf,self.post_hoc_calib_conf,self.logger)
-                    
+                    # self.print_fn('========================= Training Post-hoc Calibrator   =========================')
+                    self.cur_calibrator = get_calibrator(
+                        self.cur_clf, self.post_hoc_calib_conf, self.logger
+                    )
+
                     # randomly split the current available validation points into two parts.
-                    # one part will be used for training the calibrator and other part for finding 
+                    # one part will be used for training the calibrator and other part for finding
                     # the auto-labeling thresholds.
-                    
-                    #self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
-                    self.cur_calibrator.fit(self.dataset_dict['d_cal'], ds_val_nc=self.dataset_dict['d_th']) 
 
-                    #get pseudo labels and mask here.
-                    #estimate threshold, pseudo label etc.
-                    print('done learning new')
+                    # self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
+                    self.cur_calibrator.fit(
+                        self.dataset_dict["d_cal"], ds_val_nc=self.dataset_dict["d_th"]
+                    )
 
-                    val_inf_out_th = self.cur_calibrator.predict(self.dataset_dict['d_th'])
+                    # get pseudo labels and mask here.
+                    # estimate threshold, pseudo label etc.
+                    print("done learning new")
 
-                    lst_classes = np.arange(0,self.num_classes,1)
+                    val_inf_out_th = self.cur_calibrator.predict(
+                        self.dataset_dict["d_th"]
+                    )
+
+                    lst_classes = np.arange(0, self.num_classes, 1)
                     auto_lbl_conf = self.post_hoc_calib_conf.auto_lbl_conf
-                    val_idcs = np.arange(0,len(self.dataset_dict['d_th'].targets),1)
+                    val_idcs = np.arange(0, len(self.dataset_dict["d_th"].targets), 1)
                     eps = auto_lbl_conf.auto_label_err_threshold
-                    
-                    lst_t_val, val_idcs_to_rm, val_err, cov  = determine_threshold(lst_classes, val_inf_out_th, auto_lbl_conf,
-                                                                                    self.dataset_dict['d_th'],val_idcs, self.logger,err_threshold=eps)
+
+                    lst_t_val, val_idcs_to_rm, val_err, cov = determine_threshold(
+                        lst_classes,
+                        val_inf_out_th,
+                        auto_lbl_conf,
+                        self.dataset_dict["d_th"],
+                        val_idcs,
+                        self.logger,
+                        err_threshold=eps,
+                    )
 
                     print(cov)
 
-                    #pseudo label and mask
-                    unlbld_inf_out = self.cur_calibrator.predict(self.dataset_dict['train_ulb'])
-                    scores = unlbld_inf_out[auto_lbl_conf['score_type']]
-                    
-                    y_hat = unlbld_inf_out['labels'].to(device)
+                    # pseudo label and mask
+                    unlbld_inf_out = self.cur_calibrator.predict(
+                        self.dataset_dict["train_ulb"]
+                    )
+                    scores = unlbld_inf_out[auto_lbl_conf["score_type"]]
+
+                    y_hat = unlbld_inf_out["labels"].to(device)
 
                     print(lst_t_val)
-                    tt = torch.tensor([lst_t_val[y_hat[i]] for i in range(n_u)]).to(device) 
-                    scores  = torch.tensor(scores).to(device)  
-                    
-                    if(self.accumulate_pseudo_labels and self.pseudo_labels is not None):
-                        #new mask 
-                        mask = scores.ge(tt) # .to(scores.dtype)
-                        
-                        
-                        # overwrite previous pseudolabels.
-                        mask2 = torch.logical_and(torch.logical_not(self.mask.ge(1.0)), mask) 
+                    tt = torch.tensor([lst_t_val[y_hat[i]] for i in range(n_u)]).to(
+                        device
+                    )
+                    scores = torch.tensor(scores).to(device)
 
-                        self.print_fn(f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}")
+                    if self.accumulate_pseudo_labels and self.pseudo_labels is not None:
+                        # new mask
+                        mask = scores.ge(tt)  # .to(scores.dtype)
+
+                        # overwrite previous pseudolabels.
+                        mask2 = torch.logical_and(
+                            torch.logical_not(self.mask.ge(1.0)), mask
+                        )
+
+                        self.print_fn(
+                            f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}"
+                        )
 
                         self.pseudo_labels[mask] = y_hat[mask]
 
-                        self.mask = torch.logical_or(mask, self.mask).to(scores.dtype).to(device) 
+                        self.mask = (
+                            torch.logical_or(mask, self.mask)
+                            .to(scores.dtype)
+                            .to(device)
+                        )
 
-                        self.print_fn(f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}")
+                        self.print_fn(
+                            f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}"
+                        )
 
                     else:
-                        self.pseudo_labels = y_hat 
+                        self.pseudo_labels = y_hat
                         self.mask = scores.ge(tt).to(scores.dtype)
 
                     self.pseudo_labels = self.pseudo_labels.to(device)
                     self.mask = self.mask.to(device)
-                    self.model.train() 
+                    self.model.train()
 
                 else:
-                    #self.print_fn('=========================    No Post-hoc Calibration     =========================')
-                    self.cur_calibrator = None 
-                
-                #>>>>>>>>>>>>>>>>>>>>>>>>>>> END CALIBRATION BLOCK  >>>>>>>>>>>>>>>>>>>>>>>>>>>
+                    # self.print_fn('=========================    No Post-hoc Calibration     =========================')
+                    self.cur_calibrator = None
 
+                # >>>>>>>>>>>>>>>>>>>>>>>>>>> END CALIBRATION BLOCK  >>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 # this step only computes the loss
-                self.out_dict, self.log_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb))
+                self.out_dict, self.log_dict = self.train_step(
+                    **self.process_batch(**data_lb, **data_ulb)
+                )
 
-                #parameters are updated in the call backs.
+                # parameters are updated in the call backs.
                 self.call_hook("after_train_step")
                 # the parameters are updated once the above hooks are called.
 
                 self.it += 1
-            
-            #print('EPOCH DONE')
-            #print(len(idcs))
-            #idcs_set = set(idcs)
-            #print(len(idcs_set), min(idcs_set),max(idcs_set)) 
+
+            # print('EPOCH DONE')
+            # print(len(idcs))
+            # idcs_set = set(idcs)
+            # print(len(idcs_set), min(idcs_set),max(idcs_set))
             self.call_hook("after_train_epoch")
-            
-            #return 
+
+            # return
 
         self.call_hook("after_run")
 
-
-    def evaluate(self, eval_dest='eval', out_key='logits', return_logits=False):
+    def evaluate(self, eval_dest="eval", out_key="logits", return_logits=False):
         """
         evaluation function
         """
@@ -493,7 +594,7 @@ class AlgorithmBase:
 
         eval_loader = self.loader_dict[eval_dest]
         total_loss = 0.0
-        total_num = 0.0 
+        total_num = 0.0
         y_true = []
         y_pred = []
         y_probs = []
@@ -501,9 +602,9 @@ class AlgorithmBase:
 
         with torch.no_grad():
             for data in eval_loader:
-                x = data['x_lb']
-                y = data['y_lb']
-                
+                x = data["x_lb"]
+                y = data["y_lb"]
+
                 if isinstance(x, dict):
                     x = {k: v.cuda(self.gpu) for k, v in x.items()}
                 else:
@@ -514,35 +615,41 @@ class AlgorithmBase:
                 total_num += num_batch
 
                 logits = self.model(x)[out_key]
-                
-                loss = F.cross_entropy(logits, y, reduction='mean', ignore_index=-1)
+
+                loss = F.cross_entropy(logits, y, reduction="mean", ignore_index=-1)
                 y_true.extend(y.cpu().tolist())
                 y_pred.extend(torch.max(logits, dim=-1)[1].cpu().tolist())
                 y_logits.append(logits.cpu().numpy())
                 y_probs.extend(torch.softmax(logits, dim=-1).cpu().tolist())
                 total_loss += loss.item() * num_batch
-        
+
         y_true = np.array(y_true)
         y_pred = np.array(y_pred)
         y_logits = np.concatenate(y_logits)
         top1 = accuracy_score(y_true, y_pred)
         top5 = top_k_accuracy_score(y_true, y_probs, k=5)
         balanced_top1 = balanced_accuracy_score(y_true, y_pred)
-        precision = precision_score(y_true, y_pred, average='macro')
-        recall = recall_score(y_true, y_pred, average='macro')
-        F1 = f1_score(y_true, y_pred, average='macro')
+        precision = precision_score(y_true, y_pred, average="macro")
+        recall = recall_score(y_true, y_pred, average="macro")
+        F1 = f1_score(y_true, y_pred, average="macro")
 
-        #cf_mat = confusion_matrix(y_true, y_pred, normalize='true')
-        #self.print_fn('confusion matrix:\n' + np.array_str(cf_mat))
+        # cf_mat = confusion_matrix(y_true, y_pred, normalize='true')
+        # self.print_fn('confusion matrix:\n' + np.array_str(cf_mat))
         self.ema.restore()
         self.model.train()
 
-        eval_dict = {eval_dest+'/loss': total_loss / total_num, eval_dest+'/top-1-acc': top1, eval_dest+'/top-5-acc': top5, 
-                     eval_dest+'/balanced_acc': balanced_top1, eval_dest+'/precision': precision, eval_dest+'/recall': recall, eval_dest+'/F1': F1}
+        eval_dict = {
+            eval_dest + "/loss": total_loss / total_num,
+            eval_dest + "/top-1-acc": top1,
+            eval_dest + "/top-5-acc": top5,
+            eval_dest + "/balanced_acc": balanced_top1,
+            eval_dest + "/precision": precision,
+            eval_dest + "/recall": recall,
+            eval_dest + "/F1": F1,
+        }
         if return_logits:
-            eval_dict[eval_dest+'/logits'] = y_logits
+            eval_dict[eval_dest + "/logits"] = y_logits
         return eval_dict
-
 
     def get_save_dict(self):
         """
@@ -550,19 +657,18 @@ class AlgorithmBase:
         """
         # base arguments for all models
         save_dict = {
-            'model': self.model.state_dict(),
-            'ema_model': self.ema_model.state_dict(),
-            'optimizer': self.optimizer.state_dict(),
-            'loss_scaler': self.loss_scaler.state_dict(),
-            'it': self.it + 1,
-            'epoch': self.epoch + 1,
-            'best_it': self.best_it,
-            'best_eval_acc': self.best_eval_acc,
+            "model": self.model.state_dict(),
+            "ema_model": self.ema_model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "loss_scaler": self.loss_scaler.state_dict(),
+            "it": self.it + 1,
+            "epoch": self.epoch + 1,
+            "best_it": self.best_it,
+            "best_eval_acc": self.best_eval_acc,
         }
         if self.scheduler is not None:
-            save_dict['scheduler'] = self.scheduler.state_dict()
+            save_dict["scheduler"] = self.scheduler.state_dict()
         return save_dict
-    
 
     def save_model(self, save_name, save_path):
         """
@@ -575,24 +681,23 @@ class AlgorithmBase:
         torch.save(save_dict, save_filename)
         self.print_fn(f"model saved: {save_filename}")
 
-
     def load_model(self, load_path):
         """
         load model and specified parameters for resume
         """
-        checkpoint = torch.load(load_path, map_location='cpu')
-        self.model.load_state_dict(checkpoint['model'])
-        self.ema_model.load_state_dict(checkpoint['ema_model'])
-        self.loss_scaler.load_state_dict(checkpoint['loss_scaler'])
-        self.it = checkpoint['it']
-        self.start_epoch = checkpoint['epoch']
+        checkpoint = torch.load(load_path, map_location="cpu")
+        self.model.load_state_dict(checkpoint["model"])
+        self.ema_model.load_state_dict(checkpoint["ema_model"])
+        self.loss_scaler.load_state_dict(checkpoint["loss_scaler"])
+        self.it = checkpoint["it"]
+        self.start_epoch = checkpoint["epoch"]
         self.epoch = self.start_epoch
-        self.best_it = checkpoint['best_it']
-        self.best_eval_acc = checkpoint['best_eval_acc']
-        self.optimizer.load_state_dict(checkpoint['optimizer'])
-        if self.scheduler is not None and 'scheduler' in checkpoint:
-            self.scheduler.load_state_dict(checkpoint['scheduler'])
-        self.print_fn('Model loaded')
+        self.best_it = checkpoint["best_it"]
+        self.best_eval_acc = checkpoint["best_eval_acc"]
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        if self.scheduler is not None and "scheduler" in checkpoint:
+            self.scheduler.load_state_dict(checkpoint["scheduler"])
+        self.print_fn("Model loaded")
         return checkpoint
 
     def check_prefix_state_dict(self, state_dict):
@@ -601,14 +706,14 @@ class AlgorithmBase:
         """
         new_state_dict = dict()
         for key, item in state_dict.items():
-            if key.startswith('module'):
-                new_key = '.'.join(key.split('.')[1:])
+            if key.startswith("module"):
+                new_key = ".".join(key.split(".")[1:])
             else:
                 new_key = key
             new_state_dict[new_key] = item
         return new_state_dict
 
-    def register_hook(self, hook, name=None, priority='NORMAL'):
+    def register_hook(self, hook, name=None, priority="NORMAL"):
         """
         Ref: https://github.com/open-mmlab/mmcv/blob/a08517790d26f8761910cac47ce8098faac7b627/mmcv/runner/base_runner.py#L263
         Register a hook into the hook list.
@@ -623,7 +728,7 @@ class AlgorithmBase:
                 Lower value means higher priority.
         """
         assert isinstance(hook, Hook)
-        if hasattr(hook, 'priority'):
+        if hasattr(hook, "priority"):
             raise ValueError('"priority" is a reserved attribute for hooks')
         priority = get_priority(priority)
         hook.priority = priority  # type: ignore
@@ -636,7 +741,7 @@ class AlgorithmBase:
                 self._hooks.insert(i + 1, hook)
                 inserted = True
                 break
-        
+
         if not inserted:
             self._hooks.insert(0, hook)
 
@@ -644,8 +749,6 @@ class AlgorithmBase:
         self.hooks_dict = OrderedDict()
         for hook in self._hooks:
             self.hooks_dict[hook.name] = hook
-        
-
 
     def call_hook(self, fn_name, hook_name=None, *args, **kwargs):
         """Call all hooks.
@@ -655,10 +758,10 @@ class AlgorithmBase:
             hook_name (str): The specific hook name to be called, such as
                 "param_update" or "dist_align", uesed to call single hook in train_step.
         """
-        
+
         if hook_name is not None:
             return getattr(self.hooks_dict[hook_name], fn_name)(self, *args, **kwargs)
-        
+
         for hook in self.hooks_dict.values():
             if hasattr(hook, fn_name):
                 getattr(hook, fn_name)(self, *args, **kwargs)
@@ -669,7 +772,6 @@ class AlgorithmBase:
         """
         return hook_name in self.hooks_dict
 
-
     @staticmethod
     def get_argument():
         """
@@ -678,29 +780,41 @@ class AlgorithmBase:
         return {}
 
 
-
 class ImbAlgorithmBase(AlgorithmBase):
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         super().__init__(args, net_builder, tb_log, logger, **kwargs)
-        
+
         # imbalanced arguments
         self.lb_imb_ratio = self.args.lb_imb_ratio
         self.ulb_imb_ratio = self.args.ulb_imb_ratio
         self.imb_algorithm = self.args.imb_algorithm
-    
+
     def imb_init(self, *args, **kwargs):
         """
         intiialize imbalanced algorithm parameters
         """
-        pass 
+        pass
 
     def set_optimizer(self):
-        if 'vit' in self.args.net and self.args.dataset in ['cifar100', 'food101', 'semi_aves', 'semi_aves_out']:
-            return super().set_optimizer() 
-        elif self.args.dataset in ['imagenet', 'imagenet127']:
-            return super().set_optimizer() 
+        if "vit" in self.args.net and self.args.dataset in [
+            "cifar100",
+            "food101",
+            "semi_aves",
+            "semi_aves_out",
+        ]:
+            return super().set_optimizer()
+        elif self.args.dataset in ["imagenet", "imagenet127"]:
+            return super().set_optimizer()
         else:
             self.print_fn("Create optimizer and scheduler")
-            optimizer = get_optimizer(self.model, self.args.optim, self.args.lr, self.args.momentum, self.args.weight_decay, self.args.layer_decay, bn_wd_skip=False)
+            optimizer = get_optimizer(
+                self.model,
+                self.args.optim,
+                self.args.lr,
+                self.args.momentum,
+                self.args.weight_decay,
+                self.args.layer_decay,
+                bn_wd_skip=False,
+            )
             scheduler = None
             return optimizer, scheduler
