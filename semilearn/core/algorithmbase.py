@@ -134,6 +134,9 @@ class AlgorithmBase:
 
         self.post_hoc_calib_conf = None
 
+        self.aug_1 = args.aug_1 
+        self.aug_2 = args.aug_2 
+
     def init(self, **kwargs):
         """
         algorithm specific init function, to add parameters into class
@@ -406,6 +409,8 @@ class AlgorithmBase:
         device =  str(next(self.model.parameters()).device)  
         n_u = len(self.dataset_dict['train_ulb'].targets) 
         self.n_u = n_u
+        self.n_l = len(self.dataset_dict['train_lb'].targets) 
+
         self.y_true_ulb = torch.tensor(self.dataset_dict["train_ulb"].targets).to(
             device
         )
@@ -465,26 +470,6 @@ class AlgorithmBase:
                     
                     self.cur_clf = PyTorchClassifier(logger=self.logger)
                     self.cur_clf.model = self.model 
-                if (
-                        # re init case, train calibrator from scratch every 100 epochs
-                    self.post_hoc_calib_conf
-                    and self.it % 100 == 0
-                    and self.it >= 100
-                    and self.re_init
-                ) or (self.post_hoc_calib_conf and not self.re_init): # keep training case, keep train calibrator every epoch
-                    print(f"{self.re_init = }", "8" * 100)
-                    if self.cur_clf is None:
-                        # at the beginning, cur_clf has to be None, so either case, we have create a classifier instance
-                        self.cur_clf = PyTorchClassifier(logger=self.logger)
-                    elif self.cur_clf is not None and self.re_init:
-                        # when cur_clf is not None, that is, it contains the classifier from the previous "step". If re init, then re init.
-                        self.cur_clf = PyTorchClassifier(logger=self.logger)
-                    else:
-                        # cur_lf is not None and do not re initialize
-                        pass
-
-                    self.cur_clf.model = self.model
-
                     # self.print_fn('========================= Training Post-hoc Calibrator   =========================')
                     self.cur_calibrator = get_calibrator(
                         self.cur_clf, self.post_hoc_calib_conf, self.logger
@@ -501,7 +486,7 @@ class AlgorithmBase:
 
                     # get pseudo labels and mask here.
                     # estimate threshold, pseudo label etc.
-                    print("done learning new")
+                    print("done learning new g")
 
                     val_inf_out_th = self.cur_calibrator.predict(
                         self.dataset_dict["d_th"]

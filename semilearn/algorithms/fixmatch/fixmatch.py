@@ -50,9 +50,35 @@ class FixMatch(AlgorithmBase):
 
         # inference and calculate sup/unsup losses
 
-        # disabling weak augmentation
-        
-        #x_ulb_w = x_ulb 
+        # aug_1 : data augmentation to get pseudolabels "id" or "weak", "strong"
+        # aug_1 is weak for vanilla fixmatch
+
+        # aug_2:  data augmentation in consistency loss "id" or "weak", "strong"
+        # aug_2 is strong for vanilla fixmatch
+
+        if(self.aug_1=="id" and self.aug_2=="id"):
+            x_ulb_w = x_ulb
+            x_ulb_s = x_ulb 
+
+        elif(self.aug_1=="weak" and self.aug_2=="weak"):
+            x_ulb_s =  x_ulb_w 
+
+        elif(self.aug_1=="id" and self.aug_2 =="weak"):
+            x_ulb_w = x_ulb 
+            x_ulb_s = x_ulb_w 
+
+        elif(self.aug_1=="weak" and self.aug_2=="strong"):
+            pass 
+
+        else:
+            self.print_fn('XXXXXXXX Combination not supported XXXXXXXX') 
+            # strong, strong 
+            # strong id
+            # id     strong
+            # strong weak 
+            # weak   id 
+
+
 
         with self.amp_cm():
             if self.use_cat:
@@ -154,7 +180,10 @@ class FixMatch(AlgorithmBase):
                 self.tb_log.update({"batch_pl_cov":batch_cov, "batch_pl_acc":batch_acc}, self.it)
 
             
-            n_a = torch.sum(self.mask)
+            n_a = torch.sum(self.mask).detach()
+            
+            self.n_a = n_a 
+
             cov = n_a/self.n_u 
             acc = 0.0 
             if(n_a>0):
@@ -166,19 +195,28 @@ class FixMatch(AlgorithmBase):
             
             self.agg_pl_cov = cov
 
-            unsup_loss = self.consistency_loss(logits_x_ulb_w,
+            unsup_loss = self.consistency_loss(logits_x_ulb_s,
                                                pseudo_label,
                                                'ce',
                                                mask=mask)
 
-            total_loss = sup_loss + self.lambda_u * unsup_loss
 
-            c = (n_a)/(n_l + n_a)
+            c = cov.detach().item() 
 
-            total_loss = (1-c)*sup_loss + c* unsup_loss
+            if(self.args.loss_reweight):
+                # reweight loss by  
+                # c will go high as the coverage increases. 
+                # it reflects the portion of training data that is pseudo-labeled
 
+                c = (self.n_a)/(self.n_l + self.n_a)
+                total_loss = (1-c)*sup_loss + c * self.lambda_u* unsup_loss
 
+                self.print_fn(f"loss weights : {1-c},  {c}") 
 
+            else:
+                total_loss = sup_loss + self.lambda_u * unsup_loss
+        
+        
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 

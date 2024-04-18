@@ -27,6 +27,20 @@ from semilearn.imb_algorithms import get_imb_algorithm, name2imbalg
 
 from omegaconf import OmegaConf
 
+
+def get_save_name(args):
+    save_name = f"A-{args.algorithm}__S-{args.seed}__E-{args.epoch}__I-{args.num_train_iter}"
+    save_name += f"__nl-{args.num_labels}__bsz-{args.batch_size}"
+    save_name += f"__accpl-{args.accumulate_pseudo_labels}"
+    save_name += f"__phoc-{args.use_post_hoc_calib}__ncal-{args.n_cal}__nth-{args.n_th}__from-{args.take_d_cal_th_from}"
+    save_name += f"__lrw-{args.loss_reweight}__aug1-{args.aug_1}__aug2-{args.aug_2}"
+    
+    
+    
+    print(save_name)
+
+    return save_name 
+
 def get_config():
     from semilearn.algorithms.utils import str2bool
 
@@ -36,7 +50,7 @@ def get_config():
     Saving & loading of the model.
     """
 
-    parser.add_argument("--accumulate_pseudo_labels", type=str2bool, default=False)
+
 
     parser.add_argument("--save_dir", type=str, default="./saved_models")
     parser.add_argument("-sn", "--save_name", type=str, default="fixmatch")
@@ -54,6 +68,15 @@ def get_config():
     parser.add_argument(
         "--use_aim", action="store_true", help="Use aim to plot and save curves"
     )
+
+    
+    parser.add_argument("--aug_1",type=str, default="weak")
+    parser.add_argument("--aug_2",type=str, default="strong")
+    parser.add_argument("--loss_reweight", type=str2bool, default=False )
+
+
+    parser.add_argument("--accumulate_pseudo_labels", type=str2bool, default=False)
+
 
     """
     Training Configuration of FixMatch
@@ -240,12 +263,15 @@ def get_config():
         "fastest way to use PyTorch for either single node or "
         "multi node data parallel training",
     )
+    
     # config file
     parser.add_argument("--c", type=str, default="")
 
     # add algorithm specific parameters
     args = parser.parse_args()
+    
     over_write_args_from_file(args, args.c)
+
     for argument in name2alg[args.algorithm].get_argument():
         parser.add_argument(
             argument.name,
@@ -266,7 +292,11 @@ def get_config():
                 help=argument.help,
             )
     args = parser.parse_args()
+    
     over_write_args_from_file(args, args.c)
+    
+    args.save_name = get_save_name(args)
+
     return args
 
 
