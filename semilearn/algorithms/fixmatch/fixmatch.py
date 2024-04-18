@@ -45,10 +45,15 @@ class FixMatch(AlgorithmBase):
         self.register_hook(FixedThresholdingHook(), "MaskingHook")
         super().set_hooks()
 
-    def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s, idx_lb, idx_ulb):
+    def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s, idx_lb, idx_ulb, x_ulb):
         num_lb = y_lb.shape[0]
 
         # inference and calculate sup/unsup losses
+
+        # disabling weak augmentation
+        
+        #x_ulb_w = x_ulb 
+
         with self.amp_cm():
             if self.use_cat:
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
@@ -72,6 +77,7 @@ class FixMatch(AlgorithmBase):
             feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            
             
 
             if(self.post_hoc_calib_conf is None):
@@ -158,12 +164,20 @@ class FixMatch(AlgorithmBase):
             if not self.tb_log is None:
                 self.tb_log.update({"agg_pl_cov":cov, "agg_pl_acc":acc}, self.it)
             
-            unsup_loss = self.consistency_loss(logits_x_ulb_s,
+            self.agg_pl_cov = cov
+
+            unsup_loss = self.consistency_loss(logits_x_ulb_w,
                                                pseudo_label,
                                                'ce',
                                                mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
+
+            c = (n_a)/(n_l + n_a)
+
+            total_loss = (1-c)*sup_loss + c* unsup_loss
+
+
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 

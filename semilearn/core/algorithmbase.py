@@ -401,9 +401,10 @@ class AlgorithmBase:
         """
         self.model.train()
         self.call_hook("before_run")
+        self.agg_pl_cov = 0.0
 
-        device = str(next(self.model.parameters()).device)
-        n_u = len(self.dataset_dict["train_ulb"].targets)
+        device =  str(next(self.model.parameters()).device)  
+        n_u = len(self.dataset_dict['train_ulb'].targets) 
         self.n_u = n_u
         self.y_true_ulb = torch.tensor(self.dataset_dict["train_ulb"].targets).to(
             device
@@ -423,7 +424,11 @@ class AlgorithmBase:
             ).to(device)
             self.mask = torch.ones(len(self.pseudo_labels)).to(device)
 
+        #self.X_ulb = torch.tensor(self.dataset_dict['train_ulb'].data).to(self.device)
+
         for epoch in range(self.start_epoch, self.epochs):
+
+            
             self.epoch = epoch
 
             # prevent the training iterations exceed args.num_train_iter
@@ -438,9 +443,12 @@ class AlgorithmBase:
                 self.loader_dict["train_lb"], self.loader_dict["train_ulb"]
             ):
                 # prevent the training iterations exceed args.num_train_iter
-
-                # print(data_ulb['idx_ulb'])
-                # idcs.extend(data_ulb['idx_ulb'].tolist())
+                
+                #print(data_ulb['idx_ulb'])
+                #idcs.extend(data_ulb['idx_ulb'].tolist())
+                
+                F = 100 if self.agg_pl_cov<0.1 or self.it<15000 else int(100*((self.agg_pl_cov*100)//10))
+                print(F)
 
                 if self.it >= self.num_train_iter:
                     break
@@ -452,6 +460,11 @@ class AlgorithmBase:
 
                 # <<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<
 
+                
+                if( self.post_hoc_calib_conf and self.it%F==0 and self.it>=F):
+                    
+                    self.cur_clf = PyTorchClassifier(logger=self.logger)
+                    self.cur_clf.model = self.model 
                 if (
                         # re init case, train calibrator from scratch every 100 epochs
                     self.post_hoc_calib_conf

@@ -77,7 +77,7 @@ def get_config():
     parser.add_argument(
         "--uratio",
         type=int,
-        default=1,
+        default=10,
         help="the ratio of unlabeled data to labeled data in each mini-batch",
     )
     parser.add_argument(
