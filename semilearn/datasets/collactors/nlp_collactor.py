@@ -46,6 +46,7 @@ class DataCollatorWithPadding:
         w_features = []
         s_features_ = []
         s_features = []
+        # NOTE: weak features is None for NLP datasets, so x_ulb can be x_ulb_w!
         for f in features:
             f_ = {k:v for k,v in f.items() if 'text' not in k}
             input_ids = self.tokenizer(f['text'], max_length=self.max_length, truncation=True, padding=False)['input_ids']
@@ -88,14 +89,20 @@ class DataCollatorWithPadding:
                         return_tensors=self.return_tensors,
                     )
                     return {'idx_ulb': batch['idx'], 
+                            'x_ulb': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}, \
                             'x_ulb_w': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}, \
                             'x_ulb_s_0': {'input_ids': s_batch['input_ids'], 'attention_mask': s_batch['attention_mask']}, \
                             'x_ulb_s_1': {'input_ids': s_batch_['input_ids'], 'attention_mask': s_batch_['attention_mask']}
                         }
                 else:
-                    return {'idx_ulb': batch['idx'], 'x_ulb_w': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}, 'x_ulb_s': {'input_ids': s_batch['input_ids'], 'attention_mask': s_batch['attention_mask']}}
+                    return {'idx_ulb': batch['idx'], 
+                    'x_ulb': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']},
+                    'x_ulb_w': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}, 
+                    'x_ulb_s': {'input_ids': s_batch['input_ids'], 'attention_mask': s_batch['attention_mask']}}
             else:
-                return {'idx_ulb': batch['idx'], 'x_ulb_w': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}}
+                return {'idx_ulb': batch['idx'], 
+                'x_ulb': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']},
+                'x_ulb_w': {'input_ids': batch['input_ids'], 'attention_mask': batch['attention_mask']}}
 
 
 def get_bert_base_uncased_collactor(max_length=512):

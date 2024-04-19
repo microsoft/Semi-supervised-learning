@@ -158,7 +158,6 @@ class AlgorithmBase:
             self.args.data_dir,
             self.args.include_lb_to_ulb,
         )
-
         # N_v, nu #N_cal, N_th
 
         # take_from_train_lb ?
@@ -566,6 +565,9 @@ class AlgorithmBase:
                 # >>>>>>>>>>>>>>>>>>>>>>>>>>> END CALIBRATION BLOCK  >>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 # this step only computes the loss
+                # print(data_lb.keys())
+                # print(data_ulb.keys())
+                # a += 1
                 self.out_dict, self.log_dict = self.train_step(
                     **self.process_batch(**data_lb, **data_ulb)
                 )
