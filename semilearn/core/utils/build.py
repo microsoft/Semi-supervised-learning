@@ -85,8 +85,8 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
         lb_dset, ulb_dset, eval_dset = get_semi_aves(args, algorithm, "semi_aves", train_split='l_train_val', ulb_split='u_train_out', data_dir=data_dir)
         test_dset = None
     elif dataset in ["cifar10", "cifar100"]:
-        lb_dset, ulb_dset, eval_dset = get_cifar(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
-        test_dset = None
+        lb_dset, ulb_dset, eval_dset, test_dset = get_cifar(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
+        #test_dset = None
     elif dataset == 'svhn':
         lb_dset, ulb_dset, eval_dset = get_svhn(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
         test_dset = None
@@ -97,6 +97,8 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
         lb_dset, ulb_dset, eval_dset = get_imagenet(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
         test_dset = None
     # speech dataset
+
+
     elif dataset in ['esc50', 'fsdnoisy', 'gtzan', 'superbks', 'superbsi', 'urbansound8k']:
         lb_dset, ulb_dset, eval_dset, test_dset = get_pkl_dset(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
     elif dataset in ['aclImdb', 'ag_news', 'amazon_review', 'dbpedia', 'yahoo_answers', 'yelp_review']:
@@ -104,6 +106,8 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
     else:
         return None
     
+    # if test_dset is None then set take some part from eval_dset to create test_dset.
+
     dataset_dict = {'train_lb': lb_dset, 'train_ulb': ulb_dset, 'eval': eval_dset, 'test': test_dset}
     return dataset_dict
 

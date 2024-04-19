@@ -207,8 +207,11 @@ class FixMatch(AlgorithmBase):
                 # reweight loss by  
                 # c will go high as the coverage increases. 
                 # it reflects the portion of training data that is pseudo-labeled
+                c = 0.5
+                
+                if(self.agg_pl_cov>0.8):
+                    c = (self.n_a)/(self.n_l + self.n_a)
 
-                c = (self.n_a)/(self.n_l + self.n_a)
                 total_loss = (1-c)*sup_loss + c * self.lambda_u* unsup_loss
 
                 self.print_fn(f"loss weights : {1-c},  {c}") 

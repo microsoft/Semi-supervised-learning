@@ -45,7 +45,7 @@ class BasicDataset(Dataset):
         super(BasicDataset, self).__init__()
         self.alg = alg
         self.data = data
-        self.targets = targets
+        self.targets = np.array(targets)
 
         self.num_classes = num_classes
         self.is_ulb = is_ulb

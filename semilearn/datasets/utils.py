@@ -53,14 +53,15 @@ def split_ssl_data(args, data, targets, num_classes,
     return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
 
-def randomly_split_labeled_basic_dataset(basic_ds, size_1=None, fraction_1=None):
+def randomly_split_labeled_basic_dataset(basic_ds, size_1=None, fraction_1=None, fixed_seed=False):
     
     data, targets = basic_ds.data , basic_ds.targets
 
     basic_ds_1 = copy.deepcopy(basic_ds)
     basic_ds_2 = copy.deepcopy(basic_ds)
 
-    data1,targets1, data2, targets2 = randomly_split_labeled_data(data, targets, size_1=size_1, fraction_1=fraction_1)
+    data1,targets1, data2, targets2 = randomly_split_labeled_data(data, targets, size_1=size_1, 
+                                                                  fraction_1=fraction_1, fixed_seed=fixed_seed)
 
     basic_ds_1.data = data1
     basic_ds_1.targets = targets1 
@@ -70,9 +71,17 @@ def randomly_split_labeled_basic_dataset(basic_ds, size_1=None, fraction_1=None)
 
     return basic_ds_1, basic_ds_2
 
-def randomly_split_labeled_data(data, targets, size_1=None, fraction_1=None):
+def randomly_split_labeled_data(data, targets, size_1=None, fraction_1=None,fixed_seed=False):
     n = len(targets)
     idx = np.arange(0,n,1)
+    
+    ps = np.random.get_state()
+
+    if(fixed_seed):
+        np.random.seed(42) # use same fixed seed for this.
+        # This is the seed for life, universe and everything.
+        # CAUTION!!! do not change it!, I repeat do not change it. You might reset the universe.
+
     np.random.shuffle(idx)
 
     if(size_1):
@@ -82,6 +91,13 @@ def randomly_split_labeled_data(data, targets, size_1=None, fraction_1=None):
     else:
         raise("Give either size_1 or fraction_1")
     idx1, idx2 = idx[:s], idx[s:]
+    
+    if(fixed_seed):
+        # reset seed to previous value for rest of the application.
+        np.random.set_state(ps)
+    
+    print(type(data), type(targets))
+
     return data[idx1], targets[idx1],  data[idx2], targets[idx2]
 
 

@@ -174,11 +174,14 @@ class AlgorithmBase:
             n = self.args.n_cal + self.args.n_th
             # if(self.args.take_from_eval):
             ds1, ds2 = randomly_split_labeled_basic_dataset(
-                dataset_dict[take_d_cal_th_from], size_1=n
+                dataset_dict[take_d_cal_th_from], size_1=n, fixed_seed=True
             )
+
+            '''
             dataset_dict[take_d_cal_th_from] = (
                 ds2  # remaining n_lb (or n_eval) - n samples
             )
+            '''
 
             self.print_fn(
                 f"len(d_train) = {len(dataset_dict['train_lb'])} and len(d_eval) = {len(dataset_dict['eval'])}"
@@ -186,7 +189,7 @@ class AlgorithmBase:
 
             if need_d_cal and need_d_th:
                 ds11, ds12 = randomly_split_labeled_basic_dataset(
-                    ds1, size_1=self.args.n_cal
+                    ds1, size_1=self.args.n_cal, fixed_seed=True
                 )
                 ds11.Y = torch.Tensor(ds11.targets)
                 ds12.Y = torch.Tensor(ds12.targets)

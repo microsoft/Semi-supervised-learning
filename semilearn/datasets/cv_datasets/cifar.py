@@ -12,6 +12,8 @@ from .datasetbase import BasicDataset
 from semilearn.datasets.augmentation import RandAugment, RandomResizedCropAndInterpolation
 from semilearn.datasets.utils import split_ssl_data
 
+from semilearn.datasets.utils import randomly_split_labeled_basic_dataset
+
 
 mean, std = {}, {}
 mean['cifar10'] = [0.485, 0.456, 0.406]
@@ -116,6 +118,15 @@ def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
     dset = getattr(torchvision.datasets, name.upper())
     dset = dset(data_dir, train=False, download=True)
     test_data, test_targets = dset.data, dset.targets
+
     eval_dset = BasicDataset(alg, test_data, test_targets, num_classes, transform_val, False, None, None, False)
 
-    return lb_dset, ulb_dset, eval_dset
+    #split eval_dset into two parts, one for eval and one for test.
+
+    if(name=='cifar10'):
+        n_v = 6000
+    
+
+    eval_dset, test_dset = randomly_split_labeled_basic_dataset(eval_dset, size_1=n_v, fixed_seed=True )
+
+    return lb_dset, ulb_dset, eval_dset, test_dset
