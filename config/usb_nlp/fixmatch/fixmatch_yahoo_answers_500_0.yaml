@@ -6,13 +6,13 @@ load_path: ./saved_models/usb_nlp/fixmatch_yahoo_answers_500_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
 use_wandb: False
-epoch: 100
-num_train_iter: 102400
-num_warmup_iter: 5120
-num_log_iter: 256
-num_eval_iter: 2048
+epoch: 10
+num_train_iter: 10000
+num_warmup_iter: 512
+num_log_iter: 250
+num_eval_iter: 500
 num_labels: 500
-batch_size: 8
+batch_size: 16
 eval_batch_size: 8
 ema_m: 0.0
 hard_label: True
@@ -42,4 +42,4 @@ rank: 0
 multiprocessing_distributed: False
 dist_url: tcp://127.0.0.1:10011
 dist_backend: nccl
-gpu: None
+gpu: 0
