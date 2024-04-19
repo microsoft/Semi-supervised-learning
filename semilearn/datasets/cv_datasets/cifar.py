@@ -127,6 +127,6 @@ def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
         n_v = 6000
     
 
-    eval_dset, test_dset = randomly_split_labeled_basic_dataset(eval_dset, size_1=n_v, fixed_seed=True )
+    eval_dset, test_dset = randomly_split_labeled_basic_dataset(eval_dset, num_classes, size_1=n_v, fixed_seed=True, class_balance=True )
 
     return lb_dset, ulb_dset, eval_dset, test_dset

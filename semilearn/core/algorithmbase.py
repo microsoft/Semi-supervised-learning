@@ -174,7 +174,7 @@ class AlgorithmBase:
             n = self.args.n_cal + self.args.n_th
             # if(self.args.take_from_eval):
             ds1, ds2 = randomly_split_labeled_basic_dataset(
-                dataset_dict[take_d_cal_th_from], size_1=n, fixed_seed=True
+                dataset_dict[take_d_cal_th_from], self.num_classes, size_1=n, fixed_seed=True, class_balance=True,
             )
 
             '''
@@ -189,7 +189,7 @@ class AlgorithmBase:
 
             if need_d_cal and need_d_th:
                 ds11, ds12 = randomly_split_labeled_basic_dataset(
-                    ds1, size_1=self.args.n_cal, fixed_seed=True
+                    ds1, self.num_classes, size_1=self.args.n_cal, fixed_seed=True, class_balance=True
                 )
                 ds11.Y = torch.Tensor(ds11.targets)
                 ds12.Y = torch.Tensor(ds12.targets)

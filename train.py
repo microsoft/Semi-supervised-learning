@@ -29,7 +29,8 @@ from omegaconf import OmegaConf
 
 
 def get_save_name(args):
-    save_name = f"A-{args.algorithm}__S-{args.seed}__E-{args.epoch}__I-{args.num_train_iter}"
+    save_name = args.prefix 
+    save_name += f"__A-{args.algorithm}__S-{args.seed}__E-{args.epoch}__I-{args.num_train_iter}"
     save_name += f"__nl-{args.num_labels}__bsz-{args.batch_size}"
     save_name += f"__accpl-{args.accumulate_pseudo_labels}"
     save_name += f"__phoc-{args.use_post_hoc_calib}__ncal-{args.n_cal}__nth-{args.n_th}__from-{args.take_d_cal_th_from}"
@@ -54,6 +55,9 @@ def get_config():
 
     parser.add_argument("--save_dir", type=str, default="./saved_models")
     parser.add_argument("-sn", "--save_name", type=str, default="fixmatch")
+    
+    parser.add_argument("-pf", "--prefix", type=str, default="run")
+
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--load_path", type=str)
     parser.add_argument("-o", "--overwrite", action="store_true", default=True)

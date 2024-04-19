@@ -53,15 +53,17 @@ def split_ssl_data(args, data, targets, num_classes,
     return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
 
-def randomly_split_labeled_basic_dataset(basic_ds, size_1=None, fraction_1=None, fixed_seed=False):
+def randomly_split_labeled_basic_dataset(basic_ds,num_classes, size_1=None, fraction_1=None, fixed_seed=False, class_balance=True):
     
     data, targets = basic_ds.data , basic_ds.targets
 
     basic_ds_1 = copy.deepcopy(basic_ds)
     basic_ds_2 = copy.deepcopy(basic_ds)
 
-    data1,targets1, data2, targets2 = randomly_split_labeled_data(data, targets, size_1=size_1, 
-                                                                  fraction_1=fraction_1, fixed_seed=fixed_seed)
+    data1,targets1, data2, targets2 = randomly_split_labeled_data(data, targets, num_classes, size_1=size_1, 
+                                                                  fraction_1=fraction_1, 
+                                                                  fixed_seed=fixed_seed,
+                                                                  class_balance=True)
 
     basic_ds_1.data = data1
     basic_ds_1.targets = targets1 
@@ -71,7 +73,12 @@ def randomly_split_labeled_basic_dataset(basic_ds, size_1=None, fraction_1=None,
 
     return basic_ds_1, basic_ds_2
 
-def randomly_split_labeled_data(data, targets, size_1=None, fraction_1=None,fixed_seed=False):
+def get_class_counts(targets,num_classes):
+    z = [sum(targets==c) for c in range(num_classes)]
+    return z 
+
+def randomly_split_labeled_data(data, targets, num_classes,size_1=None, fraction_1=None,
+                                fixed_seed=False, class_balance=True):
     n = len(targets)
     idx = np.arange(0,n,1)
     
@@ -82,22 +89,39 @@ def randomly_split_labeled_data(data, targets, size_1=None, fraction_1=None,fixe
         # This is the seed for life, universe and everything.
         # CAUTION!!! do not change it!, I repeat do not change it. You might reset the universe.
 
-    np.random.shuffle(idx)
-
     if(size_1):
         s = size_1 
     elif(fraction_1):
         s = int(fraction_1*n)
     else:
         raise("Give either size_1 or fraction_1")
-    idx1, idx2 = idx[:s], idx[s:]
+    
+    print(s)
+
+    if(class_balance):
+        s2 = s//num_classes
+        idx1 = [] 
+        idx2 = []
+        for c in range(num_classes): 
+            idx_c = idx[targets==c]
+            np.random.shuffle(idx_c)
+            idx1.extend(idx_c[:s2])
+            idx2.extend(idx_c[s2:]) 
+        idx1 = np.array(idx1)
+        idx2 = np.array(idx2)
+    else:
+        np.random.shuffle(idx)
+        idx1, idx2 = idx[:s], idx[s:]
     
     if(fixed_seed):
         # reset seed to previous value for rest of the application.
         np.random.set_state(ps)
     
-    print(type(data), type(targets))
-
+    #print(len(set(idx1)), len(set(idx2)))
+    
+    print(get_class_counts(targets[idx1],num_classes))
+    print(get_class_counts(targets[idx2],num_classes))
+    
     return data[idx1], targets[idx1],  data[idx2], targets[idx2]
 
 
