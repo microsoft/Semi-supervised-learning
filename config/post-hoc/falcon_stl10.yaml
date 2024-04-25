@@ -1,4 +1,3 @@
-
 name: 'auto_label_opt_v0'
 
 device: "cuda:0"
@@ -17,13 +16,13 @@ class_wise: "independent"
 features_key: 'logits'
 alpha_1: 0.1
 
-num_classes : 100
+num_classes : 10
 use_prev_model: False 
 
 model_conf:
   input_dimension: -1
   output_dimension: -1 
-  num_classes: 100
+  num_classes: 10
   layers: 
     - type: "linear"
       dim_factor: 2   # input_dimension x dim_factor*input_dimension
