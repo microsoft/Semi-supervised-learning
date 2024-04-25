@@ -8,34 +8,24 @@ import torch
 from torch.utils.data import sampler, DataLoader
 import torch.distributed as dist
 from io import BytesIO
-import copy
+import copy 
 
 # TODO: better way
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 
-def split_ssl_data(
-    args,
-    data,
-    targets,
-    num_classes,
-    lb_num_labels,
-    ulb_num_labels=None,
-    lb_imbalance_ratio=1.0,
-    ulb_imbalance_ratio=1.0,
-    lb_index=None,
-    ulb_index=None,
-    include_lb_to_ulb=True,
-    load_exist=True,
-):
+def split_ssl_data(args, data, targets, num_classes,
+                   lb_num_labels, ulb_num_labels=None,
+                   lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
+                   lb_index=None, ulb_index=None, include_lb_to_ulb=True, load_exist=True):
     """
     data & target is splitted into labeled and unlabeled data.
-
+    
     Args
-        data: data to be split to labeled and unlabeled
-        targets: targets to be split to labeled and unlabeled
+        data: data to be split to labeled and unlabeled 
+        targets: targets to be split to labeled and unlabeled 
         num_classes: number of total classes
-        lb_num_labels: number of labeled samples.
+        lb_num_labels: number of labeled samples. 
                        If lb_imbalance_ratio is 1.0, lb_num_labels denotes total number of samples.
                        Otherwise it denotes the number of samples in head class.
         ulb_num_labels: similar to lb_num_labels but for unlabeled data.
@@ -47,18 +37,10 @@ def split_ssl_data(
         include_lb_to_ulb: If True, labeled data is also included in unlabeled data
     """
     data, targets = np.array(data), np.array(targets)
-    lb_idx, ulb_idx = sample_labeled_unlabeled_data(
-        args,
-        data,
-        targets,
-        num_classes,
-        lb_num_labels,
-        ulb_num_labels,
-        lb_imbalance_ratio,
-        ulb_imbalance_ratio,
-        load_exist=False,
-    )
-
+    lb_idx, ulb_idx = sample_labeled_unlabeled_data(args, data, targets, num_classes, 
+                                                    lb_num_labels, ulb_num_labels,
+                                                    lb_imbalance_ratio, ulb_imbalance_ratio, load_exist=False)
+    
     # manually set lb_idx and ulb_idx, do not use except for debug
     if lb_index is not None:
         lb_idx = lb_index
@@ -67,181 +49,139 @@ def split_ssl_data(
 
     if include_lb_to_ulb:
         ulb_idx = np.concatenate([lb_idx, ulb_idx], axis=0)
-
+    
     return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
 
-def randomly_split_labeled_basic_dataset(
-    basic_ds,
-    num_classes,
-    size_1=None,
-    fraction_1=None,
-    fixed_seed=False,
-    class_balance=True,
-):
-
-    data, targets = basic_ds.data, basic_ds.targets
+def randomly_split_labeled_basic_dataset(basic_ds,num_classes, size_1=None, fraction_1=None, fixed_seed=False, class_balance=True):
+    
+    data, targets = basic_ds.data , basic_ds.targets
 
     basic_ds_1 = copy.deepcopy(basic_ds)
     basic_ds_2 = copy.deepcopy(basic_ds)
 
-    data1, targets1, data2, targets2 = randomly_split_labeled_data(
-        data,
-        targets,
-        num_classes,
-        size_1=size_1,
-        fraction_1=fraction_1,
-        fixed_seed=fixed_seed,
-        class_balance=True,
-    )
+    data1,targets1, data2, targets2 = randomly_split_labeled_data(data, targets, num_classes, size_1=size_1, 
+                                                                  fraction_1=fraction_1, 
+                                                                  fixed_seed=fixed_seed,
+                                                                  class_balance=True)
 
     basic_ds_1.data = data1
-    basic_ds_1.targets = targets1
+    basic_ds_1.targets = targets1 
 
-    basic_ds_2.data = data2
-    basic_ds_2.targets = targets2
+    basic_ds_2.data =  data2 
+    basic_ds_2.targets = targets2 
 
     return basic_ds_1, basic_ds_2
 
+def get_class_counts(targets,num_classes):
+    z = [sum(targets==c) for c in range(num_classes)]
+    return z 
 
-def get_class_counts(targets, num_classes):
-    z = [sum(targets == c) for c in range(num_classes)]
-    return z
-
-
-def randomly_split_labeled_data(
-    data,
-    targets,
-    num_classes,
-    size_1=None,
-    fraction_1=None,
-    fixed_seed=False,
-    class_balance=True,
-):
+def randomly_split_labeled_data(data, targets, num_classes,size_1=None, fraction_1=None,
+                                fixed_seed=False, class_balance=True):
     n = len(targets)
-    idx = np.arange(0, n, 1)
-
+    idx = np.arange(0,n,1)
+    
     ps = np.random.get_state()
 
-    if fixed_seed:
-        np.random.seed(42)  # use same fixed seed for this.
+    if(fixed_seed):
+        np.random.seed(42) # use same fixed seed for this.
         # This is the seed for life, universe and everything.
         # CAUTION!!! do not change it!, I repeat do not change it. You might reset the universe.
 
-    if size_1:
-        s = size_1
-    elif fraction_1:
-        s = int(fraction_1 * n)
+    if(size_1):
+        s = size_1 
+    elif(fraction_1):
+        s = int(fraction_1*n)
     else:
-        raise ("Give either size_1 or fraction_1")
+        raise("Give either size_1 or fraction_1")
+    
+    print(s)
 
-    if class_balance:
-        s2 = s // num_classes
-        idx1 = []
+    if(class_balance):
+        s2 = s//num_classes
+        idx1 = [] 
         idx2 = []
-        for c in range(num_classes):
-            idx_c = idx[targets == c]
+        for c in range(num_classes): 
+            idx_c = idx[targets==c]
             np.random.shuffle(idx_c)
             idx1.extend(idx_c[:s2])
-            idx2.extend(idx_c[s2:])
-        idx1 = np.array(idx1).astype(int)
-        idx2 = np.array(idx2).astype(int)
-
+            idx2.extend(idx_c[s2:]) 
+        idx1 = np.array(idx1)
+        idx2 = np.array(idx2)
     else:
         np.random.shuffle(idx)
         idx1, idx2 = idx[:s], idx[s:]
-
-    if fixed_seed:
+    
+    if(fixed_seed):
         # reset seed to previous value for rest of the application.
         np.random.set_state(ps)
-
-    # eval; test;
-    return data[idx1], targets[idx1], data[idx2], targets[idx2]
+    
+    #print(len(set(idx1)), len(set(idx2)))
+    
+    print(get_class_counts(targets[idx1],num_classes))
+    print(get_class_counts(targets[idx2],num_classes))
+    
+    return data[idx1], targets[idx1],  data[idx2], targets[idx2]
 
 
 def sample_labeled_data():
     pass
 
 
-def sample_labeled_unlabeled_data(
-    args,
-    data,
-    target,
-    num_classes,
-    lb_num_labels,
-    ulb_num_labels=None,
-    lb_imbalance_ratio=1.0,
-    ulb_imbalance_ratio=1.0,
-    load_exist=True,
-):
-    """
+def sample_labeled_unlabeled_data(args, data, target, num_classes,
+                                  lb_num_labels, ulb_num_labels=None,
+                                  lb_imbalance_ratio=1.0, ulb_imbalance_ratio=1.0,
+                                  load_exist=True):
+    '''
     samples for labeled data
     (sampling with balanced ratio over classes)
-    """
-    dump_dir = os.path.join(base_dir, "data", args.dataset, "labeled_idx")
+    '''
+    dump_dir = os.path.join(base_dir, 'data', args.dataset, 'labeled_idx')
     os.makedirs(dump_dir, exist_ok=True)
-    lb_dump_path = os.path.join(
-        dump_dir,
-        f"lb_labels{args.num_labels}_{args.lb_imb_ratio}_seed{args.seed}_idx.npy",
-    )
-    ulb_dump_path = os.path.join(
-        dump_dir,
-        f"ulb_labels{args.num_labels}_{args.ulb_imb_ratio}_seed{args.seed}_idx.npy",
-    )
+    lb_dump_path = os.path.join(dump_dir, f'lb_labels{args.num_labels}_{args.lb_imb_ratio}_seed{args.seed}_idx.npy')
+    ulb_dump_path = os.path.join(dump_dir, f'ulb_labels{args.num_labels}_{args.ulb_imb_ratio}_seed{args.seed}_idx.npy')
 
     if os.path.exists(lb_dump_path) and os.path.exists(ulb_dump_path) and load_exist:
         lb_idx = np.load(lb_dump_path)
         ulb_idx = np.load(ulb_dump_path)
-        return lb_idx, ulb_idx
+        return lb_idx, ulb_idx 
 
+    
     # get samples per class
     if lb_imbalance_ratio == 1.0:
         # balanced setting, lb_num_labels is total number of labels for labeled data
-        assert (
-            lb_num_labels % num_classes == 0
-        ), "lb_num_labels must be dividable by num_classes in balanced setting"
+        assert lb_num_labels % num_classes == 0, "lb_num_labels must be dividable by num_classes in balanced setting"
         lb_samples_per_class = [int(lb_num_labels / num_classes)] * num_classes
     else:
         # imbalanced setting, lb_num_labels is the maximum number of labels for class 1
-        lb_samples_per_class = make_imbalance_data(
-            lb_num_labels, num_classes, lb_imbalance_ratio
-        )
+        lb_samples_per_class = make_imbalance_data(lb_num_labels, num_classes, lb_imbalance_ratio)
+
 
     if ulb_imbalance_ratio == 1.0:
         # balanced setting
-        if ulb_num_labels is None or ulb_num_labels == "None":
-            pass  # ulb_samples_per_class = [int(len(data) / num_classes) - lb_samples_per_class[c] for c in range(num_classes)] # [int(len(data) / num_classes) - int(lb_num_labels / num_classes)] * num_classes
+        if ulb_num_labels is None or ulb_num_labels == 'None':
+            pass # ulb_samples_per_class = [int(len(data) / num_classes) - lb_samples_per_class[c] for c in range(num_classes)] # [int(len(data) / num_classes) - int(lb_num_labels / num_classes)] * num_classes
         else:
-            assert (
-                ulb_num_labels % num_classes == 0
-            ), "ulb_num_labels must be dividable by num_classes in balanced setting"
+            assert ulb_num_labels % num_classes == 0, "ulb_num_labels must be dividable by num_classes in balanced setting"
             ulb_samples_per_class = [int(ulb_num_labels / num_classes)] * num_classes
     else:
         # imbalanced setting
-        assert (
-            ulb_num_labels is not None
-        ), "ulb_num_labels must be set set in imbalanced setting"
-        ulb_samples_per_class = make_imbalance_data(
-            ulb_num_labels, num_classes, ulb_imbalance_ratio
-        )
+        assert ulb_num_labels is not None, "ulb_num_labels must be set set in imbalanced setting"
+        ulb_samples_per_class = make_imbalance_data(ulb_num_labels, num_classes, ulb_imbalance_ratio)
 
     lb_idx = []
     ulb_idx = []
-
+    
     for c in range(num_classes):
         idx = np.where(target == c)[0]
         np.random.shuffle(idx)
-        lb_idx.extend(idx[: lb_samples_per_class[c]])
-        if ulb_num_labels is None or ulb_num_labels == "None":
-            ulb_idx.extend(idx[lb_samples_per_class[c] :])
+        lb_idx.extend(idx[:lb_samples_per_class[c]])
+        if ulb_num_labels is None or ulb_num_labels == 'None':
+            ulb_idx.extend(idx[lb_samples_per_class[c]:])
         else:
-            ulb_idx.extend(
-                idx[
-                    lb_samples_per_class[c] : lb_samples_per_class[c]
-                    + ulb_samples_per_class[c]
-                ]
-            )
-
+            ulb_idx.extend(idx[lb_samples_per_class[c]:lb_samples_per_class[c]+ulb_samples_per_class[c]])
+    
     if isinstance(lb_idx, list):
         lb_idx = np.asarray(lb_idx)
     if isinstance(ulb_idx, list):
@@ -249,7 +189,7 @@ def sample_labeled_unlabeled_data(
 
     np.save(lb_dump_path, lb_idx)
     np.save(ulb_dump_path, ulb_idx)
-
+    
     return lb_idx, ulb_idx
 
 
@@ -270,29 +210,22 @@ def make_imbalance_data(max_num_labels, num_classes, gamma):
 
 
 def get_collactor(args, net):
-    if net == "bert_base_uncased":
+    if net == 'bert_base_uncased':
         from semilearn.datasets.collactors import get_bert_base_uncased_collactor
-
         collact_fn = get_bert_base_uncased_collactor(args.max_length)
-    elif net == "bert_base_cased":
+    elif net == 'bert_base_cased':
         from semilearn.datasets.collactors import get_bert_base_cased_collactor
-
         collact_fn = get_bert_base_cased_collactor(args.max_length)
-    elif net == "wave2vecv2_base":
+    elif net == 'wave2vecv2_base':
         from semilearn.datasets.collactors import get_wave2vecv2_base_collactor
-
-        collact_fn = get_wave2vecv2_base_collactor(
-            args.max_length_seconds, args.sample_rate
-        )
-    elif net == "hubert_base":
+        collact_fn = get_wave2vecv2_base_collactor(args.max_length_seconds, args.sample_rate)
+    elif net == 'hubert_base':
         from semilearn.datasets.collactors import get_hubert_base_collactor
-
-        collact_fn = get_hubert_base_collactor(
-            args.max_length_seconds, args.sample_rate
-        )
+        collact_fn = get_hubert_base_collactor(args.max_length_seconds, args.sample_rate)
     else:
         collact_fn = None
     return collact_fn
+
 
 
 def get_onehot(num_classes, idx):

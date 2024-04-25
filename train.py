@@ -29,19 +29,18 @@ from omegaconf import OmegaConf
 
 
 def get_save_name(args):
-    save_name = args.prefix
-    save_name += (
-        f"__A-{args.algorithm}__S-{args.seed}__E-{args.epoch}__I-{args.num_train_iter}"
-    )
+    save_name = args.prefix 
+    save_name += f"__A-{args.algorithm}__S-{args.seed}__E-{args.epoch}__I-{args.num_train_iter}"
     save_name += f"__nl-{args.num_labels}__bsz-{args.batch_size}"
     save_name += f"__accpl-{args.accumulate_pseudo_labels}"
     save_name += f"__phoc-{args.use_post_hoc_calib}__ncal-{args.n_cal}__nth-{args.n_th}__from-{args.take_d_cal_th_from}"
     save_name += f"__lrw-{args.loss_reweight}__aug1-{args.aug_1}__aug2-{args.aug_2}"
-
+    
+    
+    
     print(save_name)
 
-    return save_name
-
+    return save_name 
 
 def get_config():
     from semilearn.algorithms.utils import str2bool
@@ -52,9 +51,11 @@ def get_config():
     Saving & loading of the model.
     """
 
+
+
     parser.add_argument("--save_dir", type=str, default="./saved_models")
     parser.add_argument("-sn", "--save_name", type=str, default="fixmatch")
-
+    
     parser.add_argument("-pf", "--prefix", type=str, default="run")
 
     parser.add_argument("--resume", action="store_true")
@@ -72,11 +73,14 @@ def get_config():
         "--use_aim", action="store_true", help="Use aim to plot and save curves"
     )
 
-    parser.add_argument("--aug_1", type=str, default="weak")
-    parser.add_argument("--aug_2", type=str, default="strong")
-    parser.add_argument("--loss_reweight", type=str2bool, default=False)
+    
+    parser.add_argument("--aug_1",type=str, default="weak")
+    parser.add_argument("--aug_2",type=str, default="strong")
+    parser.add_argument("--loss_reweight", type=str2bool, default=False )
+
 
     parser.add_argument("--accumulate_pseudo_labels", type=str2bool, default=False)
+
 
     """
     Training Configuration of FixMatch
@@ -214,22 +218,18 @@ def get_config():
     parser.add_argument("--max_length_seconds", type=float, default=4.0)
     parser.add_argument("--sample_rate", type=int, default=16000)
 
+
     """
     Post-hoc calibration
     """
     parser.add_argument("--use_post_hoc_calib", type=str2bool, default=False)
-    parser.add_argument("--n_cal", type=int, default=0)
-    parser.add_argument("--n_th", type=int, default=0)
-    parser.add_argument("--take_d_cal_th_from", type=str, default="train_lb")
+    parser.add_argument("--n_cal",type=int, default=0)
+    parser.add_argument("--n_th",type=int, default=0)
+    parser.add_argument("--take_d_cal_th_from", type=str,default='train_lb')
 
     parser.add_argument("--use_true_labels", type=str2bool, default=False)
 
-    parser.add_argument(
-        "--re_init",
-        type=str2bool,
-        default=True,
-        help="Whether or not reinitialize g at each round",
-    )
+    parser.add_argument("--re_init", type=str2bool, default=False, help="Whether or not reinitialize g at each round")
     """
     multi-GPUs & Distributed Training
     """
@@ -254,7 +254,9 @@ def get_config():
     parser.add_argument(
         "--dist-backend", default="nccl", type=str, help="distributed backend"
     )
-    parser.add_argument("--seed", type=int, help="seed for initializing training. ")
+    parser.add_argument(
+        "--seed", default=0, type=int, help="seed for initializing training. "
+    )
     parser.add_argument("--gpu", default=None, type=int, help="GPU id to use.")
     parser.add_argument(
         "--multiprocessing-distributed",
@@ -265,13 +267,13 @@ def get_config():
         "fastest way to use PyTorch for either single node or "
         "multi node data parallel training",
     )
-
+    
     # config file
     parser.add_argument("--c", type=str, default="")
 
     # add algorithm specific parameters
     args = parser.parse_args()
-
+    
     over_write_args_from_file(args, args.c)
 
     for argument in name2alg[args.algorithm].get_argument():
@@ -294,9 +296,9 @@ def get_config():
                 help=argument.help,
             )
     args = parser.parse_args()
-
+    
     over_write_args_from_file(args, args.c)
-
+    
     args.save_name = get_save_name(args)
 
     return args
@@ -375,14 +377,14 @@ def main_worker(gpu, ngpus_per_node, args):
 
     # random seed has to be set for the synchronization of labeled data sampling in each
     # process.
+    assert args.seed is not None
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    np.random.seed(args.seed)
+    cudnn.deterministic = True
+    cudnn.benchmark = True
 
-    if args.seed is not None:
-        random.seed(args.seed)
-        torch.manual_seed(args.seed)
-        torch.cuda.manual_seed_all(args.seed)
-        np.random.seed(args.seed)
-        # cudnn.deterministic = True
-        # cudnn.benchmark = True
 
     # SET UP FOR DISTRIBUTED TRAINING
     if args.distributed:
@@ -414,6 +416,8 @@ def main_worker(gpu, ngpus_per_node, args):
     logger = get_logger(args.save_name, save_path, logger_level)
     logger.info(f"Use GPU: {args.gpu} for training")
 
+
+
     _net_builder = get_net_builder(args.net, args.net_from_name)
     # optimizer, scheduler, datasets, dataloaders with be set in algorithms
     if args.imb_algorithm is not None:
@@ -422,10 +426,9 @@ def main_worker(gpu, ngpus_per_node, args):
         model = get_algorithm(args, _net_builder, tb_log, logger)
     logger.info(f"Number of Trainable Params: {count_parameters(model.model)}")
 
-    if args.use_post_hoc_calib:
-        post_hoc_calib_conf = OmegaConf.load(
-            f"./config/post-hoc/falcon_{args.dataset}.yaml"
-        )
+
+    if(args.use_post_hoc_calib):
+        post_hoc_calib_conf = OmegaConf.load("./config/post-hoc/falcon_cifar10.yaml")
         model.post_hoc_calib_conf = post_hoc_calib_conf
 
     # SET Devices for (Distributed) DataParallel
