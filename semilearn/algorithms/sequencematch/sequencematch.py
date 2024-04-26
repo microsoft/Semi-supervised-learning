@@ -66,17 +66,23 @@ class SequenceMatch(AlgorithmBase):
                 outputs = self.model(inputs)
                 logits_x_lb = outputs['logits'][:num_lb]
                 logits_x_ulb_w, logits_x_ulb_m, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(3)
+                feats_x_ulb_w, feats_x_ulb_m, feats_x_ulb_s = outputs['feat'][num_lb:].chunk(3)
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
+                feats_x_lb = outs_x_lb['feat']
+                outs_x_lb_w = self.model(x_ulb_w)
+                feats_x_lb_w = outs_x_lb_w['feat']
                 outs_x_ulb_m = self.model(x_ulb_m)
                 logits_x_ulb_m = outs_x_ulb_m['logits']
+                feats_x_ulb_m = outs_x_ulb_m['feat']
                 outs_x_ulb_s = self.model(x_ulb_s)
                 logits_x_ulb_s = outs_x_ulb_s['logits']
+                feats_x_ulb_s = outs_x_ulb_s['feat']
                 with torch.no_grad():
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w = outs_x_ulb_w['logits']
-
+            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w,'x_ulb_m': feats_x_ulb_m, 'x_ulb_s':feats_x_ulb_s}
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             # probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
