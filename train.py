@@ -197,7 +197,7 @@ def get_config():
     )
     parser.add_argument(
         "--ulb_num_labels",
-        type=int,
+        type=int1,
         default=None,
         help="number of labels for unlabeled data, used for determining the maximum "
         "number of labels in imbalanced setting",
@@ -309,7 +309,8 @@ def main(args):
     For (Distributed)DataParallelism,
     main(args) spawn each process (main_worker) to each GPU.
     """
-
+    args.use_pretrain = False
+    
     assert (
         args.num_train_iter % args.epoch == 0
     ), f"# total training iter. {args.num_train_iter} is not divisible by # epochs {args.epoch}"  # noqa: E501
