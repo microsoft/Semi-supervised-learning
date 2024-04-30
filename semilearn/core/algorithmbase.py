@@ -444,7 +444,7 @@ class AlgorithmBase:
 
             self.call_hook("before_train_epoch")
 
-            # print(len(self.loader_dict['train_lb']), len( self.loader_dict['train_ulb']))
+            # print(len(self.loader_dict['train_lb']), len(self.loader_dict['train_ulb']))
             idcs = []
             for data_lb, data_ulb in zip(
                 self.loader_dict["train_lb"], self.loader_dict["train_ulb"]
@@ -567,6 +567,10 @@ class AlgorithmBase:
                 # this step only computes the loss
                 # print(data_lb.keys())
                 # print(data_ulb.keys())
+                # print(data_lb['x_lb'])
+                # print(data_ulb['x_ulb'])
+                # print(data_ulb['x_ulb_w'])
+                # print(data_ulb['x_ulb_s'])
                 # a += 1
                 self.out_dict, self.log_dict = self.train_step(
                     **self.process_batch(**data_lb, **data_ulb)
@@ -607,18 +611,18 @@ class AlgorithmBase:
             for data in eval_loader:
                 x = data["x_lb"]
                 y = data["y_lb"]
-
                 if isinstance(x, dict):
                     x = {k: v.cuda(self.gpu) for k, v in x.items()}
                 else:
                     x = x.cuda(self.gpu)
                 y = y.cuda(self.gpu)
-
+                # print(x.keys())
+                # print(y.shape)
                 num_batch = y.shape[0]
                 total_num += num_batch
 
                 logits = self.model(x)[out_key]
-
+                # TODO: verify the types of y_true and y_pred! and what's there inside them
                 loss = F.cross_entropy(logits, y, reduction="mean", ignore_index=-1)
                 y_true.extend(y.cpu().tolist())
                 y_pred.extend(torch.max(logits, dim=-1)[1].cpu().tolist())
@@ -659,6 +663,7 @@ class AlgorithmBase:
         make easier for saving model when need save additional arguments
         """
         # base arguments for all models
+        # Added Pseudo-labels and masks in the keys!
         save_dict = {
             "model": self.model.state_dict(),
             "ema_model": self.ema_model.state_dict(),
@@ -668,6 +673,8 @@ class AlgorithmBase:
             "epoch": self.epoch + 1,
             "best_it": self.best_it,
             "best_eval_acc": self.best_eval_acc,
+            "pseudo_labels": self.pseudo_labels,
+            "mask": self.mask
         }
         if self.scheduler is not None:
             save_dict["scheduler"] = self.scheduler.state_dict()
