@@ -134,8 +134,8 @@ class AlgorithmBase:
 
         self.post_hoc_calib_conf = None
 
-        self.aug_1 = args.aug_1 
-        self.aug_2 = args.aug_2 
+        self.aug_1 = args.aug_1
+        self.aug_2 = args.aug_2
 
     def init(self, **kwargs):
         """
@@ -173,14 +173,18 @@ class AlgorithmBase:
             n = self.args.n_cal + self.args.n_th
             # if(self.args.take_from_eval):
             ds1, ds2 = randomly_split_labeled_basic_dataset(
-                dataset_dict[take_d_cal_th_from], self.num_classes, size_1=n, fixed_seed=True, class_balance=True,
+                dataset_dict[take_d_cal_th_from],
+                self.num_classes,
+                size_1=n,
+                fixed_seed=True,
+                class_balance=True,
             )
 
-            '''
+            """
             dataset_dict[take_d_cal_th_from] = (
                 ds2  # remaining n_lb (or n_eval) - n samples
             )
-            '''
+            """
 
             self.print_fn(
                 f"len(d_train) = {len(dataset_dict['train_lb'])} and len(d_eval) = {len(dataset_dict['eval'])}"
@@ -188,7 +192,11 @@ class AlgorithmBase:
 
             if need_d_cal and need_d_th:
                 ds11, ds12 = randomly_split_labeled_basic_dataset(
-                    ds1, self.num_classes, size_1=self.args.n_cal, fixed_seed=True, class_balance=True
+                    ds1,
+                    self.num_classes,
+                    size_1=self.args.n_cal,
+                    fixed_seed=True,
+                    class_balance=True,
                 )
                 ds11.Y = torch.Tensor(ds11.targets)
                 ds12.Y = torch.Tensor(ds12.targets)
@@ -408,10 +416,10 @@ class AlgorithmBase:
         self.call_hook("before_run")
         self.agg_pl_cov = 0.0
 
-        device =  str(next(self.model.parameters()).device)  
-        n_u = len(self.dataset_dict['train_ulb'].targets) 
+        device = str(next(self.model.parameters()).device)
+        n_u = len(self.dataset_dict["train_ulb"].targets)
         self.n_u = n_u
-        self.n_l = len(self.dataset_dict['train_lb'].targets) 
+        self.n_l = len(self.dataset_dict["train_lb"].targets)
 
         self.y_true_ulb = torch.tensor(self.dataset_dict["train_ulb"].targets).to(
             device
@@ -431,11 +439,10 @@ class AlgorithmBase:
             ).to(device)
             self.mask = torch.ones(len(self.pseudo_labels)).to(device)
 
-        #self.X_ulb = torch.tensor(self.dataset_dict['train_ulb'].data).to(self.device)
+        # self.X_ulb = torch.tensor(self.dataset_dict['train_ulb'].data).to(self.device)
 
         for epoch in range(self.start_epoch, self.epochs):
 
-            
             self.epoch = epoch
 
             # prevent the training iterations exceed args.num_train_iter
@@ -450,11 +457,15 @@ class AlgorithmBase:
                 self.loader_dict["train_lb"], self.loader_dict["train_ulb"]
             ):
                 # prevent the training iterations exceed args.num_train_iter
-                
-                #print(data_ulb['idx_ulb'])
-                #idcs.extend(data_ulb['idx_ulb'].tolist())
-                
-                F = 100 if self.agg_pl_cov<0.1 or self.it<15000 else int(100*((self.agg_pl_cov*100)//10))
+
+                # print(data_ulb['idx_ulb'])
+                # idcs.extend(data_ulb['idx_ulb'].tolist())
+
+                F = (
+                    100
+                    if self.agg_pl_cov < 0.1 or self.it < 15000
+                    else int(100 * ((self.agg_pl_cov * 100) // 10))
+                )
 
                 if self.it >= self.num_train_iter:
                     break
@@ -466,11 +477,10 @@ class AlgorithmBase:
 
                 # <<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<
 
-                
-                if( self.post_hoc_calib_conf and self.it%F==0 and self.it>=F):
-                    
+                if self.post_hoc_calib_conf and self.it % F == 0 and self.it >= F:
+
                     self.cur_clf = PyTorchClassifier(logger=self.logger)
-                    self.cur_clf.model = self.model 
+                    self.cur_clf.model = self.model
                     # self.print_fn('========================= Training Post-hoc Calibrator   =========================')
                     self.cur_calibrator = get_calibrator(
                         self.cur_clf, self.post_hoc_calib_conf, self.logger
@@ -506,7 +516,6 @@ class AlgorithmBase:
                         self.logger,
                         err_threshold=eps,
                     )
-
 
                     # pseudo label and mask
                     unlbld_inf_out = self.cur_calibrator.predict(
