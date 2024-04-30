@@ -455,7 +455,6 @@ class AlgorithmBase:
                 #idcs.extend(data_ulb['idx_ulb'].tolist())
                 
                 F = 100 if self.agg_pl_cov<0.1 or self.it<15000 else int(100*((self.agg_pl_cov*100)//10))
-                print(F)
 
                 if self.it >= self.num_train_iter:
                     break
@@ -488,7 +487,6 @@ class AlgorithmBase:
 
                     # get pseudo labels and mask here.
                     # estimate threshold, pseudo label etc.
-                    print("done learning new g")
 
                     val_inf_out_th = self.cur_calibrator.predict(
                         self.dataset_dict["d_th"]
@@ -509,7 +507,6 @@ class AlgorithmBase:
                         err_threshold=eps,
                     )
 
-                    print(cov)
 
                     # pseudo label and mask
                     unlbld_inf_out = self.cur_calibrator.predict(
@@ -519,7 +516,6 @@ class AlgorithmBase:
 
                     y_hat = unlbld_inf_out["labels"].to(device)
 
-                    print(lst_t_val)
                     tt = torch.tensor([lst_t_val[y_hat[i]] for i in range(n_u)]).to(
                         device
                     )

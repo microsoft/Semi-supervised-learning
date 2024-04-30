@@ -197,7 +197,7 @@ def get_config():
     )
     parser.add_argument(
         "--ulb_num_labels",
-        type=int1,
+        type=int,
         default=None,
         help="number of labels for unlabeled data, used for determining the maximum "
         "number of labels in imbalanced setting",
@@ -310,7 +310,8 @@ def main(args):
     main(args) spawn each process (main_worker) to each GPU.
     """
     args.use_pretrain = False
-    
+    args.multiprocessing_distributed = False
+
     assert (
         args.num_train_iter % args.epoch == 0
     ), f"# total training iter. {args.num_train_iter} is not divisible by # epochs {args.epoch}"  # noqa: E501
@@ -378,13 +379,13 @@ def main_worker(gpu, ngpus_per_node, args):
 
     # random seed has to be set for the synchronization of labeled data sampling in each
     # process.
-    # assert args.seed is not None
-    # random.seed(args.seed)
-    # torch.manual_seed(args.seed)
-    # torch.cuda.manual_seed_all(args.seed)
-    # np.random.seed(args.seed)
-    # cudnn.deterministic = True
-    # cudnn.benchmark = True
+    assert args.seed is not None
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    np.random.seed(args.seed)
+    cudnn.deterministic = True
+    cudnn.benchmark = True
 
     # SET UP FOR DISTRIBUTED TRAINING
     if args.distributed:
@@ -407,9 +408,6 @@ def main_worker(gpu, ngpus_per_node, args):
     logger_level = "WARNING"
     tb_log = None
     if args.rank % ngpus_per_node == 0:
-
-        print(args.use_tensorboard)
-
         tb_log = TBLog(save_path, "tensorboard", use_tensorboard=args.use_tensorboard)
         logger_level = "INFO"
 

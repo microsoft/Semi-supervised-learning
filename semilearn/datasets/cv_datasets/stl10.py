@@ -9,7 +9,7 @@ import math
 from torchvision import transforms
 
 from .datasetbase import BasicDataset
-from semilearn.datasets.utils import sample_labeled_unlabeled_data
+from semilearn.datasets.utils import sample_labeled_unlabeled_data, randomly_split_labeled_basic_dataset
 from semilearn.datasets.augmentation import RandAugment
 
 
@@ -116,5 +116,10 @@ def get_stl10(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
     dset_lb = dset(data_dir, split='test', download=True)
     data, targets = dset_lb.data.transpose([0, 2, 3, 1]), dset_lb.labels.astype(np.int64)
     eval_dset = BasicDataset(alg, data, targets, num_classes, transform_val, False, None, None, False)
+    
+    eval_dset, test_dset = randomly_split_labeled_basic_dataset(
+        eval_dset, num_classes, size_1=4800, fixed_seed=True, class_balance=True
+    )
 
-    return lb_dset, ulb_dset, eval_dset
+
+    return lb_dset, ulb_dset, eval_dset, test_dset

@@ -202,8 +202,6 @@ def get_cifar(
         n_v = 6000
     elif name == "cifar100":
         n_v = 6000
-    elif name == "stl10":
-        n_v = 4000
     else:
         raise ValueError("Unknown dataset")
 
