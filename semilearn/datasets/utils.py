@@ -96,8 +96,6 @@ def randomly_split_labeled_data(data, targets, num_classes,size_1=None, fraction
     else:
         raise("Give either size_1 or fraction_1")
     
-    print(s)
-
     if(class_balance):
         s2 = s//num_classes
         idx1 = [] 
@@ -107,8 +105,8 @@ def randomly_split_labeled_data(data, targets, num_classes,size_1=None, fraction
             np.random.shuffle(idx_c)
             idx1.extend(idx_c[:s2])
             idx2.extend(idx_c[s2:]) 
-        idx1 = np.array(idx1)
-        idx2 = np.array(idx2)
+        idx1 = np.array(idx1).astype(int)
+        idx2 = np.array(idx2).astype(int)
     else:
         np.random.shuffle(idx)
         idx1, idx2 = idx[:s], idx[s:]
@@ -116,11 +114,6 @@ def randomly_split_labeled_data(data, targets, num_classes,size_1=None, fraction
     if(fixed_seed):
         # reset seed to previous value for rest of the application.
         np.random.set_state(ps)
-    
-    #print(len(set(idx1)), len(set(idx2)))
-    
-    print(get_class_counts(targets[idx1],num_classes))
-    print(get_class_counts(targets[idx2],num_classes))
     
     return data[idx1], targets[idx1],  data[idx2], targets[idx2]
 

@@ -12,7 +12,7 @@ num_eval_iter: 5120
 num_log_iter: 256
 num_labels: 1000
 batch_size: 64
-eval_batch_size: 256
+eval_batch_size: 1024
 hard_label: True
 T: 0.5
 p_cutoff: 0.95

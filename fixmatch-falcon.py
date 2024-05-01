@@ -365,9 +365,6 @@ def main_worker(gpu, ngpus_per_node, args):
     logger_level = "WARNING"
     tb_log = None
     if args.rank % ngpus_per_node == 0:
-        
-        print(args.use_tensorboard)
-
         tb_log = TBLog(save_path, "tensorboard", use_tensorboard=args.use_tensorboard)
         logger_level = "INFO"
 
