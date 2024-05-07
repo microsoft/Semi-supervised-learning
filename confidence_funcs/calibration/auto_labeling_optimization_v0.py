@@ -510,7 +510,6 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
 
         val_idcs = [i for i in range(len(ds_val_nc))]
 
-        a = time()
         lst_t_y_, val_idcs_to_rm_, val_err_, cov = determine_threshold(
             self.lst_classes,
             inf_out,
@@ -520,16 +519,5 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
             self.logger,
             err_threshold=self.eps,
         )
-        b = time()
-        old_lst_t_y_, old_val_idcs_to_rm_, old_val_err_, old_cov = old(
-            self.lst_classes,
-            inf_out,
-            self.auto_lbl_conf,
-            ds_val_nc,
-            val_idcs,
-            self.logger,
-            err_threshold=self.eps,
-        )
-        c = time()
-
+        
         return cov
