@@ -172,16 +172,20 @@ def old(
 def determine_threshold(
     lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold=0.01
 ):
-    val_idcs = torch.tensor(val_idcs)
+
+    err_rate = 1 - accuracy_score(val_ds.Y, inf_out["labels"])
+    val_idcs = torch.tensor(val_idcs).to("cuda")
 
     classes = lst_classes
-    y_true = val_ds.Y
-    y_pred = inf_out["labels"]
-    C_1 = torch.tensor(auto_lbl_conf["C_1"])
-    err_threshold = torch.tensor(err_threshold)
+    y_true = val_ds.Y.to("cuda")
+    y_pred = inf_out["labels"].to("cuda")
+    C_1 = torch.tensor(auto_lbl_conf["C_1"]).to("cuda")
+    err_threshold = torch.tensor(err_threshold).to("cuda")
 
     class_to_idx = {class_: y_pred == class_ for class_ in classes}
-    scores = torch.tensor(inf_out[auto_lbl_conf.score_type], dtype=torch.float32)
+    scores = torch.tensor(
+        inf_out[auto_lbl_conf.score_type], dtype=torch.float32, device="cuda"
+    )
 
     n_v_0 = 10
     val_idcs_to_rm = []
@@ -190,13 +194,18 @@ def determine_threshold(
 
     for class_ in classes:
         N_t_class = (scores[class_to_idx[class_], None] >= scores).sum(dim=0)
-        scores_selected = scores[N_t_class >= n_v_0]
+        scores_selected = scores[N_t_class > n_v_0]
 
         mask = scores[class_to_idx[class_]][:, None] >= scores_selected
         mask_sum = torch.sum(mask, dim=0)
-        correct_predictions_sum = (y_pred == y_true)[class_to_idx[class_]].sum(dim=0)
+
+        correct_predictions_sum = (
+            scores[class_to_idx[class_] & (y_pred == y_true)][:, None]
+            >= scores_selected
+        ).sum(dim=0)
+
         err_class = torch.where(
-            mask_sum > n_v_0, 1 - correct_predictions_sum / mask_sum, torch.tensor(1.0)
+            mask_sum > 0, 1 - correct_predictions_sum / mask_sum, torch.tensor(1.0)
         )
         err_class = err_class + C_1 * torch.sqrt(err_class * (1 - err_class))
         candidates = scores_selected[err_class <= err_threshold]
@@ -217,4 +226,4 @@ def determine_threshold(
 
     cov = len(val_idcs_to_rm) / len(scores)
 
-    return thresholds, val_idcs_to_rm, 1 - accuracy_score(y_true, y_pred), cov
+    return thresholds, val_idcs_to_rm, err_rate, cov
