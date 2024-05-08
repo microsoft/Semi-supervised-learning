@@ -20,9 +20,6 @@ class EvaluationHook(Hook):
             algorithm.log_dict.update(test_dict)
             # results_dict['test/best_acc'] = test_dict['test/top-1-acc']
 
-            test_dict = algorithm.evaluate('test')
-            algorithm.log_dict.update(test_dict)
-
             # update best metrics
             if algorithm.log_dict['eval/top-1-acc'] > algorithm.best_eval_acc:
                 algorithm.best_eval_acc = algorithm.log_dict['eval/top-1-acc']
