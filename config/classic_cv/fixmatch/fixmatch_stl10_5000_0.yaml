@@ -15,7 +15,7 @@ batch_size: 64
 eval_batch_size: 1024
 hard_label: True
 T: 0.5
-p_cutoff: 0
+p_cutoff: 0.95
 ulb_loss_ratio: 1.0
 uratio: 7
 ema_m: 0.999
