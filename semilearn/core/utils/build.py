@@ -72,6 +72,7 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
     """
     from semilearn.datasets import get_eurosat, get_medmnist, get_semi_aves, get_cifar, get_svhn, get_stl10, get_imagenet, get_json_dset, get_pkl_dset
 
+    print(f"{dataset = }")
     if dataset == "eurosat":
         lb_dset, ulb_dset, eval_dset = get_eurosat(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
         test_dset = None
@@ -87,9 +88,8 @@ def get_dataset(args, algorithm, dataset, num_labels, num_classes, data_dir='./d
     elif dataset in ["cifar10", "cifar100"]:
         lb_dset, ulb_dset, eval_dset, test_dset = get_cifar(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
         #test_dset = None
-    elif dataset == 'svhn':
-        lb_dset, ulb_dset, eval_dset = get_svhn(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
-        test_dset = None
+    elif dataset == 'svhn':        
+        lb_dset, ulb_dset, eval_dset, test_dset = get_svhn(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
     elif dataset == 'stl10':
         lb_dset, ulb_dset, eval_dset, test_dset = get_stl10(args, algorithm, dataset, num_labels, num_classes, data_dir=data_dir, include_lb_to_ulb=include_lb_to_ulb)
     elif dataset in ["imagenet", "imagenet127"]:
