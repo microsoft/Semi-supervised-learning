@@ -1,6 +1,9 @@
 from sklearn.metrics import accuracy_score
+import os
 import numpy as np
 import torch
+from time import time
+import torch.multiprocessing as mp
 
 
 def old(
@@ -169,7 +172,7 @@ def old(
     return lst_t_y, val_idcs_to_rm, val_err, cov
 
 
-def determine_threshold(
+def new(
     lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold=0.01
 ):
 
@@ -188,11 +191,11 @@ def determine_threshold(
     )
 
     n_v_0 = 10
-    val_idcs_to_rm = []
+    val_idcs_to_rm = [torch.tensor([]).long().to("cuda") for _ in range(len(classes))]
 
-    thresholds = []
-
-    for class_ in classes:
+    thresholds = [None for _ in range(len(classes))]
+    
+    for i, class_ in enumerate(classes):
         N_t_class = (scores[class_to_idx[class_], None] >= scores).sum(dim=0)
         scores_selected = scores[N_t_class > n_v_0]
 
@@ -215,15 +218,70 @@ def determine_threshold(
             if candidates.numel() > 0
             else torch.tensor(float("inf"))
         )
-        thresholds.append(threshold.item())
+        thresholds[i] = threshold.item()
 
         if torch.isfinite(threshold):
-            val_idcs_to_rm.extend(
-                val_idcs[class_to_idx[class_]][
-                    scores[class_to_idx[class_]] >= threshold
-                ].tolist()
-            )
+            val_idcs_to_rm[i] = val_idcs[class_to_idx[class_]][scores[class_to_idx[class_]] >= threshold]
 
+    val_idcs_to_rm = torch.cat(val_idcs_to_rm, dim=0).long().to("cuda")
     cov = len(val_idcs_to_rm) / len(scores)
 
     return thresholds, val_idcs_to_rm, err_rate, cov
+
+def determine_threshold(
+    lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold=0.01
+):  
+    torch.save({
+        "lst_classes": lst_classes,
+        "inf_out": inf_out,
+        "auto_lbl_conf": auto_lbl_conf,
+        "val_ds": val_ds,
+        "val_idcs": val_idcs,
+        "logger": logger,
+        "err_threshold": err_threshold
+    }, "inputs.pth")
+    print()
+    if os.environ["OPT_TH"] == "YES":
+        print("environment variable OPT_TH is set to YES, using optimized threshold estimation")
+        tic = time()
+        ret = new(lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold)
+        toc = time()
+        time_elapsed = toc - tic
+        print("time taken for optimized threshold estimation: ", time_elapsed)
+    elif os.environ["OPT_TH"] == "NO":
+        print("environment variable OPT_TH is set to NO, using non-optimized threshold estimation")
+        tic = time()
+        ret = old(lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold)
+        toc = time()
+        time_elapsed = toc - tic
+        print("time taken for non-optimized threshold estimation: ", time_elapsed)
+    elif os.environ["OPT_TH"] == "TEST":
+        print("environment variable OPT_TH is set to TEST, testing if the optimized version is the same as non-optimized version")
+        tic = time()
+        ret = new(lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold)
+        toc = time()
+        time_elapsed = toc - tic
+        print("time taken for optimized threshold estimation: ", time_elapsed)
+        
+        tic = time()
+        old_ret = old(lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold)
+        toc = time()
+        time_elapsed = toc - tic
+        print("time taken for non-optimized threshold estimation: ", time_elapsed)
+        
+        assert torch.allclose(torch.tensor(ret[0]), torch.tensor(old_ret[0]))
+        assert torch.allclose(torch.tensor(ret[1]), torch.tensor(old_ret[1]))
+        assert ret[2] == old_ret[2]
+        assert ret[3] == old_ret[3]
+    else:
+        ret = new(lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold)
+    print()
+    return ret
+
+if __name__ == "__main__":
+    import sys
+    sys.path.append("../..")
+    import semilearn
+    inputs = torch.load("inputs.pth")
+    new(**inputs)
+    
