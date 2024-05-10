@@ -43,10 +43,10 @@ training_conf_g:
 
 training_conf_t: 
   optimizer: 'sgd'
-  learning_rate: 0.1
+  learning_rate: 0.01
   batch_size: 64
   max_epochs: 500
-  weight_decay: 0.1
+  weight_decay: 0.01
   momentum: 0.9
   use_lr_schedule: True 
   nesterov: False 
