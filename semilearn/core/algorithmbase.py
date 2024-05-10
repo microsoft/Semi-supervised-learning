@@ -69,8 +69,8 @@ class AlgorithmBase:
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         # common arguments
         self.args = args
+        self.post_hoc_frequency = args.post_hoc_frequency
         self.cur_clf = None
-        self.re_init = args.re_init
         self.num_classes = args.num_classes
         self.ema_m = args.ema_m
         self.epochs = args.epoch
@@ -462,7 +462,7 @@ class AlgorithmBase:
                 # idcs.extend(data_ulb['idx_ulb'].tolist())
 
                 F = (
-                    100
+                    self.post_hoc_frequency
                     if self.agg_pl_cov < 0.1 or self.it < 15000
                     else int(100 * ((self.agg_pl_cov * 100) // 10))
                 )

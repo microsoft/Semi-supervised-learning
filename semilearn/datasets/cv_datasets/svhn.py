@@ -9,7 +9,7 @@ import math
 
 from torchvision import transforms
 from .datasetbase import BasicDataset
-from semilearn.datasets.utils import split_ssl_data
+from semilearn.datasets.utils import split_ssl_data, randomly_split_labeled_basic_dataset
 from semilearn.datasets.augmentation import RandAugment, RandomResizedCropAndInterpolation
 
 mean, std = {}, {}
@@ -123,4 +123,10 @@ def get_svhn(args, alg, name, num_labels, num_classes, data_dir='./data', includ
     data, targets = dset.data.transpose([0, 2, 3, 1]), dset.labels
     eval_dset = BasicDataset(alg, data, targets, num_classes, transform_val, False, None, None, False)
 
-    return lb_dset, ulb_dset, eval_dset
+    n_v = 15620
+
+    eval_dset, test_dset = randomly_split_labeled_basic_dataset(
+        eval_dset, num_classes, size_1=n_v, fixed_seed=True, class_balance=True
+    )
+
+    return lb_dset, ulb_dset, eval_dset, test_dset
