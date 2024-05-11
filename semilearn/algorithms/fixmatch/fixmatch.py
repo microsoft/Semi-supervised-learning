@@ -78,8 +78,6 @@ class FixMatch(AlgorithmBase):
             # strong weak 
             # weak   id 
 
-
-
         with self.amp_cm():
             if self.use_cat:
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
@@ -104,9 +102,10 @@ class FixMatch(AlgorithmBase):
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
             
+            self.acc_pseudo_labels_flag = True 
             
-
-            if(self.post_hoc_calib_conf is None):
+            if(self.batch_pl_flag):
+                
                 # probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
                 probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
                 
@@ -116,93 +115,33 @@ class FixMatch(AlgorithmBase):
                     probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
 
                 # compute mask
-                mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
+                mask_batch = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
 
                 # generate unlabeled targets using pseudo label hook
-                pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                pseudo_labels_batch = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
                                             logits=probs_x_ulb_w,
                                             use_hard_label=self.use_hard_label,
                                             T=self.T,
                                             softmax=False)
-                
-                if(self.accumulate_pseudo_labels):
-                    #new mask 
+                print(mask_batch.sum())
 
-                    # the points that are newly psuedo-labeled
-                    #mask2 = torch.logical_and(torch.logical_not(self.mask.ge(1.0)[idx_ulb]), mask) 
+                if(self.acc_pseudo_labels_flag):
+                    pseudo_labels_batch, mask_batch = self.accumulate_pseudo_labels(idx_ulb, mask_batch,
+                                                                                     pseudo_labels_batch)
 
-                    #self.print_fn(f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}")
-                    #print('here')
-                    #print(mask)
-                    
-                    #overwrite previous pseudolabel.
-
-                    idx_ulb = idx_ulb.to(self.device)
-
-                    mask_bool = mask.ge(1.0)
-                    #print(mask_bool)
-                    
-
-                    idx_ulb_pl = idx_ulb[mask_bool]
-                    self.pseudo_labels[idx_ulb_pl] = pseudo_label[mask_bool]
-
-                    self.mask[idx_ulb] = torch.clamp( mask + self.mask[idx_ulb], min=0.0, max=1.0) #torch.logical_or(mask_bool, self.mask[idx_ulb].ge(1.0)).to(self.mask[idx_ulb].dtype).to(self.device) 
-                    
-                    #print(idx_ulb, len(self.mask)) 
-                    self.print_fn(f"{torch.sum(mask).item()},  {torch.sum( self.mask[idx_ulb] ).item()}, {torch.sum(self.mask).item()} ")
-                    
-
-                    pseudo_label = self.pseudo_labels[idx_ulb]
-                    mask         = self.mask[idx_ulb]
-
-                #else:
-                    #self.pseudo_labels = y_hat 
-                    #self.mask = scores.ge(tt).to(scores.dtype)
-                    #pass
-
-            else: 
-                
-                pseudo_label = self.pseudo_labels[idx_ulb]
-                mask         = self.mask[idx_ulb]
-
-            #print(pseudo_label, mask)
-            n_a_batch = torch.sum(mask)
-            batch_cov = (n_a_batch/ len(idx_ulb)).item() 
-            batch_acc = 0.0 
-            if(n_a_batch>0):
-                batch_acc_mask = self.y_true_ulb[idx_ulb]==self.pseudo_labels[idx_ulb]
-                batch_acc      = torch.sum(batch_acc_mask[mask.ge(1.0)])/n_a_batch 
+            else:
+                # either global_pl_flag is True or post_hoc_calib is true. 
+                pseudo_labels_batch = self.pseudo_labels[idx_ulb]
+                mask_batch         = self.mask[idx_ulb]
             
-
-            #self.print_fn(f"{batch_cov}")
-
-            if not self.tb_log is None:
-                self.tb_log.update({"batch_pl_cov":batch_cov, "batch_pl_acc":batch_acc}, self.it)
-
-            
-            n_a = torch.sum(self.mask).detach()
-            
-            self.n_a = n_a 
-
-            cov = n_a/self.n_u 
-            acc = 0.0 
-            if(n_a>0):
-                acc_mask = self.y_true_ulb==self.pseudo_labels
-                acc      = torch.sum(acc_mask[self.mask.ge(1.0)])/n_a
-            
-            if not self.tb_log is None:
-                self.tb_log.update({"agg_pl_cov":cov, "agg_pl_acc":acc}, self.it)
-            
-            self.agg_pl_cov = cov
 
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
-                                               pseudo_label,
+                                               pseudo_labels_batch,
                                                'ce',
-                                               mask=mask)
+                                               mask=mask_batch)
 
-
-            c = cov.detach().item() 
-
+            '''
+            c = self.agg_pl_cov.detach().item()
             if(self.args.loss_reweight):
                 # reweight loss by  
                 # c will go high as the coverage increases. 
@@ -217,16 +156,20 @@ class FixMatch(AlgorithmBase):
                 self.print_fn(f"loss weights : {1-c},  {c}") 
 
             else:
-                total_loss = sup_loss + self.lambda_u * unsup_loss
+            '''
+            
+            total_loss = sup_loss + self.lambda_u * unsup_loss
         
-        
+        self.log_batch_pseudo_labeling_stats(mask_batch,pseudo_labels_batch,idx_ulb)
+        self.log_full_pseudo_labeling_stats()
+
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 
-                                         util_ratio=mask.float().mean().item())
+                                         util_ratio=mask_batch.float().mean().item())
         return out_dict, log_dict
-        
+
 
     @staticmethod
     def get_argument():

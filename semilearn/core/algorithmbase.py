@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+from time import time
 
 import os
 import contextlib
@@ -397,6 +398,30 @@ class AlgorithmBase:
     def compute_prob(self, logits):
         return torch.softmax(logits, dim=-1)
 
+    def accumulate_pseudo_labels(self,idx_ulb, mask, pseudo_labels):
+        # expected sizes len(mask) = len(idx_ulb) = len(pseudo_labels)
+
+        # the points that have got new pseudo labels, should have their previous pseudo label overwritten.
+        # the points that did not get pseudo labels, will maintain their previous pseudo label.
+
+        idx_ulb = idx_ulb.to(self.device)
+
+        mask_bool = mask.ge(1.0)
+        
+        idx_ulb_pl = idx_ulb[mask_bool] # indices that got new pseudo label
+        
+        self.pseudo_labels[idx_ulb_pl] = pseudo_labels[mask_bool]  # overwrite the pseudo label for these points.
+
+        self.mask[idx_ulb] = torch.clamp( mask + self.mask[idx_ulb], min=0.0, max=1.0) # update the mask accordingly.
+        
+        self.print_fn(f"{torch.sum(mask).item()},  {torch.sum( self.mask[idx_ulb] ).item()},{torch.sum(self.mask).item()}")
+        
+        pseudo_label = self.pseudo_labels[idx_ulb]
+        mask         = self.mask[idx_ulb]
+
+        return pseudo_label, mask
+
+
     def train_step(self, idx_lb, x_lb, y_lb, idx_ulb, x_ulb_w, x_ulb_s):
         """
         train_step specific to each algorithm
@@ -429,9 +454,13 @@ class AlgorithmBase:
 
         self.pseudo_labels = torch.zeros(n_u).long().to(device)
         self.mask = torch.zeros(n_u).to(device)
+        
+        self.batch_pl_flag = True
+        self.full_pl_flag  = False
+
 
         # accumulate_pseudo_labels = True
-        self.accumulate_pseudo_labels = self.args.accumulate_pseudo_labels
+        self.acc_pseudo_labels_flag = self.args.accumulate_pseudo_labels
 
         if self.args.use_true_labels:
             self.pseudo_labels = torch.tensor(
@@ -458,14 +487,9 @@ class AlgorithmBase:
             ):
                 # prevent the training iterations exceed args.num_train_iter
 
-                # print(data_ulb['idx_ulb'])
-                # idcs.extend(data_ulb['idx_ulb'].tolist())
-
-                F = (
-                    self.post_hoc_frequency
-                    if self.agg_pl_cov < 0.1 or self.it < 15000
-                    else int(100 * ((self.agg_pl_cov * 100) // 10))
-                )
+                
+                Freq = 10 #self.post_hoc_frequency
+                
 
                 if self.it >= self.num_train_iter:
                     break
@@ -477,106 +501,20 @@ class AlgorithmBase:
 
                 # <<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<
 
-                if self.post_hoc_calib_conf and self.it % F == 0 and self.it >= F:
-
-                    self.cur_clf = PyTorchClassifier(logger=self.logger)
-                    self.cur_clf.model = self.model
-                    # self.print_fn('========================= Training Post-hoc Calibrator   =========================')
-                    self.cur_calibrator = get_calibrator(
-                        self.cur_clf, self.post_hoc_calib_conf, self.logger
-                    )
-
-                    # randomly split the current available validation points into two parts.
-                    # one part will be used for training the calibrator and other part for finding
-                    # the auto-labeling thresholds.
-
-                    # self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
-                    self.cur_calibrator.fit(
-                        self.dataset_dict["d_cal"], ds_val_nc=self.dataset_dict["d_th"]
-                    )
-
-                    # get pseudo labels and mask here.
-                    # estimate threshold, pseudo label etc.
-
-                    val_inf_out_th = self.cur_calibrator.predict(
-                        self.dataset_dict["d_th"]
-                    )
-
-                    lst_classes = np.arange(0, self.num_classes, 1)
-                    auto_lbl_conf = self.post_hoc_calib_conf.auto_lbl_conf
-                    val_idcs = np.arange(0, len(self.dataset_dict["d_th"].targets), 1)
-                    eps = auto_lbl_conf.auto_label_err_threshold
-
-                    lst_t_val, val_idcs_to_rm, val_err, cov = determine_threshold(
-                        lst_classes,
-                        val_inf_out_th,
-                        auto_lbl_conf,
-                        self.dataset_dict["d_th"],
-                        val_idcs,
-                        self.logger,
-                        err_threshold=eps,
-                    )
-
-                    # pseudo label and mask
-                    unlbld_inf_out = self.cur_calibrator.predict(
-                        self.dataset_dict["train_ulb"]
-                    )
-                    scores = unlbld_inf_out[auto_lbl_conf["score_type"]]
-
-                    y_hat = unlbld_inf_out["labels"].to(device)
-
-                    tt = torch.tensor([lst_t_val[y_hat[i]] for i in range(n_u)]).to(
-                        device
-                    )
-                    scores = torch.tensor(scores).to(device)
-
-                    if self.accumulate_pseudo_labels and self.pseudo_labels is not None:
-                        # new mask
-                        mask = scores.ge(tt)  # .to(scores.dtype)
-
-                        # overwrite previous pseudolabels.
-                        mask2 = torch.logical_and(
-                            torch.logical_not(self.mask.ge(1.0)), mask
-                        )
-
-                        self.print_fn(
-                            f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}"
-                        )
-
-                        self.pseudo_labels[mask] = y_hat[mask]
-
-                        self.mask = (
-                            torch.logical_or(mask, self.mask)
-                            .to(scores.dtype)
-                            .to(device)
-                        )
-
-                        self.print_fn(
-                            f"{torch.sum(mask).item()}, {torch.sum(mask2).item()}, {torch.sum(self.mask).item()}"
-                        )
-
-                    else:
-                        self.pseudo_labels = y_hat
-                        self.mask = scores.ge(tt).to(scores.dtype)
-
-                    self.pseudo_labels = self.pseudo_labels.to(device)
-                    self.mask = self.mask.to(device)
-                    self.model.train()
+                if self.post_hoc_calib_conf and self.it % Freq == 0 and self.it >= Freq:
+                    
+                    self.post_hoc_calib_pseudo_labeling()
 
                 else:
                     # self.print_fn('=========================    No Post-hoc Calibration     =========================')
                     self.cur_calibrator = None
 
+                if(self.post_hoc_calib_conf is None and self.full_pl_flag and self.it % Freq == 0 and self.it >= Freq):
+
+                    self.full_pseudo_labeling()
                 # >>>>>>>>>>>>>>>>>>>>>>>>>>> END CALIBRATION BLOCK  >>>>>>>>>>>>>>>>>>>>>>>>>>>
 
                 # this step only computes the loss
-                # print(data_lb.keys())
-                # print(data_ulb.keys())
-                # print(data_lb['x_lb'])
-                # print(data_ulb['x_ulb'])
-                # print(data_ulb['x_ulb_w'])
-                # print(data_ulb['x_ulb_s'])
-                # a += 1
                 self.out_dict, self.log_dict = self.train_step(
                     **self.process_batch(**data_lb, **data_ulb)
                 )
@@ -588,14 +526,141 @@ class AlgorithmBase:
                 self.it += 1
 
             # print('EPOCH DONE')
-            # print(len(idcs))
-            # idcs_set = set(idcs)
-            # print(len(idcs_set), min(idcs_set),max(idcs_set))
             self.call_hook("after_train_epoch")
 
-            # return
-
         self.call_hook("after_run")
+
+
+    def post_hoc_calib_pseudo_labeling(self):
+
+        device = self.device 
+
+        self.cur_clf = PyTorchClassifier(logger=self.logger)
+        self.cur_clf.model = self.model
+        self.post_hoc_calib_conf['device'] = self.device 
+
+        # self.print_fn('========================= Training Post-hoc Calibrator   =========================')
+        self.cur_calibrator = get_calibrator(
+            self.cur_clf, self.post_hoc_calib_conf, self.logger
+        )
+
+        # randomly split the current available validation points into two parts.
+        # one part will be used for training the calibrator and other part for finding
+        # the auto-labeling thresholds.
+
+        # self.print_fn(f"Number of points for training calibrator : {len(self.dataset_dict['d_cal'])}")
+        self.cur_calibrator.fit(
+            self.dataset_dict["d_cal"], ds_val_nc=self.dataset_dict["d_th"]
+        )
+
+        # get pseudo labels and mask here.
+        # estimate threshold, pseudo label etc.
+        inf_conf = {'feature_key':'x_lb', 'idx_key':'idx_lb'}
+        val_inf_out_th = self.cur_calibrator.predict(
+            self.dataset_dict["d_th"], inference_conf=inf_conf
+        )
+
+        lst_classes = np.arange(0, self.num_classes, 1)
+        auto_lbl_conf = self.post_hoc_calib_conf.auto_lbl_conf
+        val_idcs = np.arange(0, len(self.dataset_dict["d_th"].targets), 1)
+        eps = auto_lbl_conf.auto_label_err_threshold
+
+        tic  = time()
+        lst_t_val, val_idcs_to_rm, val_err, cov = determine_threshold(
+            lst_classes,
+            val_inf_out_th,
+            auto_lbl_conf,
+            self.dataset_dict["d_th"],
+            val_idcs,
+            self.logger,
+            err_threshold=eps,
+        )
+        toc = time()
+        self.print_fn(f"Total time in threshold estimation : {toc-tic}")
+
+        # pseudo label and mask
+        tic = time()
+        inf_conf = {'feature_key':'x_ulb_w', 'idx_key':'idx_ulb', 'batch_size':500}
+        unlbld_inf_out = self.cur_calibrator.predict(
+            self.dataset_dict["train_ulb"], inference_conf=inf_conf
+        )
+        toc = time()
+        self.print_fn(f"Total time in inference on unlabeled data : {toc-tic}")
+
+        scores = unlbld_inf_out[auto_lbl_conf["score_type"]]
+
+        y_hat = unlbld_inf_out["labels"].to(device)
+
+        tt = torch.tensor([lst_t_val[y_hat[i]] for i in range(self.n_u)]).to(
+            device
+        )
+        scores = torch.tensor(scores).to(device)
+        mask_full = scores.ge(tt).to(dtype=scores.dtype)
+        pseudo_labels_full = y_hat
+        
+        idx_ulb = torch.arange(0,self.n_u).to(self.device)
+
+        self.accumulate_pseudo_labels(idx_ulb,mask_full,pseudo_labels_full)
+
+        #self.pseudo_labels = self.pseudo_labels.to(device)
+        #self.mask = self.mask.to(device)
+
+        self.model.train() 
+        
+
+    def full_pseudo_labeling(self):
+
+        #self.cur_clf = PyTorchClassifier(logger=self.logger)
+        #self.cur_clf.model = self.model
+        inf_conf = {'feature_key':'x_ulb_w', 'idx_key':'idx_ulb'}
+        inf_out = self.cur_clf.predict(self.dataset_dict["train_ulb"],inference_conf=inf_conf)
+        
+        probs_x_ulb_w = inf_out['probs']
+
+        # compute mask
+        mask_full = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False)
+        
+        # generate unlabeled targets using pseudo label hook
+        pseudo_labels_full = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                                        logits=probs_x_ulb_w,
+                                        use_hard_label=self.use_hard_label,
+                                        T=self.T,
+                                        softmax=False)
+
+        idx_ulb = torch.arange(0,self.n_u).to(self.device)
+
+        self.accumulate_pseudo_labels(idx_ulb,mask_full,pseudo_labels_full)
+
+
+    def log_batch_pseudo_labeling_stats(self,mask_batch,pseudo_labels_batch,idx_ulb_batch):
+
+        n_a_batch = torch.sum(mask_batch)
+        batch_cov = (n_a_batch/ len(mask_batch)).item() 
+        batch_acc = 0.0 
+        if(n_a_batch>0):
+            batch_acc_mask = self.y_true_ulb[idx_ulb_batch]==pseudo_labels_batch
+            batch_acc      = torch.sum(batch_acc_mask[mask_batch.ge(1.0)])/n_a_batch 
+        
+        if not self.tb_log is None:
+            self.tb_log.update({"batch_pl_cov":batch_cov, "batch_pl_acc":batch_acc}, self.it)
+    
+    def log_full_pseudo_labeling_stats(self):
+
+        n_a = torch.sum(self.mask).detach()
+        
+        self.n_a = n_a 
+
+        cov = n_a/self.n_u 
+        acc = 0.0 
+        if(n_a>0):
+            acc_mask = self.y_true_ulb==self.pseudo_labels
+            acc      = torch.sum(acc_mask[self.mask.ge(1.0)])/n_a
+        
+        if not self.tb_log is None:
+            self.tb_log.update({"agg_pl_cov":cov, "agg_pl_acc":acc}, self.it)
+        
+        self.agg_pl_cov = cov
+            
 
     def evaluate(self, eval_dest="eval", out_key="logits", return_logits=False):
         """

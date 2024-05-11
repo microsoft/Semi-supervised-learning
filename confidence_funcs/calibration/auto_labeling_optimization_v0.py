@@ -61,12 +61,14 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         self.cur_clf = clf
         self.logger = logger
         self.g_model = None
+        self.device = calib_conf['device']
 
     def init(self, ds_calib, clf_inf_out=None, use_prev_model=False):
 
         calib_conf = self.calib_conf
         cur_clf = self.cur_clf
         # print(calib_conf)
+        ds_calib.Y = ds_calib.Y.to(self.device)
 
         # print(clf_inf_out)
 
@@ -81,11 +83,15 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         self.auto_lbl_conf = calib_conf.auto_lbl_conf
 
         if clf_inf_out is None:
-            clf_inf_out = cur_clf.predict(ds_calib)
+            inf_conf = {'feature_key':'x_lb', 'idx_key':'idx_lb'}
+
+            clf_inf_out = cur_clf.predict(ds_calib, inference_conf=inf_conf )
+
 
         fkey = self.calib_conf["features_key"]
 
         if fkey == "concat":
+            print(clf_inf_out["logits"].shape, clf_inf_out["pre_logits"].shape)
             features = torch.hstack([clf_inf_out["logits"], clf_inf_out["pre_logits"]])
 
         else:
@@ -220,12 +226,17 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         print(use_prev_model)
 
         self.init(calib_ds, calib_ds_inf_out, use_prev_model=use_prev_model)
+
+        
+
         logger = self.logger
 
         calib_conf = self.calib_conf
         device = calib_conf["device"]
         self.ds_val_nc = ds_val_nc
         # train_conf    = self.calib_conf.training_conf
+        inf_conf = {'feature_key':'x_lb', 'idx_key':'idx_lb'}
+        self.val_nc_clf_inf_out = self.cur_clf.predict(ds_val_nc, inference_conf=inf_conf)
 
         epochs = self.calib_conf.training_conf_g["max_epochs"]
 
@@ -424,15 +435,16 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
 
         return 0
 
-    def predict(self, ds, inference_conf=None):
+    def predict(self, ds, inference_conf=None,clf_inf_out=None):
 
         self.g_model.eval()
         self.t.eval()
 
         device = self.calib_conf["device"]
-
-        clf_inf_out = self.cur_clf.predict(ds)
-
+        
+        if(clf_inf_out is None):
+            clf_inf_out = self.cur_clf.predict(ds, inference_conf=inference_conf)
+        
         # features    = clf_inf_out[self.calib_conf['features_key']]
 
         fkey = self.calib_conf["features_key"]
@@ -443,7 +455,7 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         else:
             features = clf_inf_out[self.calib_conf["features_key"]]
 
-        Y = torch.Tensor(ds.targets)
+        Y = torch.Tensor(ds.targets).to(self.device)
 
         Y_correct = (clf_inf_out["labels"] != Y).long()
         # 1 ==> incorrect prediction (mistake), 0 ==> correct prediction (no mistake)
@@ -504,15 +516,16 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
     def eval(self, ds_val_nc):
         from time import time
 
-        torch.set_float32_matmul_precision("medium")
+        torch.set_float32_matmul_precision("medium") ## ???
+        inf_conf = {'feature_key':'x_lb', 'idx_key':'idx_lb'}
 
-        inf_out = self.predict(ds_val_nc)
+        calib_inf_out = self.predict(ds_val_nc, inference_conf=inf_conf, clf_inf_out=self.val_nc_clf_inf_out)
 
         val_idcs = [i for i in range(len(ds_val_nc))]
 
         lst_t_y_, val_idcs_to_rm_, val_err_, cov = determine_threshold(
             self.lst_classes,
-            inf_out,
+            calib_inf_out,
             self.auto_lbl_conf,
             ds_val_nc,
             val_idcs,

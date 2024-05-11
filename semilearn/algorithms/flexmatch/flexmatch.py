@@ -88,6 +88,7 @@ class FlexMatch(AlgorithmBase):
 
             # if distribution alignment hook is registered, call it 
             # this is implemented for imbalanced algorithm - CReST
+            
             if self.registered_hook("DistAlignHook"):
                 probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
 
@@ -115,6 +116,7 @@ class FlexMatch(AlgorithmBase):
                                          util_ratio=mask.float().mean().item())
         return out_dict, log_dict
         
+    
 
     def get_save_dict(self):
         save_dict = super().get_save_dict()

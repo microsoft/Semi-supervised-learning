@@ -175,8 +175,12 @@ def old(
 def new(
     lst_classes, inf_out, auto_lbl_conf, val_ds, val_idcs, logger, err_threshold=0.01
 ):
-
-    err_rate = 1 - accuracy_score(val_ds.Y, inf_out["labels"])
+    
+    val_ds.Y = val_ds.Y.cuda()
+    print(val_ds.Y.device, inf_out["labels"].device)
+          
+    err_rate = 1 - torch.sum(val_ds.Y == inf_out["labels"])/len(val_ds.Y) #accuracy_score(val_ds.Y.numpy(), inf_out["labels"])
+        
     val_idcs = torch.tensor(val_idcs).to("cuda")
 
     classes = lst_classes
