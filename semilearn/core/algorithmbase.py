@@ -458,6 +458,8 @@ class AlgorithmBase:
         self.batch_pl_flag = True
         self.full_pl_flag  = False
 
+        if(self.post_hoc_calib_conf):
+            self.batch_pl_flag = False 
 
         # accumulate_pseudo_labels = True
         self.acc_pseudo_labels_flag = self.args.accumulate_pseudo_labels
@@ -488,7 +490,7 @@ class AlgorithmBase:
                 # prevent the training iterations exceed args.num_train_iter
 
                 
-                Freq = 10 #self.post_hoc_frequency
+                Freq = 100 #self.post_hoc_frequency
                 
 
                 if self.it >= self.num_train_iter:

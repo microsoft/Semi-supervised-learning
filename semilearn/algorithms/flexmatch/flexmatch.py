@@ -56,8 +56,39 @@ class FlexMatch(AlgorithmBase):
         self.register_hook(FlexMatchThresholdingHook(ulb_dest_len=self.args.ulb_dest_len, num_classes=self.num_classes, thresh_warmup=self.args.thresh_warmup), "MaskingHook")
         super().set_hooks()
 
-    def train_step(self, x_lb, y_lb, idx_ulb, x_ulb_w, x_ulb_s):
+    def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s, idx_lb, idx_ulb, x_ulb):
+
         num_lb = y_lb.shape[0]
+
+        # inference and calculate sup/unsup losses
+
+        # aug_1 : data augmentation to get pseudolabels "id" or "weak", "strong"
+        # aug_1 is weak for vanilla fixmatch
+
+        # aug_2:  data augmentation in consistency loss "id" or "weak", "strong"
+        # aug_2 is strong for vanilla fixmatch
+
+        if(self.aug_1=="id" and self.aug_2=="id"):
+            x_ulb_w = x_ulb
+            x_ulb_s = x_ulb 
+
+        elif(self.aug_1=="weak" and self.aug_2=="weak"):
+            x_ulb_s =  x_ulb_w 
+
+        elif(self.aug_1=="id" and self.aug_2 =="weak"):
+            x_ulb_w = x_ulb 
+            x_ulb_s = x_ulb_w 
+
+        elif(self.aug_1=="weak" and self.aug_2=="strong"):
+            pass 
+
+        else:
+            self.print_fn('XXXXXXXX Combination not supported XXXXXXXX') 
+            # strong, strong 
+            # strong id
+            # id     strong
+            # strong weak 
+            # weak   id 
 
         # inference and calculate sup/unsup losses
         with self.amp_cm():
@@ -83,37 +114,45 @@ class FlexMatch(AlgorithmBase):
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
-            # probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
-            probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
+            if(self.batch_pl_flag):
+                # probs_x_ulb_w = torch.softmax(logits_x_ulb_w, dim=-1)
+                probs_x_ulb_w = self.compute_prob(logits_x_ulb_w.detach())
 
-            # if distribution alignment hook is registered, call it 
-            # this is implemented for imbalanced algorithm - CReST
-            
-            if self.registered_hook("DistAlignHook"):
-                probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
+                # if distribution alignment hook is registered, call it 
+                # this is implemented for imbalanced algorithm - CReST
+                
+                if self.registered_hook("DistAlignHook"):
+                    probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
 
-            # compute mask
-            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False, idx_ulb=idx_ulb)
-            
-            # generate unlabeled targets using pseudo label hook
-            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
-                                          logits=probs_x_ulb_w,
-                                          use_hard_label=self.use_hard_label,
-                                          T=self.T,
-                                          softmax=False)
+                # compute mask
+                mask_batch = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False, idx_ulb=idx_ulb)
+                
+                # generate unlabeled targets using pseudo label hook
+                pseudo_labels_batch = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                                            logits=probs_x_ulb_w,
+                                            use_hard_label=self.use_hard_label,
+                                            T=self.T,
+                                            softmax=False)
+            else:
+                # either global_pl_flag is True or post_hoc_calib is true. 
+                pseudo_labels_batch = self.pseudo_labels[idx_ulb]
+                mask_batch          = self.mask[idx_ulb]
 
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
-                                               pseudo_label,
+                                               pseudo_labels_batch,
                                                'ce',
-                                               mask=mask)
+                                               mask=mask_batch)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
+        
+        self.log_batch_pseudo_labeling_stats(mask_batch,pseudo_labels_batch,idx_ulb)
+        self.log_full_pseudo_labeling_stats()
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 
-                                         util_ratio=mask.float().mean().item())
+                                         util_ratio=mask_batch.float().mean().item())
         return out_dict, log_dict
         
     

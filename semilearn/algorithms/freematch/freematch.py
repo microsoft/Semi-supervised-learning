@@ -64,8 +64,38 @@ class FreeMatch(AlgorithmBase):
         self.register_hook(FreeMatchThresholingHook(num_classes=self.num_classes, momentum=self.args.ema_p), "MaskingHook")
         super().set_hooks()
 
+    def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s, idx_lb, idx_ulb, x_ulb):
 
-    def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
+        # inference and calculate sup/unsup losses
+
+        # aug_1 : data augmentation to get pseudolabels "id" or "weak", "strong"
+        # aug_1 is weak for vanilla fixmatch
+
+        # aug_2:  data augmentation in consistency loss "id" or "weak", "strong"
+        # aug_2 is strong for vanilla fixmatch
+
+        if(self.aug_1=="id" and self.aug_2=="id"):
+            x_ulb_w = x_ulb
+            x_ulb_s = x_ulb 
+
+        elif(self.aug_1=="weak" and self.aug_2=="weak"):
+            x_ulb_s =  x_ulb_w 
+
+        elif(self.aug_1=="id" and self.aug_2 =="weak"):
+            x_ulb_w = x_ulb 
+            x_ulb_s = x_ulb_w 
+
+        elif(self.aug_1=="weak" and self.aug_2=="strong"):
+            pass 
+
+        else:
+            self.print_fn('XXXXXXXX Combination not supported XXXXXXXX') 
+            # strong, strong 
+            # strong id
+            # id     strong
+            # strong weak 
+            # weak   id 
+
         num_lb = y_lb.shape[0]
 
         # inference and calculate sup/unsup losses
@@ -92,36 +122,43 @@ class FreeMatch(AlgorithmBase):
 
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            if(self.batch_pl_flag):
+                # calculate mask
+                mask_batch = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
 
-            # calculate mask
-            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
 
-
-            # generate unlabeled targets using pseudo label hook
-            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
-                                          logits=logits_x_ulb_w,
-                                          use_hard_label=self.use_hard_label,
-                                          T=self.T)
-            
+                # generate unlabeled targets using pseudo label hook
+                pseudo_labels_batch = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+                                            logits=logits_x_ulb_w,
+                                            use_hard_label=self.use_hard_label,
+                                            T=self.T)
+            else:
+                # either global_pl_flag is True or post_hoc_calib is true. 
+                pseudo_labels_batch = self.pseudo_labels[idx_ulb]
+                mask_batch          = self.mask[idx_ulb]
+                
             # calculate unlabeled loss
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
-                                          pseudo_label,
+                                          pseudo_labels_batch,
                                           'ce',
-                                          mask=mask)
+                                          mask=mask_batch)
             
             # calculate entropy loss
-            if mask.sum() > 0:
-               ent_loss, _ = entropy_loss(mask, logits_x_ulb_s, self.p_model, self.label_hist)
+            if mask_batch.sum() > 0:
+               ent_loss, _ = entropy_loss(mask_batch, logits_x_ulb_s, self.p_model, self.label_hist)
             else:
                ent_loss = 0.0
             # ent_loss = 0.0
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_e * ent_loss
+        
+        self.log_batch_pseudo_labeling_stats(mask_batch,pseudo_labels_batch,idx_ulb)
+        self.log_full_pseudo_labeling_stats()
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 
-                                         util_ratio=mask.float().mean().item())
+                                         util_ratio=mask_batch.float().mean().item())
         return out_dict, log_dict
 
     def get_save_dict(self):

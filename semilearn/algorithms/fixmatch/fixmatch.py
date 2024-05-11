@@ -102,7 +102,7 @@ class FixMatch(AlgorithmBase):
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
             
-            self.acc_pseudo_labels_flag = True 
+            #self.acc_pseudo_labels_flag = True 
             
             if(self.batch_pl_flag):
                 
@@ -123,7 +123,7 @@ class FixMatch(AlgorithmBase):
                                             use_hard_label=self.use_hard_label,
                                             T=self.T,
                                             softmax=False)
-                print(mask_batch.sum())
+                
 
                 if(self.acc_pseudo_labels_flag):
                     pseudo_labels_batch, mask_batch = self.accumulate_pseudo_labels(idx_ulb, mask_batch,
@@ -139,24 +139,6 @@ class FixMatch(AlgorithmBase):
                                                pseudo_labels_batch,
                                                'ce',
                                                mask=mask_batch)
-
-            '''
-            c = self.agg_pl_cov.detach().item()
-            if(self.args.loss_reweight):
-                # reweight loss by  
-                # c will go high as the coverage increases. 
-                # it reflects the portion of training data that is pseudo-labeled
-                c = 0.5
-                
-                if(self.agg_pl_cov>0.8):
-                    c = (self.n_a)/(self.n_l + self.n_a)
-
-                total_loss = (1-c)*sup_loss + c * self.lambda_u* unsup_loss
-
-                self.print_fn(f"loss weights : {1-c},  {c}") 
-
-            else:
-            '''
             
             total_loss = sup_loss + self.lambda_u * unsup_loss
         
