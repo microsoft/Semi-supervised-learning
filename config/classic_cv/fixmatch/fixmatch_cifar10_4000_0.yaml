@@ -1,7 +1,7 @@
 algorithm: fixmatch
 save_dir: ./saved_models/classic_cv
 save_name: fixmatch_cifar10_4000_0
-resume: True
+resume: False
 load_path: ./saved_models/classic_cv/fixmatch_cifar10_4000_0/latest_model.pth
 overwrite: True
 use_tensorboard: True

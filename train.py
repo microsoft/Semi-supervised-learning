@@ -38,6 +38,7 @@ def get_save_name(args):
     save_name += f"__phoc-{args.use_post_hoc_calib}__ncal-{args.n_cal}__nth-{args.n_th}__from-{args.take_d_cal_th_from}"
     save_name += f"__lrw-{args.loss_reweight}__aug1-{args.aug_1}__aug2-{args.aug_2}"
     save_name += f"__post-hoc-frequency-{args.post_hoc_frequency}__use-prev-model-{args.use_prev_model}__falcon-max-epochs-{args.falcon_max_epochs}"
+    save_name += f"__bam-{args.bayes}"
 
     print(save_name)
 
@@ -269,6 +270,12 @@ def get_config():
 
     # config file
     parser.add_argument("--c", type=str, default="")
+    
+    
+    # begin: bayes cla
+    parser.add_argument("--bayes", type=bool, default=False, help="Whether to use BaM or not")
+    parser.add_argument("--bam_config", type=str, help="path to the BaM config file")
+    # end: bayes cla
 
     # add algorithm specific parameters
     args = parser.parse_args()
@@ -297,8 +304,14 @@ def get_config():
     args = parser.parse_args()
 
     over_write_args_from_file(args, args.c)
+    
+    if args.bayes and not args.bam_config:
+        raise ValueError("Bayes is true but bam_config is None!")
+    if args.bayes and args.bam_config:
+        args.bayes_args = OmegaConf.load(args.bam_config)
 
     args.save_name = get_save_name(args)
+    
 
     return args
 

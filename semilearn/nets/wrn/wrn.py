@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from semilearn.nets.utils import load_checkpoint
+from .bayesian_layers import LinearReparameterization
 
 momentum = 0.001
 
@@ -96,7 +97,18 @@ class WideResNet(nn.Module):
         # global average pooling and classifier
         self.bn1 = nn.BatchNorm2d(channels[3], momentum=0.001, eps=0.001)
         self.relu = nn.LeakyReLU(negative_slope=0.1, inplace=False)
-        self.classifier = nn.Linear(channels[3], num_classes)
+    
+        if "bayes"in kwargs and kwargs["bayes"]:
+            self.classifier = LinearReparameterization(
+                in_features=channels[3],
+                out_features=num_classes,
+                prior_mean=kwargs["prior_mu"],
+                prior_variance=kwargs["prior_sigma"]
+            )            
+        else:
+            self.classifier = nn.Linear(channels[3], num_classes)
+            
+
         self.channels = channels[3]
         self.num_features = channels[3]
 

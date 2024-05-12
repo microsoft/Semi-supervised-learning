@@ -51,6 +51,20 @@ from confidence_funcs.classifiers.torch.pytorch_clf import PyTorchClassifier
 from confidence_funcs.core.threshold_estimation import *
 
 
+class ThresholdScheduler:
+    def __init__(self, warmup_epochs, init_thres, final_thres, total_steps, steps_per_epoch):
+        warmup_iter = steps_per_epoch * warmup_epochs
+        warmup_schedule = np.linspace(init_thres, final_thres, warmup_iter)
+        decay_iter = total_steps - warmup_iter
+        constant_schedule = np.ones(decay_iter)*final_thres
+        self.thres_schedule = np.concatenate((warmup_schedule, constant_schedule))
+        self.iter = int(-1)
+
+    def get_threshold(self):
+        self.iter += 1
+        return self.thres_schedule[self.iter]
+
+
 class AlgorithmBase:
     """
     Base class for algorithms
@@ -120,6 +134,8 @@ class AlgorithmBase:
 
         # build optimizer and scheduler
         self.optimizer, self.scheduler = self.set_optimizer()
+        if self.args.bayes:
+            self.bayes_optimizer, self.bayes_scheduler, self.quantile_sch = self.set_bayes_optimizer()
 
         # build supervised loss and unsupervised loss
         self.ce_loss = CELoss()
@@ -307,23 +323,69 @@ class AlgorithmBase:
             optimizer, self.num_train_iter, num_warmup_steps=self.args.num_warmup_iter
         )
         return optimizer, scheduler
+    
+    def set_bayes_optimizer(self):
+        from torch import optim
+        bayes_optimizer = optim.Adam(
+            self.model.classifier.parameters(),
+            lr=self.args.bayes_args.bayes_lr
+        )
+        bayes_scheduler = get_cosine_schedule_with_warmup(
+            bayes_optimizer,
+            self.num_train_iter,
+            num_warmup_steps=self.args.num_warmup_iter
+        )
+        # we have a quantile scheduler for the std threshold
+        quantile_sch = ThresholdScheduler(
+            self.args.bayes_args.quansch_warmup,
+            self.args.bayes_args.init_quan,
+            self.args.bayes_args.final_quan,
+            self.num_train_iter,
+            self.num_eval_iter
+        )
+        return bayes_optimizer, bayes_scheduler, quantile_sch
 
     def set_model(self):
         """
         initialize model
         """
-        model = self.net_builder(
-            num_classes=self.num_classes,
-            pretrained=self.args.use_pretrain,
-            pretrained_path=self.args.pretrain_path,
-        )
+        if self.args.bayes:
+            model = self.net_builder(
+                num_classes=self.num_classes,
+                pretrained=self.args.use_pretrain,
+                pretrained_path=self.args.pretrain_path,
+                bayes=self.args.bayes,
+                prior_mu=self.args.bayes_args.prior_mu,
+                prior_sigma=self.args.bayes_args.prior_sig
+            )
+        else:
+            model = self.net_builder(
+                num_classes=self.num_classes,
+                pretrained=self.args.use_pretrain,
+                pretrained_path=self.args.pretrain_path
+            )
+        
         return model
 
     def set_ema_model(self):
         """
         initialize ema model from model
         """
-        ema_model = self.net_builder(num_classes=self.num_classes)
+        if self.args.bayes:
+            ema_model = self.net_builder(
+                num_classes=self.num_classes,
+                pretrained=self.args.use_pretrain,
+                pretrained_path=self.args.pretrain_path,
+                bayes=self.args.bayes,
+                prior_mu=self.args.bayes_args.prior_mu,
+                prior_sigma=self.args.bayes_args.prior_sig
+            )
+        else:
+            ema_model = self.net_builder(
+                num_classes=self.num_classes,
+                pretrained=self.args.use_pretrain,
+                pretrained_path=self.args.pretrain_path
+            )
         ema_model.load_state_dict(self.model.state_dict())
         return ema_model
 
@@ -368,6 +430,9 @@ class AlgorithmBase:
             else:
                 var = var.cuda(self.gpu)
             input_dict[arg] = var
+            
+        if self.args.bayes:
+            self.args.bayes_args.quantile = float(self.quantile_sch.get_threshold())
 
         return input_dict
 
@@ -693,9 +758,14 @@ class AlgorithmBase:
                 num_batch = y.shape[0]
                 total_num += num_batch
 
-                logits = self.model(x)[out_key]
+                if self.args.bayes and out_key == "logits":
+                    logits, Lkl = self.model(x)[out_key]
+                    Lkl = Lkl / logits[:len(y)].shape[0] * self.args.bayes_args.kl
+                else:
+                    logits = self.model(x)[out_key]
+                    Lkl = 0
                 # TODO: verify the types of y_true and y_pred! and what's there inside them
-                loss = F.cross_entropy(logits, y, reduction="mean", ignore_index=-1)
+                loss = F.cross_entropy(logits, y, reduction="mean", ignore_index=-1) + Lkl 
                 y_true.extend(y.cpu().tolist())
                 y_pred.extend(torch.max(logits, dim=-1)[1].cpu().tolist())
                 y_logits.append(logits.cpu().numpy())
@@ -860,6 +930,18 @@ class AlgorithmBase:
         Get specificed arguments into argparse for each algorithm
         """
         return {}
+    
+    @staticmethod
+    def bayes_predict(args, bayeslayer, reps, T=1):
+        ''' creates args.bayes_samples models and get mean and std of softmax(output) '''
+        with torch.no_grad():
+            with autocast():
+                outputs = [torch.softmax(bayeslayer(reps)[0]/T,dim=-1) for _ in range(args.bayes_samples)]
+            outputs = torch.stack(outputs)
+            mean_output = torch.mean(outputs, 0)
+            std_output = torch.std(outputs,0)
+            # max_prob, preds = torch.max(mean_preds, dim=-1)
+        return mean_output, std_output
 
 
 class ImbAlgorithmBase(AlgorithmBase):

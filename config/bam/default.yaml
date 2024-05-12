@@ -1,0 +1,13 @@
+bayes_samples: 50
+kl: 1
+bayes_lr: 0.01
+std_threshold: 0.02
+prior_mu: 0
+prior_sig: 1
+quantile: -1.0
+q_warmup: -1
+q_queue: False
+save_ep: False
+quansch_warmup: 10
+init_quan: 0.1
+final_quan: 0.75

@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 import torch
+import numpy as np
 from semilearn.core.algorithmbase import AlgorithmBase
 from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
@@ -82,8 +83,14 @@ class FixMatch(AlgorithmBase):
             if self.use_cat:
                 inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
                 outputs = self.model(inputs)
-                logits_x_lb = outputs['logits'][:num_lb]
-                logits_x_ulb_w, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(2)
+                if self.args.bayes:
+                    rep = outputs["pre_logits"]
+                    logits, Lkl = outputs["logits"]
+                    logits_x_lb = logits[:num_lb]
+                    logits_x_ulb_w, logits_x_ulb_s = logits[num_lb:].chunk(2)
+                else:
+                    logits_x_lb = outputs['logits'][:num_lb]
+                    logits_x_ulb_w, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(2)
                 feats_x_lb = outputs['feat'][:num_lb]
                 feats_x_ulb_w, feats_x_ulb_s = outputs['feat'][num_lb:].chunk(2)
             else:
@@ -101,6 +108,30 @@ class FixMatch(AlgorithmBase):
             feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            
+            # if we are using BaM
+            if self.args.bayes:    
+                sup_loss += Lkl / logits[:num_lb].shape[0] * self.args.bayes_args.kl
+                
+                rep_u = rep.detach()[num_lb:]
+                rep_u_w, rep_u_s = rep_u.chunk(2)
+                
+                mean_output_u_w, std_output_u_w = self.bayes_predict(self.args.bayes_args, self.model.classifier, rep_u_w)
+                
+                max_probs_u_w, targets_u = torch.max(mean_output_u_w,dim=-1)
+                pred_std = torch.gather(std_output_u_w,1,targets_u.view(-1,1)).squeeze(1)
+                
+                mask = pred_std.le(self.args.bayes_args.std_threshold) 
+                mask = mask.float()
+
+                # Update threshold based on the quantile
+                if self.args.bayes_args.quantile != -1 and self.epoch > self.args.bayes_args.q_warmup:
+                    new_threshold = torch.quantile(pred_std, self.args.bayes_args.quantile).item()
+                    if self.args.bayes_args.q_queue:
+                        self.quan_queue.append(new_threshold)
+                        if len(self.quan_queue) > 50: self.quan_queue.pop(0) # maintain last 50 values
+                        new_threshold = np.mean(self.quan_queue)
+                        self.args.bayes_args.args.std_threshold = new_threshold
             
             #self.acc_pseudo_labels_flag = True 
             

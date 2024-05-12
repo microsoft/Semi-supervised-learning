@@ -28,6 +28,8 @@ class ParamUpdateHook(Hook):
                 algorithm.loss_scaler.unscale_(algorithm.optimizer)
                 torch.nn.utils.clip_grad_norm_(algorithm.model.parameters(), algorithm.clip_grad)
             algorithm.loss_scaler.step(algorithm.optimizer)
+            if algorithm.args.bayes:
+                algorithm.loss_scaler.step(algorithm.bayes_optimizer)
             algorithm.loss_scaler.update()
         else:
             loss.backward()
@@ -37,6 +39,8 @@ class ParamUpdateHook(Hook):
 
         if algorithm.scheduler is not None:
             algorithm.scheduler.step()
+        if algorithm.bayes_scheduler is not None:
+            algorithm.bayes_scheduler.step()
         algorithm.model.zero_grad()
 
         if hasattr(algorithm, 'end_run'):
