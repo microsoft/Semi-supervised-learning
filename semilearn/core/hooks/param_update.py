@@ -36,6 +36,8 @@ class ParamUpdateHook(Hook):
             if (algorithm.clip_grad > 0):
                 torch.nn.utils.clip_grad_norm_(algorithm.model.parameters(), algorithm.clip_grad)
             algorithm.optimizer.step()
+            if algorithm.args.bayes:
+                algorithm.bayes_optimizer.step()
 
         if algorithm.scheduler is not None:
             algorithm.scheduler.step()
