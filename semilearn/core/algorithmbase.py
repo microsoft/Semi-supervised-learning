@@ -938,7 +938,7 @@ class AlgorithmBase:
                 
     def check_if_use_bam(self, Lkl, logits, num_lb, rep):
         if self.args.bayes:    
-            sup_loss += Lkl / logits[:num_lb].shape[0] * self.args.bayes_args.kl
+            self.sup_loss += Lkl / logits[:num_lb].shape[0] * self.args.bayes_args.kl
             
             rep_u = rep.detach()[num_lb:]
             rep_u_w, rep_u_s = rep_u.chunk(2)

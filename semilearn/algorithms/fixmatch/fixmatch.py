@@ -81,7 +81,7 @@ class FixMatch(AlgorithmBase):
 
         with self.amp_cm():
             if self.use_cat:
-                rep, logits, Lkl, logits_x_lb, logits_x_ulb_w, logits_x_ulb_s, feats_x_lb, feats_x_ulb_w, feats_x_ulb_s = self.use_cat_func(x_lb, x_ulb_w, x_ulb_s, num_lb)
+                rep, logits, Lkl, logits_x_lb, logits_x_ulb_w, logits_x_ulb_s, feats_x_lb, feats_x_ulb_w, feats_x_ulb_s = self.use_cat_funcw(x_lb, x_ulb_w, x_ulb_s, num_lb)
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
@@ -96,7 +96,7 @@ class FixMatch(AlgorithmBase):
             
             feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
-            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            self.sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
             
             # if using BaM, the function run bam related stuff
             self.check_if_use_bam(Lkl, logits, num_lb, rep)
@@ -139,13 +139,13 @@ class FixMatch(AlgorithmBase):
                                                'ce',
                                                mask=mask_batch)
             
-            total_loss = sup_loss + self.lambda_u * unsup_loss
+            total_loss = self.sup_loss + self.lambda_u * unsup_loss
         
         self.log_batch_pseudo_labeling_stats(mask_batch,pseudo_labels_batch,idx_ulb)
         self.log_full_pseudo_labeling_stats()
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
-        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+        log_dict = self.process_log_dict(sup_loss=self.sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 
                                          util_ratio=mask_batch.float().mean().item())

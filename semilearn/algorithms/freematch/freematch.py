@@ -116,7 +116,7 @@ class FreeMatch(AlgorithmBase):
             feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
 
 
-            sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            self.sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
             # if using BaM, the function run bam related stuff
             self.check_if_use_bam(Lkl, logits, num_lb, rep)
             if(self.batch_pl_flag):
@@ -146,13 +146,13 @@ class FreeMatch(AlgorithmBase):
             else:
                ent_loss = 0.0
             # ent_loss = 0.0
-            total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_e * ent_loss
+            total_loss = self.sup_loss + self.lambda_u * unsup_loss + self.lambda_e * ent_loss
         
         self.log_batch_pseudo_labeling_stats(mask_batch,pseudo_labels_batch,idx_ulb)
         self.log_full_pseudo_labeling_stats()
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
-        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
+        log_dict = self.process_log_dict(sup_loss=self.sup_loss.item(), 
                                          unsup_loss=unsup_loss.item(), 
                                          total_loss=total_loss.item(), 
                                          util_ratio=mask_batch.float().mean().item())
