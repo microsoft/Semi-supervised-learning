@@ -36,5 +36,5 @@ dataset: cifar10
 train_sampler: RandomSampler
 num_classes: 10
 num_workers: 1
-seed: 0
-gpu: 0
+#seed: 0
+#gpu: 0

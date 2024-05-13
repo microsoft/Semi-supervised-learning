@@ -84,7 +84,7 @@ class AlgorithmBase:
     def __init__(self, args, net_builder, tb_log=None, logger=None, **kwargs):
         # common arguments
         self.args = args
-        self.post_hoc_frequency = args.post_hoc_frequency
+        self.full_pl_freq = args.full_pl_freq
         self.cur_clf = None
         self.num_classes = args.num_classes
         self.ema_m = args.ema_m
@@ -522,11 +522,12 @@ class AlgorithmBase:
         self.pseudo_labels = torch.zeros(n_u).long().to(device)
         self.mask = torch.zeros(n_u).to(device)
         
-        self.batch_pl_flag = True
-        self.full_pl_flag  = False
+        self.batch_pl_flag = self.args.batch_pl_flag
+        self.full_pl_flag  = self.args.full_pl_flag
+        self.full_pl_freq  = self.args.full_pl_freq
 
         if(self.post_hoc_calib_conf):
-            self.batch_pl_flag = False 
+            assert(self.full_pl_flag and not self.batch_pl_flag)
 
         # accumulate_pseudo_labels = True
         self.acc_pseudo_labels_flag = self.args.accumulate_pseudo_labels
@@ -556,33 +557,22 @@ class AlgorithmBase:
             ):
                 # prevent the training iterations exceed args.num_train_iter
 
-                
-                Freq = 100 #self.post_hoc_frequency
-                
-
                 if self.it >= self.num_train_iter:
                     break
 
                 self.call_hook("before_train_step")
 
-                # for every iter>0, if post-hoc-calib is not none, then learn new g.
-                # validation data ??
+                Freq = self.full_pl_freq #100 #self.post_hoc_frequency
 
-                # <<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<
+                if self.full_pl_flag and self.it % Freq == 0 and self.it >= Freq:
+                    if self.post_hoc_calib_conf:
+                        # for every iter>0, if post-hoc-calib is not none, then learn new g.
+                        self.post_hoc_calib_pseudo_labeling()
 
-                if self.post_hoc_calib_conf and self.it % Freq == 0 and self.it >= Freq:
-                    
-                    self.post_hoc_calib_pseudo_labeling()
-
-                else:
-                    # self.print_fn('=========================    No Post-hoc Calibration     =========================')
-                    self.cur_calibrator = None
-
-                if(self.post_hoc_calib_conf is None and self.full_pl_flag and self.it % Freq == 0 and self.it >= Freq):
-
-                    self.full_pseudo_labeling()
-                # >>>>>>>>>>>>>>>>>>>>>>>>>>> END CALIBRATION BLOCK  >>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+                    else:
+                        self.cur_calibrator = None
+                        self.full_pseudo_labeling() 
+                
                 # this step only computes the loss
                 self.out_dict, self.log_dict = self.train_step(
                     **self.process_batch(**data_lb, **data_ulb)
@@ -601,9 +591,10 @@ class AlgorithmBase:
 
 
     def post_hoc_calib_pseudo_labeling(self):
-
+        
+        # <<<<<<<<<<<<<<<<<<<<<<<<< BEGIN CALIBRATION BLOCK <<<<<<<<<<<<<<<<<<<<<<<<<   
         device = self.device 
-
+        
         self.cur_clf = PyTorchClassifier(logger=self.logger)
         self.cur_clf.model = self.model
         self.post_hoc_calib_conf['device'] = self.device 
@@ -621,6 +612,7 @@ class AlgorithmBase:
         self.cur_calibrator.fit(
             self.dataset_dict["d_cal"], ds_val_nc=self.dataset_dict["d_th"]
         )
+        # >>>>>>>>>>>>>>>>>>>>>>>>>>> END CALIBRATION BLOCK  >>>>>>>>>>>>>>>>>>>>>>>>>>>
 
         # get pseudo labels and mask here.
         # estimate threshold, pseudo label etc.
@@ -926,6 +918,8 @@ class AlgorithmBase:
         Lkl = 0
         rep = None
         logits = None
+        rep = None 
+        logits = None 
         if self.args.bayes:
             rep = outputs["pre_logits"]
             logits, Lkl = outputs["logits"]

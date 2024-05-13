@@ -91,7 +91,12 @@ class BasicDataset(Dataset):
 
             if isinstance(img, np.ndarray):
                 img = Image.fromarray(img)
+
+            
+            #img = transforms.ToTensor()(img)
             img_w = self.transform(img)
+            
+
             if not self.is_ulb:
                 return {'idx_lb': idx, 'x_lb': img_w, 'y_lb': target} 
             else:
