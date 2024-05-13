@@ -925,6 +925,7 @@ class AlgorithmBase:
         outputs = self.model(inputs)
         Lkl = 0
         rep = None
+        logits = None
         if self.args.bayes:
             rep = outputs["pre_logits"]
             logits, Lkl = outputs["logits"]
