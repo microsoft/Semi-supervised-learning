@@ -31,7 +31,7 @@ from semilearn.imb_algorithms import get_imb_algorithm, name2imbalg
 def get_save_name(args):
     save_name = args.prefix
     save_name += (
-        f"__A-{args.algorithm}__S-{args.seed}__E-{args.epoch}__I-{args.num_train_iter}"
+        f"__A-{args.algorithm}__D-{args.dataset}__S-{args.seed}__E-{args.epoch}__I-{args.num_train_iter}"
     )
     save_name += f"__nl-{args.num_labels}__bsz-{args.batch_size}"
     save_name += f"__accpl-{args.accumulate_pseudo_labels}"
@@ -39,8 +39,6 @@ def get_save_name(args):
     save_name += f"__lrw-{args.loss_reweight}__aug1-{args.aug_1}__aug2-{args.aug_2}"
     save_name += f"__post-hoc-frequency-{args.post_hoc_frequency}__use-prev-model-{args.use_prev_model}__falcon-max-epochs-{args.falcon_max_epochs}"
     save_name += f"__bam-{args.bayes}"
-
-    print(save_name)
 
     return save_name
 
@@ -273,13 +271,12 @@ def get_config():
     
     
     # begin: bayes cla
-    parser.add_argument("--bayes", type=bool, default=False, help="Whether to use BaM or not")
+    parser.add_argument("--bayes", type=str2bool, default=False, help="Whether to use BaM or not")
     parser.add_argument("--bam_config", type=str, help="path to the BaM config file")
     # end: bayes cla
 
     # add algorithm specific parameters
     args = parser.parse_args()
-
     over_write_args_from_file(args, args.c)
 
     for argument in name2alg[args.algorithm].get_argument():
@@ -304,7 +301,6 @@ def get_config():
     args = parser.parse_args()
 
     over_write_args_from_file(args, args.c)
-    
     if args.bayes and not args.bam_config:
         raise ValueError("Bayes is true but bam_config is None!")
     if args.bayes and args.bam_config:
@@ -478,7 +474,14 @@ def main_worker(gpu, ngpus_per_node, args):
 
 
 if __name__ == "__main__":
+    import wandb    
+    
     args = get_config()
+    
+    wandb.init(project="test-bam", sync_tensorboard=True, name=args.save_name)
+    
     port = get_port()
     args.dist_url = "tcp://127.0.0.1:" + str(port)
     main(args)
+    
+    wandb.finish()

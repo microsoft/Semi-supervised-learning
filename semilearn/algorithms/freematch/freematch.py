@@ -101,12 +101,7 @@ class FreeMatch(AlgorithmBase):
         # inference and calculate sup/unsup losses
         with self.amp_cm():
             if self.use_cat:
-                inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
-                outputs = self.model(inputs)
-                logits_x_lb = outputs['logits'][:num_lb]
-                logits_x_ulb_w, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(2)
-                feats_x_lb = outputs['feat'][:num_lb]
-                feats_x_ulb_w, feats_x_ulb_s = outputs['feat'][num_lb:].chunk(2)
+                rep, logits, Lkl, logits_x_lb, logits_x_ulb_w, logits_x_ulb_s, feats_x_lb, feats_x_ulb_w, feats_x_ulb_s = self.use_cat(x_lb, x_ulb_w, x_ulb_s, num_lb)
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
@@ -122,6 +117,8 @@ class FreeMatch(AlgorithmBase):
 
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
+            # if using BaM, the function run bam related stuff
+            self.check_if_use_bam(Lkl, logits, num_lb, rep)
             if(self.batch_pl_flag):
                 # calculate mask
                 mask_batch = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)

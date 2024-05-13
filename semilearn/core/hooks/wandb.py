@@ -15,7 +15,8 @@ class WANDBHook(Hook):
         super().__init__()
         self.log_key_list = ['train/sup_loss', 'train/unsup_loss', 'train/total_loss', 'train/util_ratio', 
                              'train/run_time', 'train/prefetch_time', 'lr',
-                             'eval/top-1-acc', 'eval/precision', 'eval/recall', 'eval/F1']
+                             'test/top-5-acc', 'test/top-1-acc', 'test/precision', 'test/recall', 'test/F1',
+                             'eval/top-5-acc', 'eval/top-1-acc', 'eval/precision', 'eval/recall', 'eval/F1']
 
     def before_run(self, algorithm):
         # job_id = '_'.join(algorithm.args.save_name.split('_')[:-1])
