@@ -1,4 +1,5 @@
 import sys
+from time import time 
 
 sys.path.append("../")
 sys.path.append("../../")
@@ -226,9 +227,7 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         print(use_prev_model)
 
         self.init(calib_ds, calib_ds_inf_out, use_prev_model=use_prev_model)
-
         
-
         logger = self.logger
 
         calib_conf = self.calib_conf
@@ -335,9 +334,9 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
                 # loss3 = torch.mean( (S - (1-targets)))
                 # print(S)
                 # print(1-targets)
-                loss3 = mse_loss(S, 1.0 - targets)
+                #loss3 = mse_loss(S, 1.0 - targets)
 
-                loss += l3 * loss3
+                #loss += l3 * loss3
 
                 if calib_conf["regularize"]:
                     reg = torch.mean(
@@ -358,13 +357,13 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
 
                 self.optimizer_t.step()
 
-                lst_S.append(S.detach())
+                #lst_S.append(S.detach())
                 # lst_g.append(g.detach())
 
                 lst_targets.append(targets.detach())
 
                 total_loss += n * loss.item()
-
+            '''
             S = torch.cat(lst_S, dim=0)
             targets = torch.cat(lst_targets, dim=0)
             N = len(S)
@@ -394,6 +393,7 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
                 )
 
                 logger.info(f"Epoch: {epoch} Model Norm  {model_norm(self.g_model)}")
+            '''
 
             if self.ds_val_nc:
                 if (
@@ -443,11 +443,16 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         device = self.calib_conf["device"]
         
         if(clf_inf_out is None):
+            tic = time()
             clf_inf_out = self.cur_clf.predict(ds, inference_conf=inference_conf)
+            toc = time() 
+            print(f'Time taken in in inference call : {toc-tic}')
         
         # features    = clf_inf_out[self.calib_conf['features_key']]
 
         fkey = self.calib_conf["features_key"]
+
+        #print(clf_inf_out["logits"].shape, clf_inf_out["pre_logits"].shape)
 
         if fkey == "concat":
             features = torch.hstack([clf_inf_out["logits"], clf_inf_out["pre_logits"]])
@@ -482,16 +487,16 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
 
             # print(out['logits'].shape, targets.shape)
 
-            logits = safe_squeeze(out["logits"])
-            confidence = safe_squeeze(out["probs"])
+            #logits = safe_squeeze(out["logits"])
+            #confidence = safe_squeeze(out["probs"])
 
             S, g = self.get_S(out, y_hat, idx)
 
-            lst_S.append(S)
+            #lst_S.append(S)
             # lst_targets.append(targets)
             lst_g.append(g)
 
-        S = torch.cat(lst_S, dim=0)
+        #S = torch.cat(lst_S, dim=0)
 
         G = torch.cat(lst_g, dim=0)
 
@@ -502,11 +507,11 @@ class AutoLabelingOptimization_V0(AbstractCalibrator):
         # S.detach().numpy(), U.detach().numpy(), auto_err, cov, A.detach().numpy(), B.detach().numpy()
 
         # print(inf_out['confidence'])
-        mask_correct = clf_inf_out["labels"] == Y
-        G_c = G[mask_correct].detach().cpu()
+        #mask_correct = clf_inf_out["labels"] == Y
+        #G_c = G[mask_correct].detach().cpu()
 
-        mask_incorrect = clf_inf_out["labels"] != Y
-        G_ic = G[mask_incorrect].detach().cpu()
+        #mask_incorrect = clf_inf_out["labels"] != Y
+        #G_ic = G[mask_incorrect].detach().cpu()
 
         # print(G_c.mean(), G_c.min(), G_c.max())
         # print(G_ic.mean(), G_ic.min(), G_ic.max())

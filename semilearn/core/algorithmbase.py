@@ -481,7 +481,7 @@ class AlgorithmBase:
 
         self.mask[idx_ulb] = torch.clamp( mask + self.mask[idx_ulb], min=0.0, max=1.0) # update the mask accordingly.
         
-        #self.print_fn(f"{torch.sum(mask).item()},  {torch.sum( self.mask[idx_ulb] ).item()},{torch.sum(self.mask).item()}")
+        self.print_fn(f"{torch.sum(mask).item()},  {torch.sum( self.mask[idx_ulb] ).item()},{torch.sum(self.mask).item()}")
         
         pseudo_label = self.pseudo_labels[idx_ulb]
         mask         = self.mask[idx_ulb]
@@ -528,7 +528,7 @@ class AlgorithmBase:
 
         if(self.post_hoc_calib_conf):
             assert(self.full_pl_flag and not self.batch_pl_flag)
-            
+
         # accumulate_pseudo_labels = True
         self.acc_pseudo_labels_flag = self.args.accumulate_pseudo_labels
 
