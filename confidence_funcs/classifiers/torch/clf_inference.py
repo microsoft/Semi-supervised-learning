@@ -30,7 +30,7 @@ class ClassfierInference:
                                   shuffle=inference_conf['shuffle'],
                                   pin_memory=True, 
                                   num_workers=4)
-
+        
         print(inference_conf['device'],inference_conf['batch_size'])
 
         model = model.to(device)

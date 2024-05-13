@@ -35,10 +35,19 @@ def get_save_name(args):
     )
     save_name += f"__nl-{args.num_labels}__bsz-{args.batch_size}"
     save_name += f"__accpl-{args.accumulate_pseudo_labels}"
+
+    if(args.full_pl_flag):
+        save_name += f"__full_pl-{args.full_pl_flag}"
+        save_name += f"__full_pl_freq-{args.full_pl_freq}"
+    else:
+        save_name += f"__batch_pl-{args.batch_pl_flag}"
+
     save_name += f"__phoc-{args.use_post_hoc_calib}__ncal-{args.n_cal}__nth-{args.n_th}__from-{args.take_d_cal_th_from}"
     save_name += f"__lrw-{args.loss_reweight}__aug1-{args.aug_1}__aug2-{args.aug_2}"
-    save_name += f"__post-hoc-frequency-{args.post_hoc_frequency}__use-prev-model-{args.use_prev_model}__falcon-max-epochs-{args.falcon_max_epochs}"
-    save_name += f"__bam-{args.bayes}"
+    save_name += f"__use-prev-model-{args.use_prev_model}__phoc-max-epochs-{args.post_hoc_max_epochs}"
+    
+    if(args.bayes):
+        save_name += f"__bam-{args.bayes}"
 
     return save_name
 
@@ -77,6 +86,15 @@ def get_config():
     parser.add_argument("--loss_reweight", type=str2bool, default=False)
 
     parser.add_argument("--accumulate_pseudo_labels", type=str2bool, default=False)
+    
+    # this is true for vanilla ***match methods.
+    parser.add_argument("--batch_pl_flag", type=str2bool, default=True)
+
+    # this is true when using post-hoc calib or using full pseudo labeling with ***match methods.
+    parser.add_argument("--full_pl_flag", type=str2bool, default=False)
+    
+    # makes sense only when full_pl_flag is true
+    parser.add_argument("--full_pl_freq", type=int, default=100)
 
     """
     Training Configuration of FixMatch
@@ -224,9 +242,8 @@ def get_config():
 
     parser.add_argument("--use_true_labels", type=str2bool, default=False)
     
-    parser.add_argument("--post_hoc_frequency", type=int, default=100)
     parser.add_argument("--use_prev_model", type=str2bool, default=False)
-    parser.add_argument("--falcon_max_epochs", type=int, default=500)
+    parser.add_argument("--post_hoc_max_epochs", type=int, default=500)
 
     """
     multi-GPUs & Distributed Training
@@ -434,8 +451,8 @@ def main_worker(gpu, ngpus_per_node, args):
         post_hoc_calib_conf = OmegaConf.load(
             f"./config/post-hoc/falcon_{args.dataset}.yaml"
         )
-        post_hoc_calib_conf.training_conf_g.max_epochs = args.falcon_max_epochs
-        post_hoc_calib_conf.training_conf_t.max_epochs = args.falcon_max_epochs
+        post_hoc_calib_conf.training_conf_g.max_epochs = args.post_hoc_max_epochs
+        post_hoc_calib_conf.training_conf_t.max_epochs = args.post_hoc_max_epochs
         post_hoc_calib_conf.use_prev_model = args.use_prev_model
         model.post_hoc_calib_conf = post_hoc_calib_conf
 
@@ -478,10 +495,11 @@ if __name__ == "__main__":
     
     args = get_config()
     
-    wandb.init(project="test-bam", sync_tensorboard=True, name=args.save_name)
+    # wandb is slowing down the run significantly.
+    #wandb.init(project="test-all-ssl", sync_tensorboard=True, name=args.save_name)
     
-    port = get_port()
-    args.dist_url = "tcp://127.0.0.1:" + str(port)
+    #port = get_port()
+    #args.dist_url = "tcp://127.0.0.1:" + str(port)
     main(args)
     
-    wandb.finish()
+    #wandb.finish()
