@@ -81,7 +81,7 @@ class FixMatch(AlgorithmBase):
 
         with self.amp_cm():
             if self.use_cat:
-                rep, logits, Lkl, logits_x_lb, logits_x_ulb_w, logits_x_ulb_s, feats_x_lb, feats_x_ulb_w, feats_x_ulb_s = self.use_cat(x_lb, x_ulb_w, x_ulb_s, num_lb)
+                rep, logits, Lkl, logits_x_lb, logits_x_ulb_w, logits_x_ulb_s, feats_x_lb, feats_x_ulb_w, feats_x_ulb_s = self.use_cat_func(x_lb, x_ulb_w, x_ulb_s, num_lb)
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']

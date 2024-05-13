@@ -920,7 +920,7 @@ class AlgorithmBase:
             if hasattr(hook, fn_name):
                 getattr(hook, fn_name)(self, *args, **kwargs)
     
-    def use_cat(self, x_lb, x_ulb_w, x_ulb_s, num_lb):
+    def use_cat_func(self, x_lb, x_ulb_w, x_ulb_s, num_lb):
         inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
         outputs = self.model(inputs)
         Lkl = 0
