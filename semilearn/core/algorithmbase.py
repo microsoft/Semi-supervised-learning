@@ -563,6 +563,12 @@ class AlgorithmBase:
                 self.call_hook("before_train_step")
 
                 Freq = self.full_pl_freq #100 #self.post_hoc_frequency
+                if(self.it<2000):
+                    Freq = 50
+                elif(self.it<150000):
+                    Freq = 100
+                else:
+                    Freq = 200
 
                 if self.full_pl_flag and self.it % Freq == 0 and self.it >= Freq:
                     if self.post_hoc_calib_conf:
