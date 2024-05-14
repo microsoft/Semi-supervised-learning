@@ -922,6 +922,8 @@ class AlgorithmBase:
         inputs = torch.cat((x_lb, x_ulb_w, x_ulb_s))
         outputs = self.model(inputs)
         Lkl = 0
+        rep = None
+        logits = None
         rep = None 
         logits = None 
         if self.args.bayes:
