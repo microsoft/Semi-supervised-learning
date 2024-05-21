@@ -19,7 +19,7 @@ Pygments==2.13.0
 pyparsing==3.0.9
 pytz==2022.2.1
 PyYAML==6.0
-requests==2.31.0
+requests==2.32.0
 snowballstemmer==2.2.0
 Sphinx==5.1.1
 sphinxcontrib-applehelp==1.0.2
