@@ -78,6 +78,13 @@ def get_cifar(args, alg, name, num_labels, num_classes, data_dir='./data', inclu
         ulb_count[c] += 1
     print("lb count: {}".format(lb_count))
     print("ulb count: {}".format(ulb_count))
+
+    save_dir = os.path.join(args.save_dir, args.save_name)
+    with open(os.path.join(save_dir, f'Note.txt'), 'w') as f:
+        f.write("lb_count: {}\n".format(lb_count))
+        f.write("ulb_count: {}\n".format(ulb_count + [(ulb_targets == -1).sum()]))
+        f.write("OOD unlabeled images: {}\n".format((ulb_targets == -1).sum()))
+        f.close()
     # lb_count = lb_count / lb_count.sum()
     # ulb_count = ulb_count / ulb_count.sum()
     # args.lb_class_dist = lb_count
